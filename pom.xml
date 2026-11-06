@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Project identity: groupId matches the root Java package ca.carcareplus -->
+    <groupId>ca.carcareplus</groupId>
+    <artifactId>carcareplus</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>CarCare+</name>
+    <description>COMP 8547 final project: crawler, parser, inverted index, ranking,
+        spell checking, word completion and regex for Canadian car-care services.</description>
+
+    <properties>
+        <!-- Compile for Java 21 (LTS). "release" also blocks APIs newer than 21. -->
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- Dependency and plugin versions in one place -->
+        <junit.version>5.12.2</junit.version>
+        <compiler.plugin.version>3.14.0</compiler.plugin.version>
+        <surefire.plugin.version>3.5.3</surefire.plugin.version>
+        <exec.plugin.version>3.5.0</exec.plugin.version>
+
+        <!-- Entry point used by: mvn exec:java -->
+        <exec.mainClass>ca.carcareplus.app.Main</exec.mainClass>
+    </properties>
+
+    <dependencies>
+        <!-- JUnit 5 (Jupiter) for unit tests; test scope = not shipped with the app -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+            Added in later phases, after instructor approval:
+              Phase 5 (HTML parser): org.jsoup:jsoup
+              Phase 6 (storage):     com.google.code.gson:gson
+        -->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler.plugin.version}</version>
+                <configuration>
+                    <!-- Show unchecked/deprecation warnings so we fix them early -->
+                    <compilerArgs>
+                        <arg>-Xlint:all</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <!-- Runs JUnit 5 tests during: mvn test -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.plugin.version}</version>
+                <configuration>
+                    <!-- Tests tagged "network" hit real websites; run them only on request -->
+                    <excludedGroups>network</excludedGroups>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <!-- Runs Main from the terminal: mvn -q compile exec:java -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec.plugin.version}</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>
