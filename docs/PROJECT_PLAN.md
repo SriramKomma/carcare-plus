@@ -226,7 +226,7 @@ Car Care plus+/
     │   │               LevenshteinDistance.java, SpellChecker.java
     │   ├── models/     CrawledPage.java, ServiceDocument.java, SearchRequest.java,
     │   │               SearchResult.java, VehicleType.java ★, ServiceCategory.java ★
-    │   └── exceptions/ CrawlException.java ★, ParseException.java ★,
+    │   └── exceptions/ CarCareException.java ★ (checked base), CrawlException.java ★,
     │                   StorageException.java ★, InvalidInputException.java ★
     └── test/
         ├── java/ca/carcareplus/<same packages>/*Test.java   ★ mirrored packages
@@ -251,7 +251,7 @@ Why the ★ changes:
 | Class | Kind | Fields / responsibility |
 |---|---|---|
 | `VehicleType` | enum | `EV`, `GAS`, `ANY` |
-| `ServiceCategory` | enum | `FLAT_TIRE, BATTERY_ELECTRICAL, ENGINE, BRAKES, WIPERS, BREAKDOWN_TOWING, OVERHEATING_COOLING, FUEL, EV_CHARGING, EV_MAINTENANCE, GENERAL`; each knows which `VehicleType`s it applies to (`EV_CHARGING` → EV only) |
+| `ServiceCategory` | enum | `FLAT_TIRE, BATTERY, ELECTRICAL, ENGINE, BRAKES, WIPERS, BREAKDOWN_TOWING, OVERHEATING_COOLING, FUEL, EV_MAINTENANCE, EV_CHARGING, OTHER`; each knows its `VehicleType`s (ENGINE/FUEL gas-only, EV_* EV-only) and whether it is a repair (EV_CHARGING is not) |
 | `CrawledPage` | record | `url, sourceName, depth, statusCode, html, fetchedAt` |
 | `ServiceDocument` | class | `id, url, sourceName, title, description, headings(List), bodyText, links(List), phones/emails/postalCodes(List), city, province, categories(Set), vehicleTypes(Set), contentHash, testFixture(boolean)` |
 | `SearchRequest` | record | `query, vehicleType, category, location, maxResults` |
@@ -443,7 +443,7 @@ Today is **2026-10-31**. Group (Sept 22), variant (Sept 29) and Milestone Report
 | Phase | Target | Deliverables | Acceptance criteria | Status |
 |---|---|---|---|---|
 | 1 Setup | Nov 1 | JDK 21, Maven, VS Code Java pack, Git repo, folders, `pom.xml`, `.gitignore` | `mvn -v` shows Java 21; `mvn test` → BUILD SUCCESS on a sample test | ✅ 2026-11-06 (2 tests pass; Maven 3.10.0, JDK 21.0.10) |
-| 2 Models | Nov 2 | enums, records, `ServiceDocument`, exceptions | Compiles; model unit tests (equality, null-safety) pass | ⬜ |
+| 2 Models | Nov 2 | enums, records, `ServiceDocument`, exceptions | Compiles; model unit tests (equality, null-safety) pass | ✅ 2026-11-06 (78 model tests + 2 smoke tests pass) |
 | 3 Crawler | Nov 3–5 | `UrlNormalizer`, `URLFrontier`, `RobotsTxtParser`, `PageFetcher`, `WebCrawler`, `CrawlConfig` | All crawler tests pass with fake fetcher; real crawl of 1 source (≤ 20 pages) saves HTML | ⬜ |
 | 4 Regex | Nov 5–6 | `RegexPatterns`, `DataValidator`, `PatternExtractor` | Valid/invalid tables for each pattern pass; extracts phone + postal code from a saved Fountain Tire page | ⬜ |
 | 5 Parser | Nov 6–8 | `HTMLParser`, `ContentExtractor`, `ServiceCategorizer` | Fixture tests (empty, malformed, scripts, missing title) pass; real pages → sensible documents | ⬜ |
