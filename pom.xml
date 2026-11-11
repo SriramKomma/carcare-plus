@@ -22,6 +22,7 @@
 
         <!-- Dependency and plugin versions in one place -->
         <junit.version>5.12.2</junit.version>
+        <jsoup.version>1.23.2</jsoup.version>
         <compiler.plugin.version>3.14.0</compiler.plugin.version>
         <surefire.plugin.version>3.5.3</surefire.plugin.version>
         <exec.plugin.version>3.5.0</exec.plugin.version>
@@ -40,10 +41,16 @@
         </dependency>
 
         <!--
-            Added in later phases, after instructor approval:
-              Phase 5 (HTML parser): org.jsoup:jsoup
-              Phase 6 (storage):     com.google.code.gson:gson
+            jsoup: turns HTML into a DOM tree (Phase 5, approved by the instructor).
+            Our own code decides what to keep: title fallbacks, cleaning, categories.
         -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>${jsoup.version}</version>
+        </dependency>
+
+        <!-- Added in Phase 6 (storage), after instructor approval: com.google.code.gson:gson -->
     </dependencies>
 
     <build>

@@ -1,0 +1,24 @@
+# CarCare+ service categories: keywords that tag a page with a category.
+#
+# Format:   CATEGORY | keyword, keyword, multi word phrase, ...
+#   CATEGORY must be a ServiceCategory name (see models/ServiceCategory.java).
+#   Keywords are matched as whole words, ignoring case and punctuation:
+#   "brake" matches "Brake service" but not "brakes" (list both forms if needed).
+#
+# Scoring (ServiceCategorizer): a keyword in the title or a heading counts 3 points,
+# in the description or body text 1 point. A page gets a category at 2 points or more,
+# so a single passing mention in the body text is not enough.
+#
+# OTHER has no keywords on purpose: it is what the user picks to type a free description.
+
+FLAT_TIRE           | flat tire, flat tyre, tire repair, tyre repair, puncture, tire, tires, tyre, tyres, tire change, wheel alignment, alignment, winter tires, all season tires, tire rotation
+BATTERY             | battery, batteries, car battery, battery replacement, battery test, battery testing, boost, jump start, dead battery
+ELECTRICAL          | electrical, alternator, starter, wiring, fuse, fuses, headlight, headlights, check engine light
+ENGINE              | engine, engine repair, oil change, oil, spark plugs, timing belt, transmission, exhaust, muffler, tune up
+BRAKES              | brake, brakes, brake pads, brake service, rotors, calipers, brake fluid
+WIPERS              | wiper, wipers, wiper blades, windshield wipers, washer fluid
+BREAKDOWN_TOWING    | towing, tow truck, tow, roadside assistance, roadside, breakdown, mobile service, lockout
+OVERHEATING_COOLING | overheating, cooling system, coolant, radiator, antifreeze, thermostat, water pump, air conditioning
+FUEL                | fuel, fuel system, fuel pump, fuel injection, fuel filter, gas station, diesel, gasoline
+EV_MAINTENANCE      | ev maintenance, electric vehicle maintenance, ev service, electric vehicle service, hybrid service, high voltage, electric motor, ev battery
+EV_CHARGING         | charging station, charging stations, ev charging, ev charger, ev chargers, charger, chargers, dc fast charging, fast charging, level 2, ccs, chademo, j1772, nacs, kw, connector, connectors
