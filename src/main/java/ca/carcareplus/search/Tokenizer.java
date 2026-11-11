@@ -78,18 +78,29 @@ public final class Tokenizer {
         if (text == null || text.isBlank()) {
             return terms;
         }
-        // NFD splits "é" into "e" + an accent mark; \p{M} then removes the marks.
-        // ’ is the curly apostrophe many web pages use.
-        String prepared = Normalizer.normalize(text.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .replaceAll("['\\u2019]", "");
-        for (String raw : prepared.split("[^a-z0-9]+")) {
+        for (String raw : simplify(text).split("[^a-z0-9]+")) {
             String term = keepOrDrop(raw);
             if (term != null) {
                 terms.add(term);
             }
         }
         return terms;
+    }
+
+    /**
+     * Rules 1 and 2 only: lower case, accents and apostrophes removed.
+     * "Driver’s Montréal" -> "drivers montreal". Also used by word completion,
+     * which must clean a half-typed word without dropping or changing it.
+     */
+    public static String simplify(String text) {
+        if (text == null) {
+            return "";
+        }
+        // NFD splits "é" into "e" + an accent mark; \p{M} then removes the marks.
+        // \u2019 is the curly apostrophe many web pages use.
+        return Normalizer.normalize(text.toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("['\\u2019]", "");
     }
 
     /**
