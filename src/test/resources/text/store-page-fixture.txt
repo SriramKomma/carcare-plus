@@ -1,0 +1,17 @@
+TEST FIXTURE - invented text, NOT crawled from any website.
+It imitates the body text of a tire-shop store page so PatternExtractor can be
+tested before a real crawl is approved. Phone numbers use the 555-01xx range,
+which is reserved for fiction.
+
+Example Tire - Abbotsford Store
+Address: 123 Example Way, Abbotsford, BC V2S 1A1
+Phone: (604) 555-0142
+Toll free: 1-800-555-0199
+Email: Abbotsford.Store@Example-Tire.ca
+
+Services: battery testing and replacement, brakes, wheel alignment, EV maintenance.
+Hours: Mon-Fri 8:00-18:00. Order #4105550142778 ships in 3-5 days.
+
+Need help? Call us at 604.555.0142 or email abbotsford.store@example-tire.ca.
+Our Windsor partner: 456 Sample Rd, Windsor, ON N9B 3P4, tel +1 519 555 0100.
+<img src="/images/logo@2x.png">
