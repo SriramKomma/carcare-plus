@@ -454,7 +454,7 @@ Today is **2026-10-31**. Group (Sept 22), variant (Sept 29) and Milestone Report
 | 3 Crawler | Nov 3–5 | `UrlNormalizer`, `URLFrontier`, `RobotsTxtParser`, `PageFetcher`, `WebCrawler`, `CrawlConfig` | All crawler tests pass with fake fetcher; real crawl of 1 source (≤ 20 pages) saves HTML | 🟡 2026-11-06: code done, 228 tests pass (crawler, robots.txt, local HTTP server). Real crawl **paused** — terms-of-use concerns (§10) |
 | 4 Regex | Nov 5–6 | `RegexPatterns`, `DataValidator`, `PatternExtractor` | Valid/invalid tables for each pattern pass; extracts phone + postal code from a saved Fountain Tire page | 🟡 2026-11-11: code done, 113 regex tests pass (341 total). Extraction tested on a labelled **fixture** page; re-check on a real saved page once crawling is approved. Bare "Tesla" deliberately not matched as a connector (false positives from "Tesla Model 3"); NACS covers it |
 | 5 Parser | Nov 6–8 | `HTMLParser`, `ContentExtractor`, `ServiceCategorizer` | Fixture tests (empty, malformed, scripts, missing title) pass; real pages → sensible documents | 🟡 2026-11-11: jsoup 1.23.2 approved and added; code done, 61 parser tests pass (402 total) on labelled fixtures + `config/categories.txt`. "Real pages → sensible documents" waits for an approved crawl. City/street address extraction not done yet (only province from postal code) |
-| 6 Storage | Nov 8 | `DocumentStorage` | Save → load round-trip equal; duplicates skipped; missing/corrupt file handled | ⬜ |
+| 6 Storage | Nov 8 | `DocumentStorage` | Save → load round-trip equal; duplicates skipped; missing/corrupt file handled | ✅ 2026-11-11: Gson 2.14.0 approved and added; `DocumentStorage` + `StoredDocument` (JSON layout record), 28 tests pass (430 total). Text files at `data/parsed-pages/texts/<id>.txt`. Re-crawled URLs are skipped, not updated (revisit if needed) |
 | 7 Search | Nov 9–12 | `Tokenizer`, `InvertedIndex`, `FrequencyCounter`, `SearchFrequency`, `PageRanker`, `SearchEngine` | Index/ranking tests pass; hand-computed scores match program output | ⬜ |
 | 8 Query | Nov 12–14 | `TrieNode`, `Trie`, `WordCompleter`, `LevenshteinDistance`, `SpellChecker` | `bat` → battery…; `battrey` → battery; empty/unknown handled | ⬜ |
 | 9 Integration | Nov 14–15 | `CrawlPipeline`, `SearchEngine` wiring, `Main` | End-to-end test: fixtures → index → query → ranked result | ⬜ |
@@ -603,7 +603,7 @@ Have a recorded backup and screenshots in case live demo fails; never crawl live
 | Maven, JUnit 5, Java HttpClient, `java.util.logging` | **Confirmed** (our choice; no course restriction found) |
 | Java 21 | Our choice — **ask** which version graders use |
 | VS Code | **Needs instructor approval** (Eclipse mentioned, Info p.1) |
-| jsoup, Gson | jsoup **approved** (added 2026-11-11); Gson still needs approval |
+| jsoup, Gson | Both **approved** (added 2026-11-11) |
 | Crawler-per-student interpretation | **Needs instructor clarification** |
 | AI assistance & disclosure | **Needs course-policy check** |
 | Sources: Fountain Tire, Electrify Canada (+ Kal Tire services, NRCan, FLO) | robots.txt verified 2026-10-31; **ToS still to read** |
