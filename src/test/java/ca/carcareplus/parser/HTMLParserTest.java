@@ -8,8 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,7 +30,7 @@ import ca.carcareplus.models.ServiceDocument;
 import ca.carcareplus.models.VehicleType;
 
 /**
- * Parses the hand-made fixture pages in src/test/resources/html.
+ * Parses the hand-made fixture pages in fixtures/html.
  * They are invented test data, not crawled pages (see the comment in each file).
  */
 class HTMLParserTest {
@@ -47,11 +47,9 @@ class HTMLParserTest {
         return new CrawledPage(url, source, 0, 200, "text/html; charset=UTF-8", html, FETCHED);
     }
 
+    /** Fixture pages live in fixtures/html (shared with the demo "fixtures" command). */
     private static String fixture(String name) throws IOException {
-        try (InputStream in = HTMLParserTest.class.getResourceAsStream("/html/" + name)) {
-            assertTrue(in != null, "missing fixture " + name);
-            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        }
+        return Files.readString(Path.of("fixtures", "html", name), StandardCharsets.UTF_8);
     }
 
     // --------------------------------------------------------- store fixture

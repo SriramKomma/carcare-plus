@@ -15,8 +15,9 @@ import ca.carcareplus.storage.RawPageStore;
  * The offline part of CarCare+: crawl a source and store what was downloaded.
  * Runs only when asked (never during a search).
  *
- * Phase 3: crawl -> save raw HTML.
- * Later phases add: parse -> extract patterns -> store documents -> rebuild index.
+ * Step 1 of the offline work: crawl -> save raw HTML.
+ * Step 2 is ParsePipeline (raw HTML -> documents); the index is built from the
+ * documents at start-up by SearchSystem.
  */
 public class CrawlPipeline {
 
