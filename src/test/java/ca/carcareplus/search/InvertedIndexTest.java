@@ -110,7 +110,7 @@ class InvertedIndexTest {
     @Test
     void documentAndTotalFrequency() {
         assertEquals(2, index.documentFrequency("brake"));
-        assertEquals(3, index.totalFrequency("brake"));
+        assertEquals(4, index.totalFrequency("brake"), "doc 0 'Brakes' + 'brake', doc 1 'Brake' x2");
         assertEquals(0, index.documentFrequency("alternator"));
         assertEquals(0, index.totalFrequency("alternator"));
     }
@@ -196,7 +196,8 @@ class InvertedIndexTest {
     void vocabularyIsSortedAndReadOnly() {
         Set<String> vocabulary = index.vocabulary();
         assertEquals("2", vocabulary.iterator().next(), "digits sort before letters");
-        assertTrue(vocabulary.containsAll(Set.of("battery", "brake", "tires", "kw")));
+        assertTrue(vocabulary.containsAll(Set.of("battery", "brake", "tire", "kw")));
+        assertFalse(vocabulary.contains("brakes"), "plurals are stored in singular form");
         assertThrows(UnsupportedOperationException.class, () -> vocabulary.add("x"));
     }
 

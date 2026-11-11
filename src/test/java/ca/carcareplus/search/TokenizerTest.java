@@ -15,7 +15,7 @@ class TokenizerTest {
 
     @Test
     void lowerCasesAndSplitsOnPunctuation() {
-        assertEquals(List.of("brake", "pads", "rotors"), Tokenizer.tokenize("Brake-Pads, ROTORS!"));
+        assertEquals(List.of("brake", "pad", "rotor"), Tokenizer.tokenize("Brake-Pads, ROTORS!"));
     }
 
     @Test
@@ -42,7 +42,26 @@ class TokenizerTest {
 
     @Test
     void appliesSpellingSynonyms() {
-        assertEquals(List.of("tire", "tires", "service", "center"), Tokenizer.tokenize("Tyre tyres service centre"));
+        assertEquals(List.of("tire", "tire", "service", "center", "kw"), Tokenizer.tokenize("Tyre tyres service centre kilowatts"));
+    }
+
+    @Test
+    void foldsListedPluralsToSingular() {
+        assertEquals(List.of("brake", "pad", "battery", "tire", "charger", "station"),
+                Tokenizer.tokenize("Brakes pads batteries tires chargers stations"));
+    }
+
+    @Test
+    void wordsNotInTheListAreLeftAlone() {
+        // a blind "remove final s" rule would damage these
+        assertEquals(List.of("gas", "bus", "chademo", "always", "hours"), Tokenizer.tokenize("gas bus CHAdeMO always hours"));
+    }
+
+    @Test
+    void everyWordFormMapsToAWordThatIsNotChangedAgain() {
+        for (String target : Tokenizer.WORD_FORMS.values()) {
+            assertEquals(List.of(target), Tokenizer.tokenize(target), "target '" + target + "' must be final");
+        }
     }
 
     @Test
@@ -59,7 +78,7 @@ class TokenizerTest {
     }
 
     @ParameterizedTest(name = "{0} -> {1}")
-    @CsvSource({"Tyres, tires", "  BATTERY , battery", "Québec, quebec"})
+    @CsvSource({"Tyres, tire", "  BATTERY , battery", "Batteries, battery", "Québec, quebec"})
     void normalizeTermMatchesTokenize(String word, String expected) {
         assertEquals(expected, Tokenizer.normalizeTerm(word));
     }

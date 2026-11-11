@@ -38,7 +38,7 @@ class FrequencyCounterTest {
         assertEquals(0, counter.countInDocument("battery", URL_B));
         assertEquals(1, counter.countInDocument("BRAKE", URL_A));
         assertEquals(1, counter.countInDocument("tire", URL_A), "synonym: page says 'Tyre'");
-        assertEquals(0, counter.countInDocument("tires", URL_A), "no stemming: plural is a different term");
+        assertEquals(1, counter.countInDocument("tires", URL_A), "plural folded to 'tire'");
     }
 
     @Test
@@ -73,7 +73,7 @@ class FrequencyCounterTest {
 
     @Test
     void topTermsWithLargeKReturnsAllWords() {
-        assertEquals(3, counter.topTerms(URL_B, 50).size()); // brakes, brake, pads
+        assertEquals(Map.of("brake", 2, "pad", 1), counter.topTerms(URL_B, 50)); // "Brakes" + "Brake" both count as brake
         assertEquals(Map.of(), counter.topTerms(URL_B, 0));
     }
 

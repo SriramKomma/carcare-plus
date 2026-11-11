@@ -45,9 +45,9 @@ class SearchFrequencyTest {
     @Test
     void recordAllNormalizesAndSkipsStopWords() {
         List<String> recorded = frequency.recordAll(List.of("Tyres", "the", "", "battery"));
-        assertEquals(List.of("tires", "battery"), recorded);
-        assertEquals(1, frequency.count("tyres"), "counted under its synonym 'tires'");
-        assertEquals(0, frequency.count("tyre"), "'tyre' becomes 'tire', a different term");
+        assertEquals(List.of("tire", "battery"), recorded);
+        assertEquals(1, frequency.count("tyre"), "tyres, tyre, tires and tire are one term");
+        assertEquals(1, frequency.count("tires"));
         assertEquals(2, frequency.distinctTerms());
         assertFalse(frequency.record("and"));
         assertFalse(frequency.record(null));

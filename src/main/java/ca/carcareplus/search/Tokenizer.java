@@ -20,11 +20,13 @@ import java.util.Set;
  * 4. drop very common "stop words" (the, and, for, ...) that match every page
  * 5. drop single letters (but keep single digits such as the 2 in "level 2")
  *    and anything longer than {@value #MAX_TERM_LENGTH} characters (tracking ids, hashes)
- * 6. spelling synonyms:                 "tyre" -> "tire", "centre" -> "center"
+ * 6. one form per word (WORD_FORMS):    "tyres" -> "tire", "batteries" -> "battery"
  *
- * Not done on purpose: stemming ("brakes" -> "brake"). Simple suffix rules break
- * words like "chademo" or "gas", and a real stemmer (Porter) is a project of its own.
- * Word completion and spell checking help the user find the right form instead.
+ * Why a fixed list instead of a stemmer? Without it, "brakes" and "brake" would be
+ * different terms and a search for one would miss pages using the other. A general
+ * rule like "remove a final s" breaks words such as "gas", "bus" or "chademos", and
+ * a full stemmer (Porter) is a project of its own. A short list of the plurals that
+ * matter for car services is predictable, easy to check and easy to extend.
  *
  * Cost: one pass over the text, O(n).
  */
@@ -39,14 +41,30 @@ public final class Tokenizer {
             "so", "than", "that", "the", "their", "then", "there", "these", "this", "to",
             "us", "was", "we", "were", "will", "with", "you", "your");
 
-    /** British/Canadian spellings mapped to one form so both find the same pages. */
-    static final Map<String, String> SYNONYMS = Map.of(
-            "tyre", "tire",
-            "tyres", "tires",
-            "centre", "center",
-            "centres", "centers",
-            "kilowatt", "kw",
-            "kilowatts", "kw");
+    /**
+     * Word -> the one form we index: plurals -> singular, British/Canadian
+     * spellings -> one spelling, unit names -> unit symbol. Only words in this
+     * list are changed. To add a word, add both its plural and any spelling variant.
+     */
+    static final Map<String, String> WORD_FORMS = Map.ofEntries(
+            // spelling variants
+            Map.entry("tyre", "tire"), Map.entry("tyres", "tire"),
+            Map.entry("centre", "center"), Map.entry("centres", "center"),
+            Map.entry("kilowatt", "kw"), Map.entry("kilowatts", "kw"),
+            // irregular plurals
+            Map.entry("batteries", "battery"),
+            // regular plurals of car-service words
+            Map.entry("tires", "tire"), Map.entry("brakes", "brake"), Map.entry("pads", "pad"),
+            Map.entry("rotors", "rotor"), Map.entry("calipers", "caliper"), Map.entry("wipers", "wiper"),
+            Map.entry("blades", "blade"), Map.entry("chargers", "charger"), Map.entry("stations", "station"),
+            Map.entry("connectors", "connector"), Map.entry("plugs", "plug"), Map.entry("services", "service"),
+            Map.entry("repairs", "repair"), Map.entry("headlights", "headlight"), Map.entry("lights", "light"),
+            Map.entry("fuses", "fuse"), Map.entry("filters", "filter"), Map.entry("belts", "belt"),
+            Map.entry("hoses", "hose"), Map.entry("alternators", "alternator"), Map.entry("starters", "starter"),
+            Map.entry("engines", "engine"), Map.entry("radiators", "radiator"), Map.entry("pumps", "pump"),
+            Map.entry("mufflers", "muffler"), Map.entry("wheels", "wheel"), Map.entry("rims", "rim"),
+            Map.entry("vehicles", "vehicle"), Map.entry("cars", "car"), Map.entry("trucks", "truck"),
+            Map.entry("stores", "store"), Map.entry("locations", "location"), Map.entry("centers", "center"));
 
     private Tokenizer() {
         // static helper methods only
@@ -91,6 +109,6 @@ public final class Tokenizer {
         if (raw.length() == 1 && !Character.isDigit(raw.charAt(0))) {
             return null;
         }
-        return SYNONYMS.getOrDefault(raw, raw);
+        return WORD_FORMS.getOrDefault(raw, raw);
     }
 }
