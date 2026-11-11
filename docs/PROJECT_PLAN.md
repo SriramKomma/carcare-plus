@@ -424,6 +424,13 @@ Results of checks made **2026-10-31** with a single polite request per URL (robo
 
 **Excluded (verified 2026-10-31):** CAA (`caa.ca` — Cloudflare "you have been blocked"), Mr. Lube (Akamai "Access Denied"), OK Tire (Cloudflare 403 on stores/sitemap), Yellow Pages (CloudFront 403), Ivy Charging (Cloudflare JS challenge). PlugShare: robots.txt is permissive but it's a user-content platform — don't use unless its ToS clearly allows it. Canadian Tire: `Crawl-delay: 10`, not tested further — low priority.
 
+**Terms-of-use review (2026-11-06) — real crawling paused until resolved:**
+- **Electrify Canada** (`/terms/`): you may not "copy, distribute … mirror … or otherwise use" the site "in any manner not expressly permitted"; only a single print copy or screenshot for personal use is allowed. **Most restrictive — do not crawl without permission or instructor guidance.**
+- **Fountain Tire** (`/legal`): no clause about crawlers/scraping, but site content may not be "copied, reproduced, published …" without written consent, "except as expressly permitted by applicable intellectual property laws". Canadian fair dealing for education/research (Copyright Act s. 29) *may* cover a small non-commercial student crawl — **instructor/user decision**.
+- Kal Tire, FLO: terms not yet read.
+- Government of Canada sites (NRCan, Transport Canada) are under the Open Government Licence – Canada, which explicitly permits copying and reuse with attribution.
+- Options: (1) ask the instructor whether educational fair dealing covers a small, polite, robots-compliant crawl; (2) email the site owner for permission; (3) shift toward Open-Government-Licence sources; (4) use clearly labelled test fixtures until resolved.
+
 **Crawl rules we will follow**
 - User-Agent: `CarCarePlus-COMP8547-StudentCrawler/1.0 (+<your uwindsor email>)`.
 - ≥ 2 s between requests per domain, or the site's `Crawl-delay` if larger. One thread.
@@ -444,7 +451,7 @@ Today is **2026-10-31**. Group (Sept 22), variant (Sept 29) and Milestone Report
 |---|---|---|---|---|
 | 1 Setup | Nov 1 | JDK 21, Maven, VS Code Java pack, Git repo, folders, `pom.xml`, `.gitignore` | `mvn -v` shows Java 21; `mvn test` → BUILD SUCCESS on a sample test | ✅ 2026-11-06 (2 tests pass; Maven 3.10.0, JDK 21.0.10) |
 | 2 Models | Nov 2 | enums, records, `ServiceDocument`, exceptions | Compiles; model unit tests (equality, null-safety) pass | ✅ 2026-11-06 (78 model tests + 2 smoke tests pass) |
-| 3 Crawler | Nov 3–5 | `UrlNormalizer`, `URLFrontier`, `RobotsTxtParser`, `PageFetcher`, `WebCrawler`, `CrawlConfig` | All crawler tests pass with fake fetcher; real crawl of 1 source (≤ 20 pages) saves HTML | ⬜ |
+| 3 Crawler | Nov 3–5 | `UrlNormalizer`, `URLFrontier`, `RobotsTxtParser`, `PageFetcher`, `WebCrawler`, `CrawlConfig` | All crawler tests pass with fake fetcher; real crawl of 1 source (≤ 20 pages) saves HTML | 🟡 2026-11-06: code done, 228 tests pass (crawler, robots.txt, local HTTP server). Real crawl **paused** — terms-of-use concerns (§10) |
 | 4 Regex | Nov 5–6 | `RegexPatterns`, `DataValidator`, `PatternExtractor` | Valid/invalid tables for each pattern pass; extracts phone + postal code from a saved Fountain Tire page | ⬜ |
 | 5 Parser | Nov 6–8 | `HTMLParser`, `ContentExtractor`, `ServiceCategorizer` | Fixture tests (empty, malformed, scripts, missing title) pass; real pages → sensible documents | ⬜ |
 | 6 Storage | Nov 8 | `DocumentStorage` | Save → load round-trip equal; duplicates skipped; missing/corrupt file handled | ⬜ |

@@ -1,0 +1,16 @@
+# CarCare+ crawl sources
+#
+# Format (fields separated by '|'):
+#   sourceName | allowedDomain | maxDepth | maxPages | delayMillis | pathPrefixes | seedUrls
+#   pathPrefixes: comma-separated path starts to follow, or * for any path
+#   seedUrls:     comma-separated starting URLs (HTML pages or XML sitemaps)
+#
+# robots.txt for each source was checked on 2026-10-31 (see docs/PROJECT_PLAN.md section 10).
+# The crawler re-reads robots.txt on every run and obeys it.
+# The person responsible for each source must also read that site's terms of use.
+# 2026-11-06: terms of Electrify Canada and Fountain Tire restrict copying content;
+# do not run a real crawl until the instructor confirms it is acceptable (PROJECT_PLAN.md section 10).
+
+Fountain Tire    | fountaintire.com     | 2 | 80 | 3000 | /auto-services, /stores, /all-stores | https://www.fountaintire.com/auto-services, https://www.fountaintire.com/all-stores
+Electrify Canada | electrify-canada.ca  | 1 | 70 | 3000 | /locate-charger/                     | https://www.electrify-canada.ca/sitemap-locations.xml
+Kal Tire         | kaltire.com          | 1 | 25 | 3000 | /en/services/                        | https://www.kaltire.com/en/services/
