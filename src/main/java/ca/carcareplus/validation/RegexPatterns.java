@@ -90,6 +90,18 @@ public final class RegexPatterns {
     public static final Pattern QUERY_EXACT =
             Pattern.compile("^[A-Za-z0-9 '\\-]{1," + MAX_QUERY_LENGTH + "}$");
 
+    // ------------------------------------------------------------------- location
+    /** Longest city / province name the user may type. */
+    public static final int MAX_LOCATION_LENGTH = 50;
+
+    /**
+     * A place name such as "Windsor", "St. John's", "Abbotsford, BC" or
+     * "Trois-Rivieres": letters, spaces and . , ' - only, starting with a letter.
+     * Postal codes are checked separately with POSTAL_CODE_EXACT.
+     */
+    public static final Pattern PLACE_NAME_EXACT =
+            Pattern.compile("^[A-Za-z][A-Za-z .,'\\-]{0," + (MAX_LOCATION_LENGTH - 1) + "}$");
+
     // -------------------------------------------------------- EV pattern finding
     /**
      * EV charging connector names. "CCS1"/"CCS2" and "J-1772" are common spellings.

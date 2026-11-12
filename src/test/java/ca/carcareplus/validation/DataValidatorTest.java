@@ -230,4 +230,45 @@ class DataValidatorTest {
             assertFalse(DataValidator.isValidPostalCode(huge));
         });
     }
+
+    // ---------------------------------------------------------------- location
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"   "})
+    void blankLocationMeansAnywhere(String location) {
+        assertEquals("", DataValidator.validateLocation(location));
+    }
+
+    @ParameterizedTest(name = "\"{0}\" -> \"{1}\"")
+    @CsvSource(delimiter = '|', value = {
+            "Windsor|Windsor",
+            "  Abbotsford,   BC |Abbotsford, BC",
+            "St. John's|St. John's",
+            "Trois-Rivieres|Trois-Rivieres",
+            "n9b3p4|N9B 3P4",
+            " v2s-1a1 |V2S 1A1"
+    })
+    void validLocationsAreCleaned(String input, String expected) {
+        assertEquals(expected, DataValidator.validateLocation(input));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"N9B 3P", "12345", "Windsor 2", "<b>Windsor</b>", "-Windsor", "Montréal", "Windsor; BC"})
+    void invalidLocationsAreRejected(String input) {
+        assertThrows(InvalidInputException.class, () -> DataValidator.validateLocation(input));
+    }
+
+    @Test
+    void brokenPostalCodeGetsPostalCodeMessage() {
+        InvalidInputException e = assertThrows(InvalidInputException.class,
+                () -> DataValidator.validateLocation("N9B 3P"));
+        assertTrue(e.getMessage().contains("postal code"), e.getMessage());
+    }
+
+    @Test
+    void locationOfExactly50CharactersIsAcceptedButNot51() {
+        assertEquals(50, DataValidator.validateLocation("a".repeat(50)).length());
+        assertThrows(InvalidInputException.class, () -> DataValidator.validateLocation("a".repeat(51)));
+    }
 }

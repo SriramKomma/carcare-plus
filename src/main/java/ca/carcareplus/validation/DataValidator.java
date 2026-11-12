@@ -90,6 +90,39 @@ public final class DataValidator {
         return cleaned;
     }
 
+    /**
+     * Checks the optional location the user typed: a postal code ("n9b3p4") or a
+     * place name ("Windsor", "Abbotsford, BC").
+     *
+     * @return "" for blank input (search anywhere), the postal code in "A1A 1A1"
+     *         style, or the place name trimmed with runs of spaces collapsed
+     * @throws InvalidInputException with a message that can be shown to the user
+     */
+    public static String validateLocation(String location) {
+        if (location == null || location.isBlank()) {
+            return "";
+        }
+        String cleaned = location.trim().replaceAll("\\s+", " ");
+        if (cleaned.length() > RegexPatterns.MAX_LOCATION_LENGTH) {
+            throw new InvalidInputException("Location is too long (maximum "
+                    + RegexPatterns.MAX_LOCATION_LENGTH + " characters).");
+        }
+        // Digits only appear in postal codes, so "N9B 3P" is a broken postal code, not a city
+        if (cleaned.chars().anyMatch(Character::isDigit)) {
+            String postalCode = normalizePostalCode(cleaned);
+            if (postalCode == null) {
+                throw new InvalidInputException("'" + cleaned
+                        + "' is not a valid Canadian postal code (example: N9B 3P4).");
+            }
+            return postalCode;
+        }
+        if (!RegexPatterns.PLACE_NAME_EXACT.matcher(cleaned).matches()) {
+            throw new InvalidInputException(
+                    "Location may only contain letters, spaces and . , ' - (or be a postal code).");
+        }
+        return cleaned;
+    }
+
     // ----------------------------------------------------------- normalization
 
     /**

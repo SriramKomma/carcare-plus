@@ -1,6 +1,8 @@
 package ca.carcareplus.app;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,9 +29,11 @@ import ca.carcareplus.storage.RawPageStore;
 /**
  * Entry point of CarCare+.
  *
- * Commands (until the console menu arrives in Phase 11):
+ * With no command, the interactive console menu starts (see ConsoleMenu).
+ * The other commands are kept for the offline steps and for quick checks:
  * <pre>
- * mvn -q compile exec:java                                      banner and usage
+ * mvn -q compile exec:java                                      interactive menu
+ * mvn -q compile exec:java -Dexec.args="help"                   list of commands
  * mvn -q compile exec:java -Dexec.args="crawl"                  list configured sources
  * mvn -q compile exec:java -Dexec.args="crawl 'Fountain Tire' 10"  crawl one source (optional page limit)
  * mvn -q compile exec:java -Dexec.args="fixtures"               load invented test pages as raw pages
@@ -58,12 +62,14 @@ public class Main {
 
         System.out.println(banner());
         System.out.println("Running on Java " + Runtime.version().feature());
-        if (args.length == 0) {
-            printUsage();
-            return;
-        }
         try {
+            if (args.length == 0) {
+                runMenu();
+                return;
+            }
             switch (args[0].toLowerCase(Locale.ROOT)) {
+                case "menu" -> runMenu();
+                case "help" -> printUsage();
                 case "crawl" -> runCrawl(args);
                 case "fixtures" -> runFixtures();
                 case "parse" -> runParse();
@@ -88,7 +94,8 @@ public class Main {
     }
 
     private static void printUsage() {
-        System.out.println("Usage:");
+        System.out.println("Usage (no command = interactive menu):");
+        System.out.println("  menu                         interactive menu");
         System.out.println("  crawl                        list configured sources");
         System.out.println("  crawl \"<source>\" [maxPages]  crawl one source and save raw HTML");
         System.out.println("  fixtures                     load the invented test pages (fixtures/html)");
@@ -98,6 +105,17 @@ public class Main {
         System.out.println("  count <word> <url>           how often a word occurs on one page");
         System.out.println("  history                      most searched words");
         System.out.println("  benchmark                    run performance experiments (synthetic data)");
+    }
+
+    private static void runMenu() throws CarCareException {
+        SearchSystem system = SearchSystem.load(PARSED_DIR, HISTORY_FILE);
+        if (system.isEmpty()) {
+            System.out.println("No documents yet, so there is nothing to search.");
+            printUsage();
+            return;
+        }
+        BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+        new ConsoleMenu(system, keyboard, System.out).run();
     }
 
     private static void runCrawl(String[] args) throws CarCareException {

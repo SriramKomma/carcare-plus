@@ -58,8 +58,8 @@ public class SpellChecker implements SpellingSuggester {
      * a 3-letter word like "car" would match "bar", "cap", "jar", ... -- too many
      * unrelated suggestions.
      */
-    static int defaultMaxDistance(String word) {
-        return word.length() <= SHORT_WORD_LENGTH ? 1 : 2;
+    public static int defaultMaxDistance(String word) {
+        return word == null || word.length() <= SHORT_WORD_LENGTH ? 1 : 2; // null counts as ""
     }
 
     /**
