@@ -1,0 +1,3 @@
+CarCare+ - Intelligent Roadside Assistance and Service Discovery
+Running on Java 27
+Loaded 6 invented test pages as source 'Test Fixtures'. Next: parse

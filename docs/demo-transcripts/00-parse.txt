@@ -1,0 +1,4 @@
+CarCare+ - Intelligent Roadside Assistance and Service Discovery
+Running on Java 27
+[INFO] Saved 6 documents to data/parsed-pages/documents.json.
+Pages read: 6, documents saved: 6, duplicates skipped: 0, unusable pages skipped: 0

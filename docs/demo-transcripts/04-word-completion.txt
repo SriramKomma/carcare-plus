@@ -1,0 +1,24 @@
+CarCare+ - Intelligent Roadside Assistance and Service Discovery
+Running on Java 27
+[INFO] Loaded 6 documents from data/parsed-pages/documents.json.
+Loaded 6 pages and 150 distinct words.
+
+===== CarCare+ main menu =====
+1. Find help for my vehicle
+2. Word completion
+3. Spell check a word
+4. Word frequency on a page
+5. Search history (most searched words)
+0. Exit
+Choose an option: Start of a word: Most frequent words starting with 'bra':
+  brake
+  brands
+
+===== CarCare+ main menu =====
+1. Find help for my vehicle
+2. Word completion
+3. Spell check a word
+4. Word frequency on a page
+5. Search history (most searched words)
+0. Exit
+Choose an option: Search history saved. Goodbye!

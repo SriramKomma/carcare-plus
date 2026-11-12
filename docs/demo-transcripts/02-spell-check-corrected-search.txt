@@ -1,0 +1,77 @@
+CarCare+ - Intelligent Roadside Assistance and Service Discovery
+Running on Java 27
+[INFO] Loaded 6 documents from data/parsed-pages/documents.json.
+Loaded 6 pages and 150 distinct words.
+
+===== CarCare+ main menu =====
+1. Find help for my vehicle
+2. Word completion
+3. Spell check a word
+4. Word frequency on a page
+5. Search history (most searched words)
+0. Exit
+Choose an option: 
+What do you drive?
+1. Electric Vehicle (EV)
+2. Gas Vehicle (Petrol/Diesel)
+0. Back
+Choose: 
+What do you need help with?
+1. Flat tire / puncture
+2. Battery problem
+3. Electrical problem
+4. Engine issue
+5. Brake problem
+6. Wiper problem
+7. Vehicle breakdown / towing
+8. Overheating / cooling system
+9. Fuel problem
+10. Other / custom description
+0. Back
+Choose: Describe the problem (Enter = "brake problem"). End a word with ? to see completions, e.g. bat?
+Search: Location - city or postal code (Enter = anywhere): 
+Search "breke pads" for Gas Vehicle (Petrol/Diesel)
+Search terms: breke, pad  |  matching pages: 2
+1. [TEST FIXTURE] Brake Repair Calgary | Sample Auto  (score 8)
+   https://fixtures.carcareplus.invalid/brake-shop-calgary
+   Why: description 1x2 + body 1x1 + category +5 = 8
+   Word counts on this page: breke=0, pad=2
+   Phone (403) 555-0177  |  Email brakes@sample-auto.ca  |  T2P 1A1 AB
+2. [TEST FIXTURE] Abbotsford Store | Example Tire  (score 7)
+   https://fixtures.carcareplus.invalid/store-page
+   Why: body 2x1 + category +5 = 7
+   Word counts on this page: breke=0, pad=2
+   Phone (604) 555-0142  |  Email abbotsford@example-tire.ca  |  V2S 1A1 BC
+Did you mean: breke -> brake, broken
+Search again for "brake pad"? (y/n): 
+Search "brake pad" for Gas Vehicle (Petrol/Diesel)
+Search terms: brake, pad  |  matching pages: 4
+1. [TEST FIXTURE] Brake Repair Calgary | Sample Auto  (score 35)
+   https://fixtures.carcareplus.invalid/brake-shop-calgary
+   Why: title 1x5 + headings 1x3 + description 3x2 + body 6x1 + phrase +10 + category +5 = 35
+   Word counts on this page: brake=9, pad=2
+   Phone (403) 555-0177  |  Email brakes@sample-auto.ca  |  T2P 1A1 AB
+2. [TEST FIXTURE] Abbotsford Store | Example Tire  (score 26)
+   https://fixtures.carcareplus.invalid/store-page
+   Why: headings 1x3 + description 1x2 + body 6x1 + phrase +10 + category +5 = 26
+   Word counts on this page: brake=6, pad=2
+   Phone (604) 555-0142  |  Email abbotsford@example-tire.ca  |  V2S 1A1 BC
+3. [TEST FIXTURE] Broken page  (score 15)
+   https://fixtures.carcareplus.invalid/malformed
+   Why: headings 2x3 + description 1x2 + body 2x1 + category +5 = 15
+   Word counts on this page: brake=5, pad=0
+   Phone (519) 555-0123
+4. [TEST FIXTURE] EV Service Centre Toronto  (score 6)
+   https://fixtures.carcareplus.invalid/ev-service-toronto
+   Why: body 1x1 + category +5 = 6
+   Word counts on this page: brake=1, pad=0
+   Phone (416) 555-0133  |  Email service@ev-sample.ca  |  M5V 2T6 ON
+
+===== CarCare+ main menu =====
+1. Find help for my vehicle
+2. Word completion
+3. Spell check a word
+4. Word frequency on a page
+5. Search history (most searched words)
+0. Exit
+Choose an option: Search history saved. Goodbye!

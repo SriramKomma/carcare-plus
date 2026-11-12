@@ -1,0 +1,58 @@
+CarCare+ - Intelligent Roadside Assistance and Service Discovery
+Running on Java 27
+[INFO] Loaded 6 documents from data/parsed-pages/documents.json.
+Loaded 6 pages and 150 distinct words.
+
+===== CarCare+ main menu =====
+1. Find help for my vehicle
+2. Word completion
+3. Spell check a word
+4. Word frequency on a page
+5. Search history (most searched words)
+0. Exit
+Choose an option: 
+What do you drive?
+1. Electric Vehicle (EV)
+2. Gas Vehicle (Petrol/Diesel)
+0. Back
+Choose: 
+What do you need help with?
+1. Flat tire / puncture
+2. Battery problem
+3. Electrical problem
+4. Brake problem
+5. Wiper problem
+6. Vehicle breakdown / towing
+7. Overheating / cooling system
+8. EV maintenance (motor, high-voltage system)
+9. Other / custom description
+10. Find EV charging stations
+0. Back
+Choose: Describe the problem (Enter = "ev charging station"). End a word with ? to see completions, e.g. bat?
+Search: Location - city or postal code (Enter = anywhere): 
+Search "ev charging station" for Electric Vehicle (EV) near Windsor
+Search terms: ev, charging, station  |  matching pages: 3
+1. [TEST FIXTURE] Windsor Station - 1 Sample Road  (score 24)
+   https://fixtures.carcareplus.invalid/charger-page
+   Why: title 1x5 + headings 1x3 + description 2x2 + body 4x1 + category +5 + location +3 = 24
+   Word counts on this page: ev=1, charging=2, station=5
+   Phone (800) 555-0199  |  N9B 3P4 ON
+2. [TEST FIXTURE] EV Service Centre Toronto  (score 22)
+   https://fixtures.carcareplus.invalid/ev-service-toronto
+   Why: title 1x5 + headings 2x3 + description 1x2 + body 4x1 + category +5 = 22
+   Word counts on this page: ev=6, charging=2, station=0
+   Phone (416) 555-0133  |  Email service@ev-sample.ca  |  M5V 2T6 ON
+3. [TEST FIXTURE] 24/7 Towing and Roadside Assistance - Windsor  (score 6)
+   https://fixtures.carcareplus.invalid/towing-windsor
+   Why: body 3x1 + location +3 = 6
+   Word counts on this page: ev=1, charging=1, station=1
+   Phone (519) 555-0150  |  N9A 1A1 ON
+
+===== CarCare+ main menu =====
+1. Find help for my vehicle
+2. Word completion
+3. Spell check a word
+4. Word frequency on a page
+5. Search history (most searched words)
+0. Exit
+Choose an option: Search history saved. Goodbye!

@@ -1,0 +1,59 @@
+CarCare+ - Intelligent Roadside Assistance and Service Discovery
+Running on Java 27
+[INFO] Loaded 6 documents from data/parsed-pages/documents.json.
+Loaded 6 pages and 150 distinct words.
+
+===== CarCare+ main menu =====
+1. Find help for my vehicle
+2. Word completion
+3. Spell check a word
+4. Word frequency on a page
+5. Search history (most searched words)
+0. Exit
+Choose an option: 
+Pages:
+1. [TEST FIXTURE] Brake Repair Calgary | Sample Auto  https://fixtures.carcareplus.invalid/brake-shop-calgary
+2. [TEST FIXTURE] Windsor Station - 1 Sample Road  https://fixtures.carcareplus.invalid/charger-page
+3. [TEST FIXTURE] EV Service Centre Toronto  https://fixtures.carcareplus.invalid/ev-service-toronto
+4. [TEST FIXTURE] Broken page  https://fixtures.carcareplus.invalid/malformed
+5. [TEST FIXTURE] Abbotsford Store | Example Tire  https://fixtures.carcareplus.invalid/store-page
+6. [TEST FIXTURE] 24/7 Towing and Roadside Assistance - Windsor  https://fixtures.carcareplus.invalid/towing-windsor
+0. Back
+Choose a page: Word to count (Enter = most frequent words on the page): 'brake' occurs 9 time(s) on https://fixtures.carcareplus.invalid/brake-shop-calgary
+
+===== CarCare+ main menu =====
+1. Find help for my vehicle
+2. Word completion
+3. Spell check a word
+4. Word frequency on a page
+5. Search history (most searched words)
+0. Exit
+Choose an option: 
+Pages:
+1. [TEST FIXTURE] Brake Repair Calgary | Sample Auto  https://fixtures.carcareplus.invalid/brake-shop-calgary
+2. [TEST FIXTURE] Windsor Station - 1 Sample Road  https://fixtures.carcareplus.invalid/charger-page
+3. [TEST FIXTURE] EV Service Centre Toronto  https://fixtures.carcareplus.invalid/ev-service-toronto
+4. [TEST FIXTURE] Broken page  https://fixtures.carcareplus.invalid/malformed
+5. [TEST FIXTURE] Abbotsford Store | Example Tire  https://fixtures.carcareplus.invalid/store-page
+6. [TEST FIXTURE] 24/7 Towing and Roadside Assistance - Windsor  https://fixtures.carcareplus.invalid/towing-windsor
+0. Back
+Choose a page: Word to count (Enter = most frequent words on the page): Most frequent words on https://fixtures.carcareplus.invalid/brake-shop-calgary:
+  brake  9
+  calgary  5
+  repair  3
+  service  3
+  visit  3
+  auto  2
+  fluid  2
+  other  2
+  pad  2
+  rotor  2
+
+===== CarCare+ main menu =====
+1. Find help for my vehicle
+2. Word completion
+3. Spell check a word
+4. Word frequency on a page
+5. Search history (most searched words)
+0. Exit
+Choose an option: Search history saved. Goodbye!
