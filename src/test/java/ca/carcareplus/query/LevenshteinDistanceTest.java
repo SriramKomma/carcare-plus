@@ -2,12 +2,15 @@ package ca.carcareplus.query;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
+import ca.carcareplus.exceptions.InvalidInputException;
 
 class LevenshteinDistanceTest {
 
@@ -27,6 +30,14 @@ class LevenshteinDistanceTest {
     void knownDistances(String a, String b, int expected) {
         assertEquals(expected, LevenshteinDistance.distance(a, b));
         assertEquals(expected, LevenshteinDistance.distance(b, a), "distance is symmetric");
+    }
+
+    @Test
+    void hugeWordsAreRejectedByFullMatrixButNotByDistanceWithin() {
+        String huge = "a".repeat(LevenshteinDistance.MAX_MATRIX_WORD_LENGTH + 1);
+        assertThrows(InvalidInputException.class, () -> LevenshteinDistance.distance(huge, "a"));
+        assertEquals(0, LevenshteinDistance.distanceWithin(huge, huge, 2), "two rows only, no big table");
+        assertEquals(0, LevenshteinDistance.distance("a".repeat(1_000), "a".repeat(1_000)), "limit itself is fine");
     }
 
     @Test

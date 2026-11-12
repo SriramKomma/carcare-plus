@@ -1,5 +1,8 @@
 package ca.carcareplus.app;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +18,7 @@ import ca.carcareplus.exceptions.InvalidInputException;
 import ca.carcareplus.models.SearchRequest;
 import ca.carcareplus.models.VehicleType;
 import ca.carcareplus.parser.HTMLParser;
+import ca.carcareplus.perf.Benchmarks;
 import ca.carcareplus.parser.ServiceCategorizer;
 import ca.carcareplus.search.SearchFrequency.TermCount;
 import ca.carcareplus.search.SearchOutcome;
@@ -34,6 +38,7 @@ import ca.carcareplus.storage.RawPageStore;
  * mvn -q compile exec:java -Dexec.args="complete bat"           word completion
  * mvn -q compile exec:java -Dexec.args="count battery URL"      frequency of a word on one page
  * mvn -q compile exec:java -Dexec.args="history"                most searched words
+ * mvn -q compile exec:java -Dexec.args="benchmark"              performance experiments -> docs/performance-results.md
  * </pre>
  */
 public class Main {
@@ -45,6 +50,7 @@ public class Main {
     static final Path HISTORY_FILE = Path.of("data", "search-history.txt");
     static final Path CATEGORIES_FILE = Path.of("config", "categories.txt");
     static final Path FIXTURES_DIR = Path.of("fixtures", "html");
+    static final Path BENCHMARK_FILE = Path.of("docs", "performance-results.md");
 
     public static void main(String[] args) {
         // One-line log format: "[INFO] message"
@@ -65,6 +71,7 @@ public class Main {
                 case "complete" -> runComplete(args);
                 case "count" -> runCount(args);
                 case "history" -> runHistory();
+                case "benchmark" -> runBenchmark();
                 default -> {
                     System.out.println("Unknown command: " + args[0]);
                     printUsage();
@@ -90,6 +97,7 @@ public class Main {
         System.out.println("  complete <start of a word>   word completion");
         System.out.println("  count <word> <url>           how often a word occurs on one page");
         System.out.println("  history                      most searched words");
+        System.out.println("  benchmark                    run performance experiments (synthetic data)");
     }
 
     private static void runCrawl(String[] args) throws CarCareException {
@@ -186,6 +194,18 @@ public class Main {
         for (TermCount entry : top) {
             System.out.println("  " + entry.term() + "  " + entry.count());
         }
+    }
+
+    private static void runBenchmark() throws CarCareException {
+        System.out.println("Running performance experiments on synthetic data (about a minute)...");
+        String results = Benchmarks.run(Benchmarks.FULL);
+        System.out.println(results);
+        try {
+            Files.writeString(BENCHMARK_FILE, results, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new CarCareException("Could not write " + BENCHMARK_FILE + ": " + e.getMessage(), e);
+        }
+        System.out.println("Saved to " + BENCHMARK_FILE);
     }
 
     private static SearchSystem loadSearchSystem() throws CarCareException {

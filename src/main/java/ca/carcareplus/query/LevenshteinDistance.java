@@ -1,5 +1,7 @@
 package ca.carcareplus.query;
 
+import ca.carcareplus.exceptions.InvalidInputException;
+
 /**
  * Edit distance: the smallest number of single-character inserts, deletes and
  * substitutions that turn one word into another. "kitten" -> "sitting" = 3.
@@ -19,6 +21,13 @@ package ca.carcareplus.query;
  */
 public final class LevenshteinDistance {
 
+    /**
+     * Longest word the full matrix accepts. Two 10,000-letter strings would need a
+     * 10,001 x 10,001 table (about 400 MB); real words are at most 30 letters
+     * (see Tokenizer), so 1,000 is far more than enough.
+     */
+    public static final int MAX_MATRIX_WORD_LENGTH = 1_000;
+
     private LevenshteinDistance() {
         // static helper methods only
     }
@@ -26,10 +35,16 @@ public final class LevenshteinDistance {
     /**
      * Full matrix, O(m * n) time and space. Kept so the demo can print the table.
      * null is treated as "".
+     *
+     * @throws InvalidInputException if a word is longer than {@value #MAX_MATRIX_WORD_LENGTH} characters
      */
     public static int[][] matrix(String a, String b) {
         String s = a == null ? "" : a;
         String t = b == null ? "" : b;
+        if (s.length() > MAX_MATRIX_WORD_LENGTH || t.length() > MAX_MATRIX_WORD_LENGTH) {
+            throw new InvalidInputException("Words for edit distance may have at most "
+                    + MAX_MATRIX_WORD_LENGTH + " characters.");
+        }
         int[][] dp = new int[s.length() + 1][t.length() + 1];
         for (int i = 0; i <= s.length(); i++) {
             dp[i][0] = i;
