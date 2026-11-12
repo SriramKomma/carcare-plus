@@ -4,7 +4,7 @@ Intelligent Roadside Assistance and Service Discovery System — COMP 8547 Advan
 
 A Java console backend that crawls selected Canadian car-repair and EV-charging websites, parses them into service documents, and lets a driver search them: choose **EV or gas vehicle → problem category → words → location** and get ranked pages with phone numbers, emails and postal codes pulled out by regular expressions.
 
-Full plan and progress tracker: [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) · Performance results: [docs/performance-results.md](docs/performance-results.md) · Demo script: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)
+Full plan and progress tracker: [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) · Performance results: [docs/performance-results.md](docs/performance-results.md) · Demo script: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) · Report draft: [docs/REPORT.md](docs/REPORT.md)
 
 > **Data status:** real crawling is paused until the instructor confirms the source websites' terms of use allow it (plan §10). All searches currently run on **6 invented test pages** in `fixtures/html/`. Every result from them is labelled `[TEST FIXTURE]`.
 
