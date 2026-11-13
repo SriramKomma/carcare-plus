@@ -7,6 +7,8 @@ import java.util.Map;
 import ca.carcareplus.models.SearchRequest;
 import ca.carcareplus.models.SearchResult;
 import ca.carcareplus.models.ServiceDocument;
+import ca.carcareplus.hours.Availability;
+import ca.carcareplus.osm.OsmImporter;
 import ca.carcareplus.search.SearchOutcome;
 
 /**
@@ -41,7 +43,7 @@ public final class ResultFormatter {
                 .append(System.lineSeparator());
 
         if (!outcome.hasResults()) {
-            out.append("No results found.").append(System.lineSeparator());
+            out.append(noResultsMessage(request, outcome)).append(System.lineSeparator());
         }
         int rank = 1;
         for (SearchResult result : outcome.results()) {
@@ -50,7 +52,23 @@ public final class ResultFormatter {
         if (!outcome.suggestions().isEmpty()) {
             out.append(formatSuggestions(outcome.suggestions()));
         }
+        if (outcome.results().stream().anyMatch(r -> OsmImporter.SOURCE_NAME.equals(r.document().getSourceName()))) {
+            out.append(OsmImporter.ATTRIBUTION).append(System.lineSeparator());
+        }
         return out.toString();
+    }
+
+    /** "No results found in Windsor (12 matching pages are elsewhere; try a province such as ON ...)". */
+    static String noResultsMessage(SearchRequest request, SearchOutcome outcome) {
+        if (!request.hasLocation()) {
+            return "No results found.";
+        }
+        String message = "No results found in " + request.location() + ".";
+        if (outcome.outsideLocation() > 0) {
+            message += " " + outcome.outsideLocation() + " matching page(s) are in other places"
+                    + " - try a nearby city, a province (e.g. ON), or no location.";
+        }
+        return message;
     }
 
     /** One result, e.g. "1. Title  (score 28)" followed by details lines. */
@@ -63,6 +81,16 @@ public final class ResultFormatter {
         out.append("   ").append(doc.getUrl()).append(nl);
         out.append("   Why: ").append(result.scoreBreakdown()).append(nl);
         out.append("   Word counts on this page: ").append(formatCounts(result.termCounts())).append(nl);
+        if (!doc.getOpeningHours().isEmpty()) {
+            Availability availability = Availability.of(doc.getOpeningHours(), java.time.Clock.systemUTC());
+            out.append("   ").append(availability.state() == Availability.State.UNKNOWN
+                    ? "Hours: " + doc.getOpeningHours()
+                    : availability.label() + "  (hours: " + doc.getOpeningHours() + ")").append(nl);
+        }
+        String place = String.join(", ", nonEmpty(doc.getAddress(), doc.getCity()));
+        if (!place.isEmpty()) {
+            out.append("   Address: ").append(place).append(nl);
+        }
         List<String> contact = new ArrayList<>();
         if (!doc.getPhones().isEmpty()) {
             contact.add("Phone " + String.join(", ", doc.getPhones()));
@@ -87,6 +115,16 @@ public final class ResultFormatter {
                     .append(String.join(", ", entry.getValue())).append(System.lineSeparator());
         }
         return out.toString();
+    }
+
+    private static List<String> nonEmpty(String... parts) {
+        List<String> result = new ArrayList<>();
+        for (String part : parts) {
+            if (part != null && !part.isBlank()) {
+                result.add(part.trim());
+            }
+        }
+        return result;
     }
 
     static String formatCounts(Map<String, Integer> counts) {

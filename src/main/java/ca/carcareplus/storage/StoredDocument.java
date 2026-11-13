@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.logging.Logger;
 
+import ca.carcareplus.exceptions.InvalidInputException;
+import ca.carcareplus.models.GeoPoint;
 import ca.carcareplus.models.ServiceCategory;
 import ca.carcareplus.models.ServiceDocument;
 import ca.carcareplus.models.VehicleType;
@@ -22,6 +24,8 @@ import ca.carcareplus.models.VehicleType;
  * - The JSON layout stays the same even if ServiceDocument's fields change later.
  *
  * id is an Integer (not int) so that a missing id reads as null, not as a real id 0.
+ * latitude/longitude are Double for the same reason: files written before they
+ * existed (and web pages, which have no position) read as null = "no location".
  */
 record StoredDocument(
         Integer id,
@@ -42,7 +46,11 @@ record StoredDocument(
         List<String> categories,
         List<String> vehicleTypes,
         String contentHash,
-        boolean testFixture) {
+        boolean testFixture,
+        Double latitude,
+        Double longitude,
+        String openingHours,
+        String website) {
 
     private static final Logger LOG = Logger.getLogger(StoredDocument.class.getName());
 
@@ -75,7 +83,11 @@ record StoredDocument(
                 categoryNames,
                 vehicleNames,
                 doc.getContentHash(),
-                doc.isTestFixture());
+                doc.isTestFixture(),
+                doc.hasLocation() ? doc.getLocation().latitude() : null,
+                doc.hasLocation() ? doc.getLocation().longitude() : null,
+                doc.getOpeningHours(),
+                doc.getWebsite());
     }
 
     /**
@@ -114,6 +126,15 @@ record StoredDocument(
         }
         doc.setContentHash(contentHash);
         doc.setTestFixture(testFixture);
+        if (latitude != null && longitude != null) {
+            try {
+                doc.setLocation(new GeoPoint(latitude, longitude));
+            } catch (InvalidInputException e) {
+                LOG.warning(() -> "Bad coordinates in " + url + "; location ignored.");
+            }
+        }
+        doc.setOpeningHours(openingHours);
+        doc.setWebsite(website);
         return doc;
     }
 

@@ -16,13 +16,22 @@ import ca.carcareplus.models.SearchResult;
  * @param results        best pages first (at most the number requested)
  * @param suggestions    for each term that no page contains: spelling suggestions,
  *                       e.g. "battrey" -> ["battery"]; terms without suggestions are left out
+ * @param outsideLocation pages that matched the words but are not in the typed location
+ *                       (so the console can say "none in Windsor, 12 elsewhere")
  */
 public record SearchOutcome(
         String query,
         List<String> terms,
         int candidateCount,
         List<SearchResult> results,
-        Map<String, List<String>> suggestions) {
+        Map<String, List<String>> suggestions,
+        int outsideLocation) {
+
+    /** Outcome of a search without a location. */
+    public SearchOutcome(String query, List<String> terms, int candidateCount,
+                         List<SearchResult> results, Map<String, List<String>> suggestions) {
+        this(query, terms, candidateCount, results, suggestions, 0);
+    }
 
     public SearchOutcome {
         terms = terms == null ? List.of() : List.copyOf(terms);

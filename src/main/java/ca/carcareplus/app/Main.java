@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
 
 import ca.carcareplus.crawler.CrawlConfig;
 import ca.carcareplus.crawler.CrawlResult;
@@ -20,6 +21,10 @@ import ca.carcareplus.exceptions.InvalidInputException;
 import ca.carcareplus.models.SearchRequest;
 import ca.carcareplus.models.VehicleType;
 import ca.carcareplus.parser.HTMLParser;
+import ca.carcareplus.live.GooglePlacesClient;
+import ca.carcareplus.models.ServiceDocument;
+import ca.carcareplus.osm.OsmImporter;
+import ca.carcareplus.osm.OverpassDownloader;
 import ca.carcareplus.perf.Benchmarks;
 import ca.carcareplus.parser.ServiceCategorizer;
 import ca.carcareplus.search.SearchFrequency.TermCount;
@@ -34,6 +39,7 @@ import ca.carcareplus.storage.RawPageStore;
  * <pre>
  * mvn -q compile exec:java                                      interactive menu
  * mvn -q compile exec:java -Dexec.args="help"                   list of commands
+ * mvn -q compile exec:java -Dexec.args="web"                    web page at http://localhost:8080/
  * mvn -q compile exec:java -Dexec.args="crawl"                  list configured sources
  * mvn -q compile exec:java -Dexec.args="crawl 'Fountain Tire' 10"  crawl one source (optional page limit)
  * mvn -q compile exec:java -Dexec.args="fixtures"               load invented test pages as raw pages
@@ -54,6 +60,7 @@ public class Main {
     static final Path HISTORY_FILE = Path.of("data", "search-history.txt");
     static final Path CATEGORIES_FILE = Path.of("config", "categories.txt");
     static final Path FIXTURES_DIR = Path.of("fixtures", "html");
+    static final Path OSM_DIR = Path.of("data", "osm");
     static final Path BENCHMARK_FILE = Path.of("docs", "performance-results.md");
 
     public static void main(String[] args) {
@@ -70,6 +77,8 @@ public class Main {
             switch (args[0].toLowerCase(Locale.ROOT)) {
                 case "menu" -> runMenu();
                 case "help" -> printUsage();
+                case "web" -> runWeb(args);
+                case "osm" -> runOsm(args);
                 case "crawl" -> runCrawl(args);
                 case "fixtures" -> runFixtures();
                 case "parse" -> runParse();
@@ -96,9 +105,11 @@ public class Main {
     private static void printUsage() {
         System.out.println("Usage (no command = interactive menu):");
         System.out.println("  menu                         interactive menu");
+        System.out.println("  web [port]                   web page on http://localhost:8080/ (Ctrl+C stops it)");
         System.out.println("  crawl                        list configured sources");
         System.out.println("  crawl \"<source>\" [maxPages]  crawl one source and save raw HTML");
         System.out.println("  fixtures                     load the invented test pages (fixtures/html)");
+        System.out.println("  osm [server]                 download Ontario repair shops from OpenStreetMap (then: parse)");
         System.out.println("  parse                        turn saved raw pages into searchable documents");
         System.out.println("  search ev|gas <words> [location=<place>]");
         System.out.println("  complete <start of a word>   word completion");
@@ -116,6 +127,63 @@ public class Main {
         }
         BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
         new ConsoleMenu(system, keyboard, System.out).run();
+    }
+
+    static final int DEFAULT_WEB_PORT = 8080;
+
+    private static void runWeb(String[] args) throws CarCareException {
+        int port = args.length >= 2 ? parsePort(args[1]) : DEFAULT_WEB_PORT;
+        SearchSystem system = loadSearchSystem();
+        GooglePlacesClient live = GooglePlacesClient.fromEnvironment();
+        WebServer server = WebServer.start(system, port, live);
+        System.out.println("CarCare+ is running at " + server.url());
+        System.out.println(live == null
+                ? "Live nearby (Google Places) is off: set " + GooglePlacesClient.API_KEY_VARIABLE + " to turn it on."
+                : "Live nearby (Google Places) is on.");
+        System.out.println("Open it in your browser. Press Ctrl+C here to stop.");
+        try {
+            new CountDownLatch(1).await(); // keep running until the program is stopped
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            server.stop();
+        }
+    }
+
+    static int parsePort(String text) {
+        try {
+            int port = Integer.parseInt(text.trim());
+            if (port >= 1 && port <= 65_535) {
+                return port;
+            }
+        } catch (NumberFormatException e) {
+            // fall through to the message below
+        }
+        throw new InvalidInputException("Port must be a whole number from 1 to 65535, but was '" + text + "'.");
+    }
+
+    private static void runOsm(String[] args) throws CarCareException {
+        // Optional: osm https://some-overpass-server/api/interpreter
+        List<String> servers = args.length >= 2 ? List.of(args[1]) : OverpassDownloader.PUBLIC_ENDPOINTS;
+        System.out.println("Downloading Ontario repair shops, tyre shops, EV chargers and places from OpenStreetMap...");
+        System.out.println("(this can take a few minutes; other public servers are tried if one refuses)");
+        OverpassDownloader downloader = new OverpassDownloader(servers);
+        OverpassDownloader.Report report = downloader.downloadOntario(OSM_DIR);
+        if (!report.downloaded().isEmpty()) {
+            System.out.println("Downloaded " + String.join(", ", report.downloaded()) + " (" + (report.bytes() / 1024)
+                    + " KB from " + downloader.usedEndpoint() + ")");
+        }
+        if (!report.skipped().isEmpty()) {
+            System.out.println("Already downloaded, kept: " + String.join(", ", report.skipped())
+                    + "  (delete " + OSM_DIR + " to download everything again)");
+        }
+        if (report.complete()) {
+            System.out.println("All parts are in " + OSM_DIR + ". Next: parse");
+        } else {
+            System.out.println("Still missing: " + String.join("; ", report.failed()));
+            System.out.println("The servers are busy. Run 'osm' again later: only the missing parts are downloaded."
+                    + " You can already run 'parse' to use the parts you have.");
+        }
+        System.out.println("Data (c) OpenStreetMap contributors, ODbL 1.0 - https://www.openstreetmap.org/copyright");
     }
 
     private static void runCrawl(String[] args) throws CarCareException {
@@ -155,12 +223,17 @@ public class Main {
             sources.add(config.sourceName());
         }
         sources.add(FixtureLoader.SOURCE_NAME);
-        HTMLParser parser = new HTMLParser(ServiceCategorizer.loadFile(CATEGORIES_FILE));
-        ParsePipeline.ParseReport report =
-                new ParsePipeline(new RawPageStore(RAW_PAGES_DIR), parser, PARSED_DIR).parseSources(sources);
+        ServiceCategorizer categorizer = ServiceCategorizer.loadFile(CATEGORIES_FILE);
+        HTMLParser parser = new HTMLParser(categorizer);
+        List<ServiceDocument> osmShops = new OsmImporter(categorizer).load(OSM_DIR);
+        ParsePipeline.ParseReport report = new ParsePipeline(new RawPageStore(RAW_PAGES_DIR), parser, PARSED_DIR)
+                .parseSources(sources, osmShops);
         System.out.println(report);
+        if (!osmShops.isEmpty()) {
+            System.out.println("Including " + osmShops.size() + " OpenStreetMap places. " + OsmImporter.ATTRIBUTION);
+        }
         if (report.pagesRead() == 0) {
-            System.out.println("No raw pages found. Run 'crawl' (when approved) or 'fixtures' first.");
+            System.out.println("Nothing to parse. Run 'osm', 'fixtures' or 'crawl' (when approved) first.");
         }
     }
 

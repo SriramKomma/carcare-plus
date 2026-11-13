@@ -1,0 +1,25 @@
+{
+  "version": 0.6,
+  "generator": "INVENTED TEST DATA in Overpass format (not real OpenStreetMap data)",
+  "elements": [
+    {"type": "node", "id": 1001, "lat": 42.3149, "lon": -83.0364,
+     "tags": {"shop": "car_repair", "name": "Test Brake Garage", "service:vehicle:brakes": "yes",
+              "addr:housenumber": "100", "addr:street": "Ouellette Avenue", "addr:city": "Windsor",
+              "addr:postcode": "N9A 1A1", "phone": "+1 519-555-0101;519 555 0102", "opening_hours": "Mo-Fr 08:00-17:00"}},
+    {"type": "way", "id": 2002, "center": {"lat": 42.2975, "lon": -82.8890},
+     "tags": {"shop": "tyres", "name": "Test Tyre Shop"}},
+    {"type": "node", "id": 3003, "lat": 43.6532, "lon": -79.3832,
+     "tags": {"amenity": "charging_station", "operator": "Test Charge Co", "socket:type2_combo": "2",
+              "socket:chademo": "1", "capacity": "3", "addr:city": "Toronto"}},
+    {"type": "node", "id": 4004, "lat": 42.31, "lon": -83.03,
+     "tags": {"shop": "car_repair"}},
+    {"type": "node", "id": 5005, "lat": 50.0, "lon": -85.0,
+     "tags": {"shop": "car_repair", "name": "Test Remote Auto"}},
+    {"type": "node", "id": 6006, "lat": 42.30, "lon": -83.00,
+     "tags": {"shop": "car_repair", "name": "Test General Auto", "addr:city": "Windsor"}},
+    {"type": "node", "id": 7007, "lat": 43.65, "lon": -79.40,
+     "tags": {"shop": "car_repair", "name": "Test Street Garage", "addr:street": "Windsor Street", "addr:city": "Toronto"}},
+    {"type": "relation", "id": 8008,
+     "tags": {"shop": "car_repair", "name": "Test No Position"}}
+  ]
+}

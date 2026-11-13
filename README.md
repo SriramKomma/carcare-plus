@@ -6,7 +6,9 @@ A Java console backend that crawls selected Canadian car-repair and EV-charging 
 
 Full plan and progress tracker: [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) · Performance results: [docs/performance-results.md](docs/performance-results.md) · Demo script: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) · Report draft: [docs/REPORT.md](docs/REPORT.md)
 
-> **Data status:** real crawling is paused until the instructor confirms the source websites' terms of use allow it (plan §10). All searches currently run on **6 invented test pages** in `fixtures/html/`. Every result from them is labelled `[TEST FIXTURE]`.
+> **Data status:** website crawling is paused until the instructor confirms the source websites' terms of use allow it (plan §10). Real Ontario shop data comes from **OpenStreetMap** (`osm` command, Open Database Licence, "© OpenStreetMap contributors"). The **6 invented test pages** in `fixtures/html/` are labelled `[TEST FIXTURE]` in every result.
+
+**Location search:** a typed location is a filter, not just a bonus. "Windsor" shows only places whose city is Windsor (OpenStreetMap's `addr:city`, or else the nearest city/town/village within 25 km). "Windsor, ON", a postal code (same first three characters) or a province ("ON") also work.
 
 ## Requirements
 
@@ -20,6 +22,7 @@ Check with `mvn -v`: the `Java version:` line must be 21 or higher.
 
 ```bash
 mvn test                                          # compile and run all unit tests
+mvn -q compile exec:java -Dexec.args="osm"        # real Ontario shops from OpenStreetMap (one download)
 mvn -q compile exec:java -Dexec.args="fixtures"   # copy the invented test pages into data/raw-pages
 mvn -q compile exec:java -Dexec.args="parse"      # raw pages -> searchable documents
 mvn -q compile exec:java                          # start the interactive menu
@@ -33,9 +36,13 @@ Run with `mvn -q compile exec:java -Dexec.args="<command>"`. With no command, th
 |---|---|
 | *(none)* or `menu` | Interactive menu (needs parsed documents) |
 | `help` | List of commands |
+| `web [port]` | Web page with every feature at http://localhost:8080/ (local only; Ctrl+C stops it) |
+
+**Web page extras:** "Use my location" (browser location, 2–50 km radius, nearest-first sorting), a map of results (Leaflet + OpenStreetMap tiles), and a **Live nearby** tab with Google Places ratings, reviews and opening hours. Live nearby is off unless the server is started with a Google Places API key: `export GOOGLE_MAPS_API_KEY=...` (Places API (New), billing enabled). Google results are fetched per search and never stored or indexed, as Google's terms require; the graded search features run on OpenStreetMap / crawled data. Once real data is loaded, the invented test pages are hidden on the web page.
 | `crawl` | List the sources in `config/sources.txt` |
 | `crawl "<source>" [maxPages]` | Crawl one source and save raw HTML (only after approval, see above) |
 | `fixtures` | Load the invented test pages as raw pages |
+| `osm` | Download Ontario car-repair shops, tyre shops, EV chargers and places from OpenStreetMap into `data/osm/` (then run `parse`) |
 | `parse` | Turn all saved raw pages into documents (full rebuild) |
 | `search ev\|gas <words> [location=<place>]` | One search without the menu |
 | `complete <start of a word>` | Word completion |
@@ -140,3 +147,4 @@ src/test/resources/             HTML and text fixtures used only by tests
 - The crawler reads and obeys each site's `robots.txt` (`Disallow`, `Crawl-delay`), waits between requests (the longer of the source's delay — 3 s for every configured source, never below 1 s — and robots.txt `Crawl-delay`), and stops a source after repeated 403/429 answers. It never bypasses bot protection.
 - Real crawling waits for the instructor's confirmation on terms of use (plan §10).
 - Test pages are invented and flagged `testFixture = true`; they are never presented as real businesses.
+- OpenStreetMap data is used under the ODbL; the app shows "© OpenStreetMap contributors" wherever OSM places appear. The download is two requests per run, and the files stay out of Git (`data/osm/`).

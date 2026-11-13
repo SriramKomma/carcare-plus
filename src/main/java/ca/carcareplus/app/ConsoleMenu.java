@@ -255,18 +255,23 @@ public class ConsoleMenu {
 
     /**
      * Search words for a category when the user just presses Enter:
-     * "Vehicle breakdown / towing" -> "vehicle breakdown towing". OTHER has no
-     * useful words, so it returns "" (the user must type something).
+     * "Brake problem" -> "brake problem repair". OTHER has no useful words, so it
+     * returns "" (the user must type something).
+     *
+     * Repair categories add "repair": the search uses OR, so shops that list
+     * brakes rank first, and general repair shops (most OpenStreetMap shops list
+     * no specific services) still appear after them.
      */
     static String defaultQueryFor(ServiceCategory category) {
         if (category == null || category == ServiceCategory.OTHER) {
             return "";
         }
         // Keep only characters a query may contain (see DataValidator.validateQuery)
-        return category.displayName().toLowerCase(Locale.ROOT)
+        String words = category.displayName().toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9 '\\-]", " ")
                 .trim()
                 .replaceAll("\\s+", " ");
+        return category.isRepair() && !words.contains("repair") ? words + " repair" : words;
     }
 
     /**

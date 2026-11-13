@@ -15,16 +15,28 @@ import ca.carcareplus.exceptions.InvalidInputException;
  * @param category    optional category filter; null means "any category"
  * @param location    optional city, province or postal code; "" means "anywhere"
  * @param maxResults  how many results to show (1 to MAX_RESULTS_LIMIT)
+ * @param near        optional point ("use my location"); null means no distance filter
+ * @param radiusKm    with near: only pages with a known position within this distance
  */
 public record SearchRequest(
         String query,
         VehicleType vehicleType,
         ServiceCategory category,
         String location,
-        int maxResults) {
+        int maxResults,
+        GeoPoint near,
+        double radiusKm) {
 
     public static final int DEFAULT_MAX_RESULTS = 10;
     public static final int MAX_RESULTS_LIMIT = 50;
+    public static final double DEFAULT_RADIUS_KM = 10;
+    public static final double MAX_RADIUS_KM = 200;
+
+    /** A request without "near me". */
+    public SearchRequest(String query, VehicleType vehicleType, ServiceCategory category,
+                         String location, int maxResults) {
+        this(query, vehicleType, category, location, maxResults, null, 0);
+    }
 
     public SearchRequest {
         if (query == null || query.isBlank()) {
@@ -41,6 +53,10 @@ public record SearchRequest(
             throw new InvalidInputException(
                     "Number of results must be between 1 and " + MAX_RESULTS_LIMIT + ".");
         }
+        if (near != null && !(radiusKm > 0 && radiusKm <= MAX_RADIUS_KM)) {
+            throw new InvalidInputException("Search radius must be more than 0 and at most "
+                    + (int) MAX_RADIUS_KM + " km.");
+        }
         query = query.trim();
         location = location == null ? "" : location.trim();
     }
@@ -56,5 +72,9 @@ public record SearchRequest(
 
     public boolean hasLocation() {
         return !location.isEmpty();
+    }
+
+    public boolean hasNear() {
+        return near != null;
     }
 }

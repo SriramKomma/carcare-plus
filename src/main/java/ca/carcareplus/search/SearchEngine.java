@@ -19,7 +19,9 @@ import ca.carcareplus.validation.DataValidator;
  * 2. tokenize     same Tokenizer as the index  ("Brake Pads" -> brake, pad)
  * 3. record       SearchFrequency counts each term   (search frequency feature)
  * 4. look up      InvertedIndex.lookupAny          (pages with at least one term)
- * 5. filter       keep pages that suit the vehicle type (EV / Gas)
+ * 5. filter       keep pages that suit the vehicle type (EV / Gas) and, if a
+ *                 location was typed, are in that place (LocationMatcher); with
+ *                 "near me", only places within the radius (GeoPoint.distanceKm)
  * 6. rank         PageRanker, best k                  (page ranking feature)
  * 7. suggest      for terms no page contains, ask the SpellingSuggester
  * </pre>
@@ -69,14 +71,27 @@ public class SearchEngine {
         }
 
         Set<Integer> candidates = new TreeSet<>();
+        int outsideLocation = 0;
         for (int id : index.lookupAny(terms)) {
             ServiceDocument doc = index.document(id);
-            if (doc.appliesTo(request.vehicleType())) {
-                candidates.add(id);
+            if (!doc.appliesTo(request.vehicleType())) {
+                continue;
             }
+            // A typed location is a filter: only pages in that place are results
+            if (request.hasLocation() && !LocationMatcher.matches(doc, request.location(), index)) {
+                outsideLocation++;
+                continue;
+            }
+            // "Use my location": only places with a known position inside the radius
+            if (request.hasNear() && !(doc.hasLocation()
+                    && doc.getLocation().distanceKm(request.near()) <= request.radiusKm())) {
+                outsideLocation++;
+                continue;
+            }
+            candidates.add(id);
         }
         List<SearchResult> results = ranker.rank(candidates, terms, request, request.maxResults());
-        return new SearchOutcome(query, terms, candidates.size(), results, suggestionsFor(terms));
+        return new SearchOutcome(query, terms, candidates.size(), results, suggestionsFor(terms), outsideLocation);
     }
 
     /** Suggestions for every term that no indexed page contains. */

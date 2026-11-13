@@ -50,8 +50,17 @@ public class ParsePipeline {
      * @throws StorageException if raw pages cannot be read or documents cannot be saved
      */
     public ParseReport parseSources(List<String> sourceNames) throws StorageException {
-        if (sourceNames == null) {
-            throw new InvalidInputException("Source names are required.");
+        return parseSources(sourceNames, List.of());
+    }
+
+    /**
+     * Same, and also stores documents that did not come from HTML pages
+     * (OpenStreetMap shops from OsmImporter). They count as "pages read" too.
+     */
+    public ParseReport parseSources(List<String> sourceNames, List<ServiceDocument> extraDocuments)
+            throws StorageException {
+        if (sourceNames == null || extraDocuments == null) {
+            throw new InvalidInputException("Source names and extra documents are required.");
         }
         DocumentStorage storage = new DocumentStorage(parsedDir); // empty: full rebuild
         int read = 0;
@@ -69,6 +78,12 @@ public class ParsePipeline {
                 if (storage.addIfNew(doc) != DocumentStorage.AddResult.ADDED) {
                     duplicates++;
                 }
+            }
+        }
+        for (ServiceDocument doc : extraDocuments) {
+            read++;
+            if (storage.addIfNew(doc) != DocumentStorage.AddResult.ADDED) {
+                duplicates++;
             }
         }
         storage.saveAll();

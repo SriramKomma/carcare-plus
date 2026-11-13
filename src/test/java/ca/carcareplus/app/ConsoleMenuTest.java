@@ -119,7 +119,7 @@ class ConsoleMenuTest {
     @Test
     void enterUsesTheCategoryNameAsTheQuery() throws Exception {
         String output = run("1", "2", option(VehicleType.GAS, ServiceCategory.BRAKES), "", "", "0");
-        assertTrue(output.contains("Search \"brake problem\" for Gas Vehicle"), output);
+        assertTrue(output.contains("Search \"brake problem repair\" for Gas Vehicle"), output);
     }
 
     @Test
@@ -228,8 +228,9 @@ class ConsoleMenuTest {
 
     @Test
     void defaultQueriesAreCleanedCategoryNames() {
-        assertEquals("vehicle breakdown towing", ConsoleMenu.defaultQueryFor(ServiceCategory.BREAKDOWN_TOWING));
-        assertEquals("ev maintenance motor high-voltage system",
+        assertEquals("vehicle breakdown towing repair", ConsoleMenu.defaultQueryFor(ServiceCategory.BREAKDOWN_TOWING));
+        assertEquals("ev charging station", ConsoleMenu.defaultQueryFor(ServiceCategory.EV_CHARGING), "not a repair");
+        assertEquals("ev maintenance motor high-voltage system repair",
                 ConsoleMenu.defaultQueryFor(ServiceCategory.EV_MAINTENANCE));
         assertEquals("", ConsoleMenu.defaultQueryFor(ServiceCategory.OTHER));
         assertEquals("", ConsoleMenu.defaultQueryFor(null));

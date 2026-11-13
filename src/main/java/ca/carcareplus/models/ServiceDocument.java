@@ -53,6 +53,11 @@ public class ServiceDocument {
     private String contentHash = "";
     private boolean testFixture;
 
+    // Only known for places from OpenStreetMap; web pages leave them empty
+    private GeoPoint location;
+    private String openingHours = "";
+    private String website = "";
+
     /** Used only by the JSON library when loading saved documents (Phase 6). */
     private ServiceDocument() {
     }
@@ -287,6 +292,36 @@ public class ServiceDocument {
     }
 
     /** True for hand-made test data; such documents are labelled "[TEST FIXTURE]" in output. */
+    /** @return the map position, or null if unknown */
+    public GeoPoint getLocation() {
+        return location;
+    }
+
+    public boolean hasLocation() {
+        return location != null;
+    }
+
+    public void setLocation(GeoPoint location) {
+        this.location = location;
+    }
+
+    /** OpenStreetMap format, e.g. "Mo-Fr 08:00-17:00; Sa 09:00-13:00"; "" if unknown. */
+    public String getOpeningHours() {
+        return openingHours;
+    }
+
+    public void setOpeningHours(String openingHours) {
+        this.openingHours = clean(openingHours);
+    }
+
+    public String getWebsite() {
+        return website;
+    }
+
+    public void setWebsite(String website) {
+        this.website = clean(website);
+    }
+
     public boolean isTestFixture() {
         return testFixture;
     }

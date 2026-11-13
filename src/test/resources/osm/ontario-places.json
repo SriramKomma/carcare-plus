@@ -1,0 +1,11 @@
+{
+  "version": 0.6,
+  "generator": "TEST DATA: real Ontario place names with approximate coordinates",
+  "elements": [
+    {"type": "node", "id": 1, "lat": 42.3149, "lon": -83.0364, "tags": {"place": "city", "name": "Windsor"}},
+    {"type": "node", "id": 2, "lat": 42.2970, "lon": -82.8870, "tags": {"place": "town", "name": "Tecumseh"}},
+    {"type": "node", "id": 3, "lat": 43.6532, "lon": -79.3832, "tags": {"place": "city", "name": "Toronto"}},
+    {"type": "node", "id": 4, "lat": 45.4215, "lon": -75.6972, "tags": {"place": "city", "name": "Ottawa"}},
+    {"type": "node", "id": 5, "lat": 46.5, "lon": -84.33, "tags": {"place": "city"}}
+  ]
+}

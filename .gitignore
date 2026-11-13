@@ -23,3 +23,6 @@ data/search-history.txt
 
 # Logs
 *.log
+
+# OpenStreetMap downloads (ODbL data, regenerated with the osm command)
+data/osm/

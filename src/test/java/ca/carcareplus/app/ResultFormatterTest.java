@@ -60,7 +60,7 @@ class ResultFormatterTest {
         String text = ResultFormatter.format(request, outcome);
 
         assertTrue(text.startsWith("Search \"battrey\" for Electric Vehicle (EV) near Windsor"), text);
-        assertTrue(text.contains("No results found."), text);
+        assertTrue(text.contains("No results found in Windsor."), text);
         assertTrue(text.contains("Did you mean: battrey -> battery, batter"), text);
     }
 
