@@ -81,10 +81,10 @@
   .lead { margin: 4px 0 16px; color: var(--muted); font-size: 14px; }
   .form { display: grid; gap: 12px; grid-template-columns: repeat(12, 1fr); align-items: end; }
   .col-3 { grid-column: span 3; } .col-4 { grid-column: span 4; } .col-5 { grid-column: span 5; }
-  .col-6 { grid-column: span 6; } .col-12 { grid-column: span 12; } .col-2 { grid-column: span 2; }
-  @media (max-width: 900px) { .col-3, .col-4, .col-5 { grid-column: span 6; } .col-2 { grid-column: span 6; } }
+  .col-6 { grid-column: span 6; } .col-12 { grid-column: span 12; } .col-2 { grid-column: span 2; } .col-9 { grid-column: span 9; }
+  @media (max-width: 900px) { .col-3, .col-4, .col-5 { grid-column: span 6; } .col-2 { grid-column: span 6; } .col-9 { grid-column: span 12; } }
   @media (max-width: 600px) { .form > * { grid-column: span 12 !important; } }
-  label.lbl { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; letter-spacing: .01em; }
+  .lbl { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 6px; letter-spacing: .01em; }
   .field { position: relative; }
   .field > .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
   input, select { width: 100%; height: 44px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
@@ -210,6 +210,21 @@
   .notice.error { background: var(--danger-soft); color: var(--danger); }
   .notice .icon { margin-top: 2px; }
   .skeleton { padding: 16px; }
+
+  /* problem-first search */
+  .q-big > input { height: 52px; font-size: 16.5px; }
+  .examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+  .example { border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); border-radius: 999px;
+             padding: 5px 11px; font: inherit; font-size: 13px; cursor: pointer; transition: border-color .15s, color .15s; }
+  .example:hover { border-color: var(--primary); color: var(--primary); }
+  .problem { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; padding: 12px 14px; margin-bottom: 12px;
+             border-radius: var(--radius-sm); background: var(--ok-soft); color: var(--text); font-size: 14px; }
+  .problem .icon { color: var(--ok); margin-top: 2px; }
+  .problem .alts { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  /* while a new search runs, keep the old results visible but dimmed (no jumping) */
+  .results-area { transition: opacity .15s var(--ease); }
+  .results-area.loading { opacity: .5; pointer-events: none; }
+  .layout.no-map .map-wrap { display: none; }
   .sk { border-radius: 6px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 37%, var(--surface-2) 63%);
         background-size: 400% 100%; animation: shimmer 1.3s ease infinite; height: 12px; margin-top: 10px; }
   .sk.title { height: 18px; width: 60%; margin-top: 0; }
@@ -350,9 +365,17 @@
   <!-- =============================================================== Find help -->
   <section data-panel="search">
     <div class="card search-card">
-      <h2>Find help for your vehicle</h2>
-      <p class="lead">Search real shops by city, postal code or your current location. Results are ranked by CarCare+'s own search engine.</p>
+      <h2>What's wrong with your car?</h2>
+      <p class="lead">Describe the problem in your own words. CarCare+ works out which service you need and lists the nearest real shops.</p>
       <div class="form">
+        <div class="col-9">
+          <label class="lbl" for="q">1. Describe the problem</label>
+          <div class="field q-big">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input id="q" autocomplete="off" placeholder="e.g. my car won't start" role="combobox" aria-expanded="false" aria-controls="qList" aria-autocomplete="list">
+            <ul class="ac-list" id="qList" role="listbox" hidden></ul>
+          </div>
+        </div>
         <div class="col-3">
           <span class="lbl" id="vehicleLbl">Vehicle</span>
           <div class="seg" role="group" aria-labelledby="vehicleLbl" id="vehicle">
@@ -360,43 +383,43 @@
             <button type="button" data-v="gas" aria-pressed="false"><svg class="icon sm"><use href="#i-fuel"/></svg>Gas</button>
           </div>
         </div>
-        <div class="col-4">
-          <label class="lbl" for="category">Problem</label>
-          <div class="field"><svg class="icon"><use href="#i-car"/></svg><select id="category"></select></div>
-        </div>
-        <div class="col-5">
-          <label class="lbl" for="q">Describe it (optional)</label>
-          <div class="field">
-            <svg class="icon"><use href="#i-search"/></svg>
-            <input id="q" autocomplete="off" placeholder="e.g. battery dead" role="combobox" aria-expanded="false" aria-controls="qList" aria-autocomplete="list">
-            <ul class="ac-list" id="qList" role="listbox" hidden></ul>
+        <div class="col-12 examples" id="examples">Try:</div>
+        <div class="col-3">
+          <span class="lbl">2. Where are you?</span>
+          <div class="row-inline" id="nearArea">
+            <button type="button" class="btn ghost" id="locateBtn" style="width:100%"><svg class="icon"><use href="#i-locate"/></svg>Use my location</button>
           </div>
         </div>
-        <div class="col-5">
-          <label class="lbl" for="location">City or postal code</label>
+        <div class="col-4">
+          <label class="lbl" for="location">or city / postal code</label>
           <div class="field">
             <svg class="icon"><use href="#i-pin"/></svg>
             <input id="location" list="cityList" autocomplete="off" placeholder="e.g. Windsor or N9B 3P4">
             <datalist id="cityList"></datalist>
           </div>
         </div>
-        <div class="col-2">
-          <span class="lbl">Availability</span>
-          <label class="switch"><input type="checkbox" id="openNow"><span class="track"></span>Open now</label>
-        </div>
         <div class="col-3">
-          <span class="lbl">Or</span>
-          <div class="row-inline" id="nearArea">
-            <button type="button" class="btn ghost" id="locateBtn" style="width:100%"><svg class="icon"><use href="#i-locate"/></svg>Use my location</button>
-          </div>
+          <label class="lbl" for="category">Service (optional)</label>
+          <div class="field"><svg class="icon"><use href="#i-car"/></svg><select id="category"></select></div>
         </div>
         <div class="col-2">
-          <button type="button" class="btn primary" id="searchBtn"><svg class="icon"><use href="#i-search"/></svg>Search</button>
+          <button type="button" class="btn primary" id="searchBtn"><svg class="icon"><use href="#i-search"/></svg>Find shops</button>
+        </div>
+        <div class="col-12">
+          <label class="switch"><input type="checkbox" id="openNow"><span class="track"></span>Open now only</label>
         </div>
       </div>
     </div>
 
-    <div id="searchResults"></div>
+    <!-- Built once; each search only fills these in, so the map is never rebuilt -->
+    <div id="searchStatus" aria-live="polite"></div>
+    <div class="results-area" id="resultsArea" hidden>
+      <div class="results-head" id="resultsHead"></div>
+      <div class="layout" id="layout" data-view="list">
+        <div class="list" id="list"></div>
+        <div class="card map-wrap"><div id="map"></div></div>
+      </div>
+    </div>
   </section>
 
   <!-- ============================================================= Live nearby -->
@@ -510,13 +533,14 @@ const icon = (name, cls = "") => `<svg class="icon ${cls}" aria-hidden="true"><u
 const safeUrl = (u) => /^https?:\/\//i.test(u || "") ? u : "";   // only http(s) links from data
 const telHref = (p) => "tel:" + String(p).replace(/[^\d+]/g, "");
 
-async function api(path, params = {}) {
+async function api(path, params = {}, signal) {
   const clean = Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ""));
   const query = new URLSearchParams(clean).toString();
   let response;
   try {
-    response = await fetch("/api/" + path + (query ? "?" + query : ""));
+    response = await fetch("/api/" + path + (query ? "?" + query : ""), { signal });
   } catch (e) {
+    if (e.name === "AbortError") throw e;   // cancelled on purpose: a newer search replaced it
     throw Object.assign(new Error("Cannot reach the CarCare+ server. Is it still running?"), { status: 0 });
   }
   let body = {};
@@ -551,7 +575,7 @@ document.querySelectorAll("#tabs button").forEach((btn) => btn.addEventListener(
   document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
   document.querySelectorAll("[data-panel]").forEach((p) => p.hidden = p.dataset.panel !== btn.dataset.tab);
   if (btn.dataset.tab === "history") loadHistory();
-  if (btn.dataset.tab === "search" && map) setTimeout(() => map.invalidateSize(), 50);
+  if (btn.dataset.tab === "search" && map) setTimeout(() => { map.invalidateSize(); fitMap(); }, 50);
   if (btn.dataset.tab === "live") loadLiveIntro();
 }));
 
@@ -589,7 +613,9 @@ function locate(which) {
     nearState[which] = { lat: pos.coords.latitude, lon: pos.coords.longitude, radius: 10 };
     renderNear(which);
     (which === "search" ? $("location") : $("llocation")).value = "";
-    which === "search" ? runSearch() : runLive();
+    if (which === "live") runLive();
+    else if (hasSomethingToSearch()) runSearch();
+    else { toast("Got your location. Now describe the problem."); $("q").focus(); }
   }, (err) => {
     setBusy(button, false);
     toast(err.code === 1 ? "Location permission was denied. Type a city or postal code instead."
@@ -617,111 +643,170 @@ $("llocation").addEventListener("input", () => { if (nearState.live && $("llocat
 
 // ================================================================== find help
 let vehicle = "ev";
+const EXAMPLES = {
+  ev:  ["my car won't start", "flat tire", "brakes are squealing", "I need to charge my car", "won't charge at home"],
+  gas: ["my car won't start", "flat tire", "brakes are squealing", "engine is overheating", "check engine light is on"]
+};
+function renderExamples() {
+  $("examples").innerHTML = "Try:" + EXAMPLES[vehicle].map((t) => `<button type="button" class="example">${esc(t)}</button>`).join("");
+  $("examples").querySelectorAll(".example").forEach((b) => b.addEventListener("click", () => {
+    $("q").value = b.textContent; $("category").value = ""; runSearch();
+  }));
+}
 async function loadCategories() {
   try {
+    const keep = $("category").value;
     const categories = await api("categories", { vehicle });
-    $("category").innerHTML = categories.map((c) =>
-      `<option value="${esc(c.name)}" data-default="${esc(c.defaultQuery)}">${esc(c.label)}</option>`).join("");
-    updatePlaceholder();
+    // First option: let SymptomMatcher pick the service from the description
+    $("category").innerHTML = `<option value="">Work it out from my words</option>` + categories.map((c) =>
+      `<option value="${esc(c.name)}">${esc(c.label)}</option>`).join("");
+    if ([...$("category").options].some((o) => o.value === keep)) $("category").value = keep;
   } catch (e) { toast(e.message); }
 }
-function updatePlaceholder() {
-  const option = $("category").selectedOptions[0];
-  const def = option ? option.dataset.default : "";
-  $("q").placeholder = def ? "Leave empty to search: " + def : "Type a few words, e.g. tow truck";
-}
-$("category").addEventListener("change", updatePlaceholder);
-document.querySelectorAll("#vehicle button").forEach((btn) => btn.addEventListener("click", () => {
+document.querySelectorAll("#vehicle button").forEach((btn) => btn.addEventListener("click", async () => {
+  if (vehicle === btn.dataset.v) return;
   vehicle = btn.dataset.v;
   document.querySelectorAll("#vehicle button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
-  loadCategories();
+  renderExamples();
+  await loadCategories();
+  if (lastSearch) runSearch();   // show the same search for the other vehicle straight away
 }));
+function hasSomethingToSearch() { return $("q").value.trim() !== "" || $("category").value !== ""; }
 
 let lastSearch = null;
-let sortMode = "best";
+let sortMode = "distance";       // with "use my location", nearest first is what a driver wants
 let viewMode = "list";
+let searchSeq = 0, searchAbort = null;
+
 async function runSearch(queryOverride) {
   if (queryOverride !== undefined) $("q").value = queryOverride;
   closeList();
+  if (!hasSomethingToSearch()) {
+    toast("Describe the problem first, e.g. \"my car won't start\".");
+    $("q").focus();
+    return;
+  }
   const n = nearState.search;
   const params = { vehicle, category: $("category").value, q: $("q").value, location: n ? "" : $("location").value,
                    lat: n?.lat, lon: n?.lon, radius: n?.radius, sort: n ? sortMode : undefined,
                    open: $("openNow").checked ? 1 : undefined };
+
+  // Only the newest search may draw: cancel the one still running, and ignore late answers
+  searchAbort?.abort();
+  searchAbort = new AbortController();
+  const mySeq = ++searchSeq;
+
   const button = $("searchBtn");
   setBusy(button, true);
-  $("searchResults").innerHTML = skeletons();
+  if ($("resultsArea").hidden) $("searchStatus").innerHTML = skeletons();
+  else $("resultsArea").classList.add("loading");   // keep old results on screen, dimmed
   try {
-    const r = await api("search", params);
+    const r = await api("search", params, searchAbort.signal);
+    if (mySeq !== searchSeq) return;
     lastSearch = r;
     renderResults(r);
+    // On a phone the results are below the form: bring them into view
+    if (window.matchMedia("(max-width: 980px)").matches) $("searchStatus").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (e) {
-    $("searchResults").innerHTML = stateHtml("error", "alert", e.status === 400 ? "Please check your search" : "Something went wrong",
-      esc(e.message), e.status === 400 ? "" : `<button class="btn ghost" id="retry">${icon("refresh")}Try again</button>`);
+    if (e.name === "AbortError" || mySeq !== searchSeq) return;
+    showState(stateHtml("error", "alert", e.status === 400 ? "Please check your search" : "Something went wrong",
+      esc(e.message), e.status === 400 ? "" : `<button class="btn ghost" id="retry">${icon("refresh")}Try again</button>`));
     $("retry")?.addEventListener("click", () => runSearch());
-  } finally { setBusy(button, false); }
+  } finally {
+    if (mySeq === searchSeq) { setBusy(button, false); $("resultsArea").classList.remove("loading"); }
+  }
+}
+
+/** Shows a message instead of results (no results, error). */
+function showState(html) {
+  $("searchStatus").innerHTML = html;
+  $("resultsArea").hidden = true;
+}
+
+function problemHtml(r) {
+  if (!r.problem) return "";
+  const p = r.problem;
+  const said = p.symptoms.length ? ` (matched “${p.symptoms.map(esc).join("”, “")}”)` : "";
+  const alts = p.alternatives.map((a) => `<button type="button" class="example" data-cat="${esc(a.category)}">${esc(a.label)}</button>`).join("");
+  return `<div class="problem">${icon("check")}<div>Your problem looks like: <b>${esc(p.label)}</b>${said}.
+    Showing shops that can help${r.near ? ", nearest first" : ""}.</div>
+    ${alts ? `<span class="alts">Not it? ${alts}</span>` : ""}</div>`;
 }
 
 function renderResults(r) {
-  const out = $("searchResults");
   if (r.terms.length === 0) {
-    out.innerHTML = stateHtml("", "info", "Try more specific words", "Your search only has very common words (like \"the\" or \"and\").");
+    showState(stateHtml("", "info", "Try more specific words", "Your search only has very common words (like \"the\" or \"and\")."));
     return;
   }
-  let dym = "";
+  let notices = problemHtml(r);
   const sugg = Object.entries(r.suggestions || {});
   if (sugg.length) {
-    dym = `<div class="notice info">${icon("spell")}<div>Did you mean: ${sugg.map(([w, s]) => `<b>${esc(w)}</b> → ${s.map(esc).join(", ")}`).join("; ")}?
+    notices += `<div class="notice info">${icon("spell")}<div>Did you mean: ${sugg.map(([w, s]) => `<b>${esc(w)}</b> → ${s.map(esc).join(", ")}`).join("; ")}?
       <button class="btn ghost small" id="again" style="margin-left:6px">Search “${esc(r.correctedQuery)}”</button></div></div>`;
+  } else if (!r.problem && !$("category").value && r.results.length === 0) {
+    notices += `<div class="notice info">${icon("info")}<span>Tip: describe what the car does, e.g. “won't start”, “squealing brakes” or “flat tire”, or pick a service.</span></div>`;
   }
   const where = r.near ? `within ${r.near.radiusKm} km of you` : r.location ? `in ${esc(r.location)}` : "in all places";
+
   if (r.results.length === 0) {
     const actions = [];
     if (r.openNowOnly) actions.push(`<button class="btn ghost" id="showClosed">${icon("clock")}Show closed places too</button>`);
     if (r.location || r.near) actions.push(`<button class="btn ghost" id="widen">${icon("map")}${r.near ? "Search a bigger area" : "Search everywhere"}</button>`);
-    out.innerHTML = dym + stateHtml("", "search", "No places found " + (r.near ? "near you" : r.location ? "in " + r.location : ""),
-      esc(r.noResultsMessage || "Try other words."), actions.join(""));
+    showState(notices + stateHtml("", "search", "No places found " + (r.near ? "near you" : r.location ? "in " + r.location : ""),
+      esc(r.noResultsMessage || "Try other words."), actions.join("")));
     $("widen")?.addEventListener("click", () => {
       if (r.near) { const n = nearState.search; n.radius = RADII.find((x) => x > n.radius) || 50; renderNear("search"); }
       else $("location").value = "";
       runSearch();
     });
-    $("again")?.addEventListener("click", () => runSearch(r.correctedQuery));
+    bindNoticeButtons();
     $("showClosed")?.addEventListener("click", () => { $("openNow").checked = false; runSearch(); });
     return;
   }
+
+  $("searchStatus").innerHTML = notices;
+  bindNoticeButtons();
   const hasPoints = r.results.some((x) => x.lat !== undefined);
-  out.innerHTML = dym + `
-    <div class="results-head">
+  const what = r.problem ? r.problem.label : "“" + r.query + "”";
+  $("resultsHead").innerHTML = `
       <h3>${r.results.length}${r.moreResults ? "+" : ""} result${r.results.length === 1 ? "" : "s"}</h3>
-      <span class="meta">for “${esc(r.query)}” · ${esc(r.vehicle)} · ${where}${r.openNowOnly ? " · open now" : ""}</span>
+      <span class="meta">${esc(what)} · ${esc(r.vehicle)} · ${where}${r.openNowOnly ? " · open now" : ""}</span>
       <span class="spacer"></span>
       ${r.near ? `<div class="field" style="width:170px"><select id="sortSel" aria-label="Sort results" style="height:36px">
-         <option value="best" ${sortMode === "best" ? "selected" : ""}>Best match</option>
-         <option value="distance" ${sortMode === "distance" ? "selected" : ""}>Nearest first</option></select></div>` : ""}
+         <option value="distance" ${sortMode === "distance" ? "selected" : ""}>Nearest first</option>
+         <option value="best" ${sortMode === "best" ? "selected" : ""}>Best match</option></select></div>` : ""}
       ${hasPoints ? `<div class="seg view-toggle" style="width:170px;height:38px" role="group" aria-label="Show as">
          <button type="button" data-view="list" aria-pressed="${viewMode === "list"}">${icon("list", "sm")}List</button>
-         <button type="button" data-view="map" aria-pressed="${viewMode === "map"}">${icon("map", "sm")}Map</button></div>` : ""}
-    </div>
-    <div class="layout ${hasPoints ? "" : "no-map"}" id="layout" data-view="${viewMode}">
-      <div class="list" id="list">${r.results.map(resultCard).join("")}</div>
-      ${hasPoints ? `<div class="card map-wrap"><div id="map"></div></div>` : ""}
-    </div>`;
-  $("again")?.addEventListener("click", () => runSearch(r.correctedQuery));
+         <button type="button" data-view="map" aria-pressed="${viewMode === "map"}">${icon("map", "sm")}Map</button></div>` : ""}`;
+  $("layout").classList.toggle("no-map", !hasPoints);
+  $("layout").dataset.view = viewMode;
+  $("list").innerHTML = r.results.map(resultCard).join("");
+  $("resultsArea").hidden = false;
+
   $("sortSel")?.addEventListener("change", (e) => { sortMode = e.target.value; runSearch(); });
-  out.querySelectorAll(".view-toggle button").forEach((b) => b.addEventListener("click", () => {
+  $("resultsHead").querySelectorAll(".view-toggle button").forEach((b) => b.addEventListener("click", () => {
     viewMode = b.dataset.view;
     $("layout").dataset.view = viewMode;
-    out.querySelectorAll(".view-toggle button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-    if (viewMode === "map" && map) setTimeout(() => map.invalidateSize(), 30);
+    $("resultsHead").querySelectorAll(".view-toggle button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    if (viewMode === "map" && map) requestAnimationFrame(() => { map.invalidateSize(); fitMap(); });
   }));
-  out.querySelectorAll(".result").forEach((card) => {
+  $("list").querySelectorAll(".result").forEach((card) => {
     card.addEventListener("mouseenter", () => highlight(Number(card.dataset.rank), false));
     card.querySelector(".show-map")?.addEventListener("click", () => {
-      if (window.matchMedia("(max-width: 980px)").matches) out.querySelector('.view-toggle [data-view="map"]')?.click();
+      if (window.matchMedia("(max-width: 980px)").matches) $("resultsHead").querySelector('.view-toggle [data-view="map"]')?.click();
       highlight(Number(card.dataset.rank), true);
     });
   });
   if (hasPoints) drawMap(r);
+}
+
+/** "Did you mean" and "Not it? <other problem>" buttons above the results. */
+function bindNoticeButtons() {
+  $("again")?.addEventListener("click", () => runSearch(lastSearch.correctedQuery));
+  $("searchStatus").querySelectorAll("[data-cat]").forEach((b) => b.addEventListener("click", () => {
+    $("category").value = b.dataset.cat;   // the user picks the service: no more guessing
+    runSearch();
+  }));
 }
 
 function resultCard(x, i) {
@@ -751,7 +836,7 @@ function resultCard(x, i) {
   if (x.phones.length) actions.push(`<a class="btn ghost small" href="${esc(telHref(x.phones[0]))}">${icon("phone", "sm")}Call</a>`);
   if (safeUrl(x.website)) actions.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="${esc(safeUrl(x.website))}">${icon("globe", "sm")}Website</a>`);
   if (safeUrl(x.url)) actions.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="${esc(safeUrl(x.url))}">${icon("external", "sm")}${x.source === "OpenStreetMap" ? "OpenStreetMap" : "Source page"}</a>`);
-  return `<article class="card result" data-rank="${x.rank}" style="--i:${i}">
+  return `<article class="card result" data-rank="${x.rank}" style="--i:${Math.min(i, 8)}">
     <div class="r-top"><div class="rank">${x.rank}</div>
       <div class="r-title"><h4>${esc(x.title)}</h4><div class="r-sub">${esc(x.source)}</div></div>
       <div class="score"><b>${esc(x.score)}</b><span>score</span></div></div>
@@ -766,44 +851,71 @@ function resultCard(x, i) {
 }
 
 // ========================================================================== map
-let map = null, markers = {}, meMarker = null;
-function drawMap(r) {
-  const el = $("map");
-  if (!el) return;
+// The map is created ONCE. Each search only swaps the markers in one layer group,
+// so tiles stay loaded and the map moves smoothly to the new results.
+let map = null, markerLayer = null, markers = {}, mapHasView = false, pendingPoints = null;
+function ensureMap() {
+  if (map) return true;
   if (typeof L === "undefined") {
-    el.innerHTML = `<div class="map-empty">${icon("map", "lg")}<div>The map could not load (no internet connection?). The list still works.</div></div>`;
-    return;
+    $("map").innerHTML = `<div class="map-empty">${icon("map", "lg")}<div>The map could not load (no internet connection?). The list still works.</div></div>`;
+    return false;
   }
-  if (map) { map.remove(); map = null; }
-  map = L.map(el, { scrollWheelZoom: true, zoomControl: true });
+  map = L.map($("map"), { scrollWheelZoom: true, zoomControl: true });
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+  return true;
+}
+function drawMap(r) {
+  if (!ensureMap()) return;
+  markerLayer.clearLayers();
   markers = {};
   const points = [];
   r.results.filter((x) => x.lat !== undefined).forEach((x) => {
     const m = L.marker([x.lat, x.lon], { icon: L.divIcon({ className: "", html: `<div class="pin"><span>${x.rank}</span></div>`, iconSize: [30, 30], iconAnchor: [15, 30], popupAnchor: [0, -28] }) })
-      .addTo(map)
-      .bindPopup(`<b>${esc(x.title)}</b><br>${esc([x.address, x.city].filter(Boolean).join(", "))}${x.phones.length ? "<br>" + esc(x.phones[0]) : ""}`);
+      .bindPopup(`<b>${esc(x.title)}</b><br>${esc([x.address, x.city].filter(Boolean).join(", "))}${x.distanceKm !== undefined ? "<br>" + km(x.distanceKm) + " away" : ""}${x.phones.length ? "<br>" + esc(x.phones[0]) : ""}`);
     m.on("click", () => highlight(x.rank, false, true));
+    markerLayer.addLayer(m);
     markers[x.rank] = m;
     points.push([x.lat, x.lon]);
   });
   if (r.near) {
-    meMarker = L.marker([r.near.lat, r.near.lon], { icon: L.divIcon({ className: "", html: `<div class="me"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] }), zIndexOffset: 1000 })
-      .addTo(map).bindPopup("You are here");
-    L.circle([r.near.lat, r.near.lon], { radius: r.near.radiusKm * 1000, color: "#2459e0", weight: 1, fillOpacity: .05 }).addTo(map);
+    markerLayer.addLayer(L.marker([r.near.lat, r.near.lon], { icon: L.divIcon({ className: "", html: `<div class="me"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] }), zIndexOffset: 1000 })
+      .bindPopup("You are here"));
+    markerLayer.addLayer(L.circle([r.near.lat, r.near.lon], { radius: r.near.radiusKm * 1000, color: "#2459e0", weight: 1, fillOpacity: .05, interactive: false }));
     points.push([r.near.lat, r.near.lon]);
   }
-  if (points.length === 1) map.setView(points[0], 14);
-  else map.fitBounds(points, { padding: [36, 36], maxZoom: 15 });
-  setTimeout(() => map && map.invalidateSize(), 60);
+  pendingPoints = points;
+  fitMap();
+}
+/**
+ * Moves the map to the latest results. A hidden map (phone "List" view) has size
+ * 0 x 0, and Leaflet cannot compute a zoom for that, so the move waits until the
+ * map is shown. A brand-new map has no view to animate from, so it jumps once;
+ * after that it glides, stopping any glide still running from an older search.
+ */
+function fitMap() {
+  if (!map || !pendingPoints || $("map").offsetWidth === 0) return;
+  const points = pendingPoints;
+  pendingPoints = null;
+  map.invalidateSize();
+  map.stop();
+  const animate = mapHasView;
+  mapHasView = true;
+  if (points.length === 1) map.setView(points[0], 14, { animate });
+  else if (!animate) map.fitBounds(points, { padding: [36, 36], maxZoom: 15 });
+  else map.flyToBounds(points, { padding: [36, 36], maxZoom: 15, duration: 0.6 });
 }
 function highlight(rank, openPopup, scrollCard) {
   document.querySelectorAll(".result").forEach((c) => c.classList.toggle("active", Number(c.dataset.rank) === rank));
   Object.entries(markers).forEach(([k, m]) => m.getElement()?.querySelector(".pin")?.classList.toggle("active", Number(k) === rank));
   const m = markers[rank];
-  if (m && openPopup) { map.setView(m.getLatLng(), Math.max(map.getZoom(), 14), { animate: true }); m.openPopup(); }
+  if (m && openPopup) {
+    fitMap();   // in case the map was hidden until now
+    if ($("map").offsetWidth > 0) { map.stop(); map.flyTo(m.getLatLng(), Math.max(map.getZoom(), 14), { duration: 0.5 }); }
+    m.openPopup();
+  }
   if (scrollCard) document.querySelector(`.result[data-rank="${rank}"]`)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -1011,7 +1123,9 @@ async function loadHistory() {
 }
 $("historyRefresh").addEventListener("click", loadHistory);
 
+renderExamples();
 loadCategories();
+$("q").focus();
 </script>
 </body>
 </html>

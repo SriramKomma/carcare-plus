@@ -161,4 +161,62 @@ class WebApiTest {
     void constructorRejectsNull() {
         assertThrows(InvalidInputException.class, () -> new WebApi(null));
     }
+
+    // ------------------------------------------------------------- problem descriptions
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void problemDescriptionIsTurnedIntoTheService() throws Exception {
+        // "squealing when I brake" never appears on a page; the Calgary brake shop is still found
+        Map<String, Object> answer = api.search(Map.of("vehicle", "gas", "q", "my brakes are squealing"));
+
+        Map<String, Object> problem = (Map<String, Object>) answer.get("problem");
+        assertEquals("my brakes are squealing", problem.get("text"));
+        assertEquals("BRAKES", problem.get("category"));
+        assertEquals("Brake problem", problem.get("label"));
+        assertEquals(List.of("squealing"), problem.get("symptoms"));
+        assertEquals("brake problem repair", answer.get("query"), "searches the service words");
+        assertEquals("Brake problem", answer.get("category"));
+        List<Map<String, Object>> results = (List<Map<String, Object>>) answer.get("results");
+        assertEquals(CALGARY, results.get(0).get("url"));
+        assertTrue(((Map<String, List<String>>) answer.get("suggestions")).isEmpty(),
+                "no 'did you mean' for the user's own symptom words");
+    }
+
+    @Test
+    void chosenCategoryWinsOverTheDescription() throws Exception {
+        Map<String, Object> answer = api.search(Map.of("vehicle", "gas", "category", "BATTERY",
+                "q", "brakes squealing"));
+        assertNull(answer.get("problem"));
+        assertEquals("brakes squealing", answer.get("query"));
+    }
+
+    @Test
+    void plainServiceWordsAreSearchedAsTyped() throws Exception {
+        // "brake pads" is not a symptom, so the normal word search runs
+        Map<String, Object> answer = api.search(Map.of("vehicle", "gas", "q", "brake pads"));
+        assertNull(answer.get("problem"));
+        assertEquals("brake pads", answer.get("query"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void gasCarIsNeverSentToAnEvCharger() throws Exception {
+        // "need to charge my car" is EV_CHARGING, which does not apply to a gas car
+        Map<String, Object> gas = api.search(Map.of("vehicle", "gas", "q", "I need to charge my car"));
+        Map<String, Object> ev = api.search(Map.of("vehicle", "ev", "q", "I need to charge my car"));
+        assertNull(gas.get("problem"));
+        assertEquals("EV_CHARGING", ((Map<String, Object>) ev.get("problem")).get("category"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void otherPossibleProblemsAreListed() throws Exception {
+        Map<String, Object> answer = api.search(Map.of("vehicle", "gas",
+                "q", "grinding noise when braking and the engine is overheating"));
+        Map<String, Object> problem = (Map<String, Object>) answer.get("problem");
+        assertEquals("BRAKES", problem.get("category"));
+        List<Map<String, Object>> alternatives = (List<Map<String, Object>>) problem.get("alternatives");
+        assertEquals("OVERHEATING_COOLING", alternatives.get(0).get("category"));
+    }
 }

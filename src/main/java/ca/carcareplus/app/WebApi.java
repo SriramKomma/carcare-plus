@@ -21,6 +21,7 @@ import ca.carcareplus.models.GeoPoint;
 import ca.carcareplus.osm.OsmImporter;
 import ca.carcareplus.query.LevenshteinDistance;
 import ca.carcareplus.query.SpellChecker;
+import ca.carcareplus.query.SymptomMatcher;
 import ca.carcareplus.search.SearchFrequency.TermCount;
 import ca.carcareplus.search.SearchOutcome;
 import ca.carcareplus.validation.DataValidator;
@@ -114,11 +115,26 @@ public class WebApi {
      * An empty q uses the category name, like pressing Enter in the console.
      * lat/lon ("use my location") keep only places within radius km (default 10);
      * sort=distance lists the nearest first instead of the best score first.
+     * With no category, q may describe a problem ("my car won't start"): SymptomMatcher
+     * picks the service (BATTERY) and the search runs for that service's words;
+     * the answer's "problem" field says what was understood, so the page can show it.
      */
     public Map<String, Object> search(Map<String, String> params) throws StorageException {
         VehicleType vehicle = VehicleType.fromUserInput(params.get("vehicle"));
         ServiceCategory category = parseCategory(params.get("category"));
         String query = params.getOrDefault("q", "").trim();
+
+        // "My car won't start": no category chosen, so read the problem from the words
+        Map<String, Object> problem = null;
+        if (category == null && !query.isEmpty()) {
+            List<SymptomMatcher.Match> matches = matchesFor(vehicle, query);
+            if (!matches.isEmpty()) {
+                problem = problemToMap(query, matches);
+                category = matches.get(0).category();
+                // Search for the SERVICE: a shop's text says "battery", not "won't start"
+                query = ConsoleMenu.defaultQueryFor(category);
+            }
+        }
         if (query.isEmpty()) {
             query = ConsoleMenu.defaultQueryFor(category);
         }
@@ -155,6 +171,7 @@ public class WebApi {
 
         Map<String, Object> answer = new LinkedHashMap<>();
         answer.put("query", outcome.query());
+        answer.put("problem", problem);
         answer.put("vehicle", vehicle.displayName());
         answer.put("category", category == null ? "" : category.displayName());
         answer.put("location", location);
@@ -180,6 +197,33 @@ public class WebApi {
                   + " Turn off \"Open now\" to see them."
                 : noResultsMessage(request, outcome));
         return answer;
+    }
+
+    /** Symptom matches whose service applies to this vehicle (no "EV charging" for a gas car). */
+    private List<SymptomMatcher.Match> matchesFor(VehicleType vehicle, String description) {
+        List<SymptomMatcher.Match> fitting = new ArrayList<>();
+        for (SymptomMatcher.Match match : system.symptoms().match(description)) {
+            if (match.category().appliesTo(vehicle)) {
+                fitting.add(match);
+            }
+        }
+        return fitting;
+    }
+
+    /** What the page shows as "Looks like: Battery problem (you said: won't start)". */
+    private static Map<String, Object> problemToMap(String description, List<SymptomMatcher.Match> matches) {
+        SymptomMatcher.Match best = matches.get(0);
+        Map<String, Object> problem = new LinkedHashMap<>();
+        problem.put("text", description);
+        problem.put("category", best.category().name());
+        problem.put("label", best.category().displayName());
+        problem.put("symptoms", best.symptoms());
+        List<Map<String, Object>> alternatives = new ArrayList<>();
+        for (SymptomMatcher.Match other : matches.subList(1, Math.min(matches.size(), 3))) {
+            alternatives.add(Map.of("category", other.category().name(), "label", other.category().displayName()));
+        }
+        problem.put("alternatives", alternatives);
+        return problem;
     }
 
     private static String noResultsMessage(SearchRequest request, SearchOutcome outcome) {

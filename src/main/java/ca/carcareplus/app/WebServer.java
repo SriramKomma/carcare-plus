@@ -9,6 +9,8 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,15 +46,21 @@ import ca.carcareplus.live.GooglePlacesClient;
  * </pre>
  *
  * Safety: it listens on the loopback address only (127.0.0.1), so other computers
- * cannot reach it. No executor is set, so requests are handled one at a time on
- * one thread -- the search structures are not thread-safe, and one user does not
- * need more.
+ * cannot reach it.
+ *
+ * Threads: a small pool of {@value #THREADS} threads answers requests, so a slow
+ * request (a "Live nearby" call to Google can take seconds) no longer blocks the
+ * page, the map or the next search. The search structures (index, search history)
+ * are NOT thread-safe, so every route that uses them runs while holding one shared
+ * lock -- they still run one at a time, exactly as before. Only routes that touch
+ * no shared state (/api/live, the page itself) run without the lock.
  */
 public final class WebServer {
 
     private static final Logger LOG = Logger.getLogger(WebServer.class.getName());
     private static final Gson GSON = new Gson();
     static final String PAGE_RESOURCE = "/web/index.html";
+    static final int THREADS = 4;
 
     /** One API route: query parameters in, an object to send as JSON out. */
     @FunctionalInterface
@@ -61,9 +69,11 @@ public final class WebServer {
     }
 
     private final HttpServer server;
+    private final ExecutorService pool;
 
-    private WebServer(HttpServer server) {
+    private WebServer(HttpServer server, ExecutorService pool) {
         this.server = server;
+        this.pool = pool;
     }
 
     /**
@@ -85,20 +95,28 @@ public final class WebServer {
             throw new CarCareException("Could not start the web server on port " + port
                     + " (is it already in use?): " + e.getMessage(), e);
         }
+        // One lock for everything that reads or changes the search structures
+        Object searchLock = new Object();
         server.createContext("/", WebServer::servePage);
-        route(server, "/api/stats", params -> api.stats());
-        route(server, "/api/categories", api::categories);
-        route(server, "/api/search", api::search);
-        route(server, "/api/complete", api::complete);
-        route(server, "/api/spell", api::spell);
-        route(server, "/api/matrix", api::matrix);
-        route(server, "/api/pages", params -> api.pages());
-        route(server, "/api/frequency", api::frequency);
-        route(server, "/api/history", params -> api.history());
-        route(server, "/api/cities", params -> api.cities());
-        route(server, "/api/live", api::live);
+        route(server, "/api/stats", searchLock, params -> api.stats());
+        route(server, "/api/categories", searchLock, api::categories);
+        route(server, "/api/search", searchLock, api::search);
+        route(server, "/api/complete", searchLock, api::complete);
+        route(server, "/api/spell", searchLock, api::spell);
+        route(server, "/api/matrix", searchLock, api::matrix);
+        route(server, "/api/pages", searchLock, params -> api.pages());
+        route(server, "/api/frequency", searchLock, api::frequency);
+        route(server, "/api/history", searchLock, params -> api.history());
+        route(server, "/api/cities", searchLock, params -> api.cities());
+        route(server, "/api/live", null, api::live); // network call to Google; no shared state
+        ExecutorService pool = Executors.newFixedThreadPool(THREADS, task -> {
+            Thread thread = new Thread(task, "carcare-web");
+            thread.setDaemon(true); // do not keep the program alive after the server stops
+            return thread;
+        });
+        server.setExecutor(pool);
         server.start();
-        return new WebServer(server);
+        return new WebServer(server, pool);
     }
 
     public int port() {
@@ -111,9 +129,11 @@ public final class WebServer {
 
     public void stop() {
         server.stop(0);
+        pool.shutdownNow();
     }
 
-    private static void route(HttpServer server, String path, Route route) {
+    /** @param lock held while the route runs, or null for a route that shares no state */
+    private static void route(HttpServer server, String path, Object lock, Route route) {
         server.createContext(path, exchange -> {
             try (exchange) {
                 if (!"GET".equals(exchange.getRequestMethod())) {
@@ -125,8 +145,16 @@ public final class WebServer {
                     return;
                 }
                 try {
-                    Object answer = route.answer(parseQuery(exchange.getRequestURI().getRawQuery()));
-                    sendJson(exchange, 200, answer);
+                    Map<String, String> params = parseQuery(exchange.getRequestURI().getRawQuery());
+                    Object answer;
+                    if (lock == null) {
+                        answer = route.answer(params);
+                    } else {
+                        synchronized (lock) {
+                            answer = route.answer(params);
+                        }
+                    }
+                    sendJson(exchange, 200, answer); // sending happens outside the lock
                 } catch (InvalidInputException e) {
                     sendJson(exchange, 400, Map.of("error", e.getMessage()));
                 } catch (ServiceUnavailableException e) {

@@ -1,0 +1,26 @@
+# CarCare+ symptoms: what a driver might TYPE, mapped to the service that fixes it.
+#
+# Format:   CATEGORY | symptom, symptom, multi word symptom, ...
+#   CATEGORY must be a ServiceCategory name (see models/ServiceCategory.java).
+#
+# Matching (SymptomMatcher): a symptom matches when ALL its words appear in what the
+# user typed, in any order. Words are normalized by the search Tokenizer first, so
+# "won't" = "wont", "tyres" = "tire", and stop words ("the", "my"...) are ignored.
+#   "battery is dead"         matches  "dead battery"
+#   "car won't start at all"  matches  "won't start"
+# Each matched symptom adds its number of words to the category's score, so a
+# specific two-word symptom counts more than a vague one-word one.
+#
+# Written by the team from general car-care knowledge (not copied from any website).
+
+BATTERY             | won't start, wont start, will not start, not starting, doesn't start, does not start, dead battery, battery light, clicking key, needs boost, need boost, jump start, slow crank, cranks slowly, battery drains, battery died
+ELECTRICAL          | lights flicker, lights flickering, dim lights, headlight out, headlights not working, check engine light, dashboard lights, power windows, radio not working, blown fuse, burning smell wires, alternator, starter motor
+FLAT_TIRE           | flat, flat tire, puncture, tire pressure light, low tire pressure, nail tire, tire leaking, tire leak, bulge tire, pulls to one side, steering wheel shakes, vibration highway
+BRAKES              | squeal, squeals, squealing, squeak brake, squeaking brake, grinding, grinding noise, brake pedal soft, spongy pedal, pedal goes floor, car pulls braking, brake light, takes longer stop, shakes when braking
+ENGINE              | engine light, misfire, rough idle, stalls, stalling, knocking, knocking noise, loss power, oil leak, oil light, smoke exhaust, blue smoke, black smoke, loud exhaust, transmission slipping, hard shifting, check engine
+WIPERS              | wipers streak, wipers not working, wiper squeak, can't see rain, windshield washer, washer fluid, cracked windshield, chipped windshield
+BREAKDOWN_TOWING    | broke down, broken down, stuck road, stranded, need tow, needs tow, accident, locked out, keys locked, ditch, won't move, wont move
+OVERHEATING_COOLING | overheating, overheat, temperature gauge high, steam hood, smoke hood, coolant leak, sweet smell, green fluid, no heat, heater not working, ac not cold, air conditioning not working, ac blowing warm
+FUEL                | out gas, ran out fuel, fuel smell, gas smell, fuel leak, poor mileage, bad fuel economy, fuel gauge, hard start cold
+EV_MAINTENANCE      | won't charge, wont charge, not charging, charge port, charging port, reduced range, range dropped, high voltage warning, motor noise, regen not working, regenerative braking
+EV_CHARGING         | need charge, need charging, needs charging, low range, out charge, ran out charge, charge car, charging station, charger near, fast charger

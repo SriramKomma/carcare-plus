@@ -119,4 +119,21 @@ class WebServerTest {
         assertThrows(InvalidInputException.class, () -> Main.parsePort("70000"));
         assertThrows(InvalidInputException.class, () -> Main.parsePort("web"));
     }
+
+    @Test
+    void manySearchesAtOnceAreAllAnsweredAndAllCounted() throws Exception {
+        // 20 searches sent together: the pool answers them in parallel, and the shared
+        // lock makes sure no search-history update is lost (20 searches -> count 20)
+        List<java.util.concurrent.CompletableFuture<HttpResponse<String>>> pending = new java.util.ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            pending.add(client.sendAsync(HttpRequest.newBuilder(URI.create(
+                    "http://localhost:" + server.port() + "/api/search?vehicle=gas&q=towing")).GET().build(),
+                    HttpResponse.BodyHandlers.ofString()));
+        }
+        for (var future : pending) {
+            assertEquals(200, future.get(30, java.util.concurrent.TimeUnit.SECONDS).statusCode());
+        }
+        String history = get("/api/history").body();
+        assertTrue(history.contains("{\"term\":\"towing\",\"count\":20}"), history);
+    }
 }
