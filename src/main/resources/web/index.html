@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CarCare+</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2040%2040%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22carcareLogoGradient%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%233b82f6%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%231d4ed8%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%2240%22%20height%3D%2240%22%20rx%3D%2211%22%20fill%3D%22url%28%23carcareLogoGradient%29%22%2F%3E%3Cpath%20d%3D%22M11.5%2022.5l2.1-5.6a3%203%200%200%201%202.8-1.9h7.2a3%203%200%200%201%202.8%201.9l2.1%205.6%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222.2%22%20stroke-linejoin%3D%22round%22%2F%3E%3Crect%20x%3D%229%22%20y%3D%2221.8%22%20width%3D%2222%22%20height%3D%227.6%22%20rx%3D%222.6%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2213.6%22%20cy%3D%2225.6%22%20r%3D%221.5%22%20fill%3D%22%231d4ed8%22%2F%3E%3Ccircle%20cx%3D%2226.4%22%20cy%3D%2225.6%22%20r%3D%221.5%22%20fill%3D%22%231d4ed8%22%2F%3E%3Crect%20x%3D%2211%22%20y%3D%2228.6%22%20width%3D%224.2%22%20height%3D%223.4%22%20rx%3D%221.2%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%2224.8%22%20y%3D%2228.6%22%20width%3D%224.2%22%20height%3D%223.4%22%20rx%3D%221.2%22%20fill%3D%22%23fff%22%2F%3E%3Cg%20class%3D%22logo-plus%22%3E%3Ccircle%20cx%3D%2231%22%20cy%3D%2210%22%20r%3D%226.2%22%20fill%3D%22%2322c55e%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M31%207.2v5.6M28.2%2010h5.6%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.9%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <meta name="description" content="Find real vehicle repair shops and EV chargers in Ontario.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,8 +46,14 @@
            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
   .bar { display: flex; align-items: center; gap: 24px; min-height: 64px; flex-wrap: wrap; }
   .brand { display: flex; align-items: center; gap: 10px; }
-  .logo { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; color: #fff; background: var(--primary); }
-  .logo .icon { width: 19px; height: 19px; }
+  .logo { width: 38px; height: 38px; flex: none; filter: drop-shadow(0 2px 4px rgba(37, 99, 235, .25));
+          transition: transform .3s var(--ease), filter .3s var(--ease); }
+  .logo svg { display: block; }
+  .logo-plus { transform-origin: 31px 10px; transition: transform .4s var(--ease); }
+  .brand { cursor: default; }
+  .brand:hover .logo { transform: translateY(-1px) rotate(-4deg); filter: drop-shadow(0 6px 10px rgba(37, 99, 235, .3)); }
+  .brand:hover .logo-plus { transform: rotate(90deg) scale(1.12); }
+  .brand h1 .plus { color: var(--primary); }
   .brand h1 { font-size: 17px; line-height: 1.15; margin: 0; font-weight: 700; letter-spacing: -.01em; }
   .brand small { display: block; color: var(--muted); font-size: 12.5px; }
   nav.tabs { display: flex; gap: 22px; margin-left: auto; align-self: stretch; overflow-x: auto; scrollbar-width: none; }
@@ -384,6 +391,54 @@
   footer { padding-bottom: 40px; }
   footer .wrap { border-top-color: var(--line); }
   footer a:hover { text-decoration: underline; }
+
+  /* ------------------------------------------------ more hover effects
+     All short (150-300 ms) and small; the reduced-motion rule above switches them off. */
+  /* tabs: the underline grows from the centre */
+  nav.tabs button { position: relative; border-bottom: 0; }
+  nav.tabs button::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: 2px;
+                           background: var(--primary); transform: scaleX(0); transition: transform .25s var(--ease); }
+  nav.tabs button:hover::after { transform: scaleX(.6); background: var(--line-strong); }
+  nav.tabs button[aria-selected="true"]::after { transform: scaleX(1); background: var(--primary); }
+  nav.tabs button .icon { transition: transform .2s var(--ease); }
+  nav.tabs button:hover .icon { transform: translateY(-1px); }
+
+  /* buttons: icons nudge in the direction of the action */
+  .btn .icon { transition: transform .2s var(--ease); }
+  #searchBtn:hover .icon { transform: scale(1.12) rotate(-8deg); }
+  #locateBtn:hover .icon { transform: rotate(90deg); }
+  a.btn:hover .icon:has(use[href="#i-nav"]) { transform: translate(2px, -2px); }
+  a.btn:hover .icon:has(use[href="#i-phone"]) { animation: ring .5s var(--ease); }
+  .more-btn .icon { transition: transform .25s var(--ease); }
+  .more-btn[aria-expanded="true"] .icon { transform: rotate(180deg); }
+  .btn.ghost:hover { box-shadow: 0 2px 6px rgba(16, 24, 40, .08); }
+  .btn:active { transform: translateY(0) scale(.98); }
+
+  /* result cards: a blue accent bar slides in on the left */
+  .result { position: relative; overflow: hidden; }
+  .result::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--primary);
+                    transform: scaleY(0); transform-origin: top; transition: transform .25s var(--ease); }
+  .result:hover::before, .result.active::before { transform: scaleY(1); }
+  .r-title h4 { transition: color .2s; }
+  .result:hover .r-title h4 { color: var(--primary); }
+  .dist { transition: background .2s, color .2s, border-color .2s; }
+  .result:hover .dist { background: var(--primary-soft); border-color: var(--primary-line); color: var(--primary); }
+
+  /* map pins grow under the pointer */
+  .pin { transition: transform .18s var(--ease), background .18s; }
+  .leaflet-marker-icon:hover .pin { transform: rotate(-45deg) scale(1.18); background: var(--primary-hover); }
+
+  /* small things */
+  .seg button { transition: color .15s, background .15s; }
+  .seg button[aria-pressed="false"]:hover { background: rgba(255, 255, 255, .7); }
+  .tool { transition: box-shadow .2s var(--ease), border-color .2s; }
+  .tool:hover { box-shadow: var(--shadow); border-color: var(--line-strong); }
+  .guides a, footer a { background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+                        transition: background-size .25s var(--ease); }
+  .guides a:hover, footer a:hover { background-size: 100% 1px; text-decoration: none; }
+  .near-chip .icon-btn { transition: background .15s, transform .2s var(--ease); }
+  .near-chip .icon-btn:hover { transform: rotate(90deg); }
+  @keyframes ring { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 50% { transform: rotate(12deg); } 75% { transform: rotate(-6deg); } }
 </style>
 </head>
 <body>
@@ -418,14 +473,22 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
   <symbol id="i-loader" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
   <symbol id="i-car" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></symbol>
 </svg>
 
 <header>
   <div class="wrap bar">
     <div class="brand">
-      <div class="logo"><svg class="icon"><use href="#i-wrench"/></svg></div>
-      <div><h1>CarCare+</h1><small>Find real repair shops and EV chargers in Ontario</small></div>
+      <div class="logo" aria-hidden="true"><svg viewBox="0 0 40 40" width="38" height="38"><defs><linearGradient id="carcareLogoGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient></defs>
+<rect width="40" height="40" rx="11" fill="url(#carcareLogoGradient)"/>
+<path d="M11.5 22.5l2.1-5.6a3 3 0 0 1 2.8-1.9h7.2a3 3 0 0 1 2.8 1.9l2.1 5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="9" y="21.8" width="22" height="7.6" rx="2.6" fill="#fff"/>
+<circle cx="13.6" cy="25.6" r="1.5" fill="#1d4ed8"/><circle cx="26.4" cy="25.6" r="1.5" fill="#1d4ed8"/>
+<rect x="11" y="28.6" width="4.2" height="3.4" rx="1.2" fill="#fff"/><rect x="24.8" y="28.6" width="4.2" height="3.4" rx="1.2" fill="#fff"/>
+<g class="logo-plus"><circle cx="31" cy="10" r="6.2" fill="#22c55e" stroke="#fff" stroke-width="2"/>
+<path d="M31 7.2v5.6M28.2 10h5.6" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></g></svg></div>
+      <div><h1>CarCare<span class="plus">+</span></h1><small>Find real repair shops and EV chargers in Ontario</small></div>
     </div>
     <nav class="tabs" role="tablist" id="tabs">
       <button role="tab" aria-selected="true" data-tab="search"><svg class="icon sm"><use href="#i-search"/></svg>Find help</button>
@@ -866,7 +929,7 @@ function renderResults(r) {
       const panel = card.querySelector(".details");
       panel.hidden = !panel.hidden;
       e.currentTarget.setAttribute("aria-expanded", String(!panel.hidden));
-      e.currentTarget.textContent = panel.hidden ? "More" : "Less";
+      e.currentTarget.querySelector("span").textContent = panel.hidden ? "More" : "Less";
     });
     card.querySelector(".copy-btn").addEventListener("click", async () => {
       try { await navigator.clipboard.writeText(contactText(x)); toast("Contact details copied."); }
@@ -920,7 +983,7 @@ function resultCard(x, i) {
   if (x.phones.length) actions.push(`<a class="btn primary small" style="width:auto" href="${esc(telHref(x.phones[0]))}">${icon("phone", "sm")}Call</a>`);
   else if (x.emails.length) actions.push(`<a class="btn primary small" style="width:auto" href="${esc(mailtoHref(x.emails[0], x))}">${icon("mail", "sm")}Email</a>`);
   if (x.lat !== undefined) actions.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}">${icon("nav", "sm")}Directions</a>`);
-  actions.push(`<button type="button" class="btn ghost small more-btn" aria-expanded="false">More</button>`);
+  actions.push(`<button type="button" class="btn ghost small more-btn" aria-expanded="false"><span>More</span>${icon("chevron", "sm")}</button>`);
 
   return `<article class="card result" data-rank="${x.rank}" style="--i:${Math.min(i, 8)}">
     <div class="r-top"><div class="rank">${x.rank}</div>
