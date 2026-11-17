@@ -225,12 +225,34 @@
   .results-area { transition: opacity .15s var(--ease); }
   .results-area.loading { opacity: .5; pointer-events: none; }
   .layout.no-map .map-wrap { display: none; }
+  /* "hidden" must always win, even over display: grid/flex set by a class */
+  [hidden] { display: none !important; }
+  /* simple search box */
+  .search-card h2 { margin-bottom: 14px; }
+  .ask { display: flex; gap: 10px; }
+  .ask .field { flex: 1; }
+  .ask .btn { width: auto; height: 52px; padding: 0 24px; font-size: 15.5px; }
+  .where { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .where .seg { width: 220px; }
+  .where .city { flex: 1; min-width: 200px; }
+  .search-card .examples { margin-top: 12px; }
+  .more-options { margin-top: 12px; font-size: 13.5px; }
+  .more-options summary { cursor: pointer; color: var(--muted); font-weight: 600; }
+  @media (max-width: 600px) {
+    .ask { flex-direction: column; }
+    .ask .btn { width: 100%; }
+    .where .seg, .where #nearArea, .where #nearArea .btn { width: 100%; }
+  }
+  /* simple result card */
+  .r-place { color: var(--muted); font-size: 14px; margin-top: 3px; overflow-wrap: anywhere; }
+  .dist { flex: none; font-weight: 700; color: var(--primary); font-size: 15px; white-space: nowrap; }
+  .r-status { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .r-status .fact.status { font-size: 13px; }
+  .details { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); display: grid; gap: 10px; font-size: 14px; }
+  .details .who { font-size: 12.5px; color: var(--muted); }
+  .details .who a { color: var(--primary); }
+  .site-info { color: var(--muted); }
   .guides a { color: var(--primary); font-weight: 600; }
-  .contact-panel { margin-top: 12px; padding: 12px; border-radius: var(--radius-sm); background: var(--surface-2);
-                   border: 1px solid var(--line); display: grid; gap: 10px; animation: pop .14s var(--ease); }
-  .contact-panel .row-inline { gap: 8px; }
-  .contact-panel .who { font-size: 12.5px; color: var(--muted); }
-  .contact-panel .who a { color: var(--primary); }
   .guide-credit { margin-top: 4px; font-size: 12px; color: var(--muted); }
   .sk { border-radius: 6px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 37%, var(--surface-2) 63%);
         background-size: 400% 100%; animation: shimmer 1.3s ease infinite; height: 12px; margin-top: 10px; }
@@ -352,16 +374,12 @@
       <div class="logo"><svg class="icon"><use href="#i-wrench"/></svg></div>
       <div><h1>CarCare+</h1><small>Find real repair shops and EV chargers in Ontario</small></div>
     </div>
-    <div class="pills" id="pills" aria-live="polite"></div>
   </div>
   <div class="wrap">
     <nav class="tabs" role="tablist" id="tabs">
       <button role="tab" aria-selected="true" data-tab="search"><svg class="icon sm"><use href="#i-search"/></svg>Find help</button>
-      <button role="tab" aria-selected="false" data-tab="live"><svg class="icon sm"><use href="#i-live"/></svg>Live nearby</button>
-      <button role="tab" aria-selected="false" data-tab="complete"><svg class="icon sm"><use href="#i-type"/></svg>Word completion</button>
-      <button role="tab" aria-selected="false" data-tab="spell"><svg class="icon sm"><use href="#i-spell"/></svg>Spell check</button>
-      <button role="tab" aria-selected="false" data-tab="frequency"><svg class="icon sm"><use href="#i-chart"/></svg>Word frequency</button>
-      <button role="tab" aria-selected="false" data-tab="history"><svg class="icon sm"><use href="#i-history"/></svg>Search history</button>
+      <button role="tab" aria-selected="false" data-tab="live" id="liveTab" hidden><svg class="icon sm"><use href="#i-live"/></svg>Live nearby</button>
+      <button role="tab" aria-selected="false" data-tab="tools"><svg class="icon sm"><use href="#i-grid"/></svg>Course tools</button>
     </nav>
   </div>
 </header>
@@ -373,49 +391,36 @@
   <section data-panel="search">
     <div class="card search-card">
       <h2>What's wrong with your car?</h2>
-      <p class="lead">Describe the problem in your own words. CarCare+ works out which service you need and lists the nearest real shops.</p>
-      <div class="form">
-        <div class="col-9">
-          <label class="lbl" for="q">1. Describe the problem</label>
-          <div class="field q-big">
-            <svg class="icon"><use href="#i-search"/></svg>
-            <input id="q" autocomplete="off" placeholder="e.g. my car won't start" role="combobox" aria-expanded="false" aria-controls="qList" aria-autocomplete="list">
-            <ul class="ac-list" id="qList" role="listbox" hidden></ul>
-          </div>
+      <div class="ask">
+        <div class="field q-big">
+          <svg class="icon"><use href="#i-search"/></svg>
+          <input id="q" autocomplete="off" aria-label="Describe the problem" placeholder="Describe it, e.g. my car won't start" role="combobox" aria-expanded="false" aria-controls="qList" aria-autocomplete="list">
+          <ul class="ac-list" id="qList" role="listbox" hidden></ul>
         </div>
-        <div class="col-3">
-          <span class="lbl" id="vehicleLbl">Vehicle</span>
-          <div class="seg" role="group" aria-labelledby="vehicleLbl" id="vehicle">
-            <button type="button" data-v="ev" aria-pressed="true"><svg class="icon sm"><use href="#i-zap"/></svg>Electric</button>
-            <button type="button" data-v="gas" aria-pressed="false"><svg class="icon sm"><use href="#i-fuel"/></svg>Gas</button>
-          </div>
+        <button type="button" class="btn primary" id="searchBtn"><svg class="icon"><use href="#i-search"/></svg>Find shops</button>
+      </div>
+      <div class="where">
+        <div class="seg" role="group" aria-label="Vehicle" id="vehicle">
+          <button type="button" data-v="ev" aria-pressed="true"><svg class="icon sm"><use href="#i-zap"/></svg>Electric</button>
+          <button type="button" data-v="gas" aria-pressed="false"><svg class="icon sm"><use href="#i-fuel"/></svg>Gas</button>
         </div>
-        <div class="col-12 examples" id="examples">Try:</div>
-        <div class="col-3">
-          <span class="lbl">2. Where are you?</span>
-          <div class="row-inline" id="nearArea">
-            <button type="button" class="btn ghost" id="locateBtn" style="width:100%"><svg class="icon"><use href="#i-locate"/></svg>Use my location</button>
-          </div>
+        <div class="row-inline" id="nearArea">
+          <button type="button" class="btn ghost" id="locateBtn"><svg class="icon"><use href="#i-locate"/></svg>Use my location</button>
         </div>
-        <div class="col-4">
-          <label class="lbl" for="location">or city / postal code</label>
-          <div class="field">
-            <svg class="icon"><use href="#i-pin"/></svg>
-            <input id="location" list="cityList" autocomplete="off" placeholder="e.g. Windsor or N9B 3P4">
-            <datalist id="cityList"></datalist>
-          </div>
-        </div>
-        <div class="col-3">
-          <label class="lbl" for="category">Service (optional)</label>
-          <div class="field"><svg class="icon"><use href="#i-car"/></svg><select id="category"></select></div>
-        </div>
-        <div class="col-2">
-          <button type="button" class="btn primary" id="searchBtn"><svg class="icon"><use href="#i-search"/></svg>Find shops</button>
-        </div>
-        <div class="col-12">
-          <label class="switch"><input type="checkbox" id="openNow"><span class="track"></span>Open now only</label>
+        <div class="field city">
+          <svg class="icon"><use href="#i-pin"/></svg>
+          <input id="location" list="cityList" autocomplete="off" aria-label="City or postal code" placeholder="or type a city / postal code">
+          <datalist id="cityList"></datalist>
         </div>
       </div>
+      <div class="examples" id="examples">Try:</div>
+      <details class="more-options">
+        <summary>More options</summary>
+        <div class="row-inline" style="margin-top:10px;gap:16px">
+          <div class="field" style="min-width:260px"><svg class="icon"><use href="#i-car"/></svg><select id="category" aria-label="Service"></select></div>
+          <label class="switch"><input type="checkbox" id="openNow"><span class="track"></span>Open now only</label>
+        </div>
+      </details>
     </div>
 
     <!-- Built once; each search only fills these in, so the map is never rebuilt -->
@@ -426,6 +431,7 @@
         <div class="list" id="list"></div>
         <div class="card map-wrap"><div id="map"></div></div>
       </div>
+      <div id="guidesArea" style="margin-top:14px"></div>
     </div>
   </section>
 
@@ -458,7 +464,7 @@
   </section>
 
   <!-- ========================================================= Word completion -->
-  <section data-panel="complete" hidden>
+  <section data-panel="tools" hidden>
     <div class="card tool">
       <h2><svg class="icon"><use href="#i-type"/></svg>Word completion</h2>
       <p class="lead">A Trie of every word in the pages. The most frequent words come first.</p>
@@ -469,7 +475,7 @@
   </section>
 
   <!-- ============================================================= Spell check -->
-  <section data-panel="spell" hidden>
+  <section data-panel="tools" hidden>
     <div class="card tool">
       <h2><svg class="icon"><use href="#i-spell"/></svg>Spell check</h2>
       <p class="lead">Levenshtein edit distance against the vocabulary from the text files. Up to 1 edit for words of 4 letters or fewer, otherwise 2.</p>
@@ -493,7 +499,7 @@
   </section>
 
   <!-- ========================================================== Word frequency -->
-  <section data-panel="frequency" hidden>
+  <section data-panel="tools" hidden>
     <div class="card tool">
       <h2><svg class="icon"><use href="#i-chart"/></svg>Word frequency on a page</h2>
       <p class="lead">Counts come from the inverted index. Leave the word empty to see the page's most frequent words.</p>
@@ -509,7 +515,7 @@
   </section>
 
   <!-- ========================================================== Search history -->
-  <section data-panel="history" hidden>
+  <section data-panel="tools" hidden>
     <div class="card tool">
       <div class="row-inline" style="justify-content:space-between">
         <h2><svg class="icon"><use href="#i-history"/></svg>Search history</h2>
@@ -523,7 +529,7 @@
 
 <footer>
   <div class="wrap">
-    <span>CarCare+ · COMP 8547 course project</span>
+    <span>CarCare+ · COMP 8547 course project · <span class="site-info" id="siteInfo"></span></span>
     <span id="credits">Map tiles and shop data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL) · Guides: Natural Resources Canada (non-commercial reproduction)</span>
   </div>
 </footer>
@@ -581,7 +587,7 @@ function km(d) { return d < 1 ? Math.round(d * 1000) + " m" : d.toFixed(1).repla
 document.querySelectorAll("#tabs button").forEach((btn) => btn.addEventListener("click", () => {
   document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
   document.querySelectorAll("[data-panel]").forEach((p) => p.hidden = p.dataset.panel !== btn.dataset.tab);
-  if (btn.dataset.tab === "history") loadHistory();
+  if (btn.dataset.tab === "tools") loadHistory();
   if (btn.dataset.tab === "search" && map) setTimeout(() => { map.invalidateSize(); fitMap(); }, 50);
   if (btn.dataset.tab === "live") loadLiveIntro();
 }));
@@ -590,18 +596,15 @@ document.querySelectorAll("#tabs button").forEach((btn) => btn.addEventListener(
 let stats = null;
 api("stats").then((s) => {
   stats = s;
-  const pills = [`<span class="pill">${icon("file", "sm")}${s.pages.toLocaleString()} places · ${s.words.toLocaleString()} words</span>`];
-  if (s.osmPages > 0) pills.push(`<span class="pill ok">${icon("check", "sm")}Real data · OpenStreetMap</span>`);
-  else pills.push(`<span class="pill warn">${icon("alert", "sm")}Test pages only</span>`);
-  pills.push(s.liveEnabled ? `<span class="pill ok">${icon("live", "sm")}Live search on</span>`
-                           : `<span class="pill">${icon("live", "sm")}Live search off</span>`);
-  $("pills").innerHTML = pills.join("");
+  $("siteInfo").textContent = `${s.pages.toLocaleString()} places and pages · ${s.words.toLocaleString()} words indexed`
+    + (s.osmPages > 0 ? "" : " · test pages only");
+  $("liveTab").hidden = !s.liveEnabled;   // without a Google key the tab could only show setup steps
   if (s.realPages === 0) {
     $("dataNotice").innerHTML = `<div class="notice warn">${icon("alert")}<div><b>No real shop data loaded yet.</b>
       The results below come from 6 invented test pages. To load real Ontario shops, stop the server and run
       <code>mvn -q compile exec:java -Dexec.args="osm"</code> then <code>-Dexec.args="parse"</code>, then start the web page again.</div></div>`;
   }
-}).catch((e) => { $("pills").innerHTML = `<span class="pill warn">${icon("alert", "sm")}${esc(e.message)}</span>`; });
+}).catch((e) => { $("siteInfo").textContent = e.message; });
 
 api("cities").then((cities) => {
   $("cityList").innerHTML = cities.map((c) => `<option value="${esc(c.city)}">${c.pages} place${c.pages === 1 ? "" : "s"}</option>`).join("");
@@ -633,7 +636,7 @@ function renderNear(which) {
   const area = which === "search" ? $("nearArea") : $("lnearArea");
   const n = nearState[which];
   if (!n) {
-    area.innerHTML = `<button type="button" class="btn ghost" id="${which === "search" ? "locateBtn" : "llocateBtn"}" style="width:100%">${icon("locate")}Use my location</button>`;
+    area.innerHTML = `<button type="button" class="btn ghost" id="${which === "search" ? "locateBtn" : "llocateBtn"}">${icon("locate")}Use my location</button>`;
     area.querySelector("button").addEventListener("click", () => locate(which));
     return;
   }
@@ -651,8 +654,8 @@ $("llocation").addEventListener("input", () => { if (nearState.live && $("llocat
 // ================================================================== find help
 let vehicle = "ev";
 const EXAMPLES = {
-  ev:  ["my car won't start", "flat tire", "brakes are squealing", "I need to charge my car", "won't charge at home"],
-  gas: ["my car won't start", "flat tire", "brakes are squealing", "engine is overheating", "check engine light is on"]
+  ev:  ["my car won't start", "flat tire", "I need to charge my car"],
+  gas: ["my car won't start", "flat tire", "brakes are squealing"]
 };
 function renderExamples() {
   $("examples").innerHTML = "Try:" + EXAMPLES[vehicle].map((t) => `<button type="button" class="example">${esc(t)}</button>`).join("");
@@ -733,11 +736,9 @@ function showState(html) {
 function problemHtml(r) {
   if (!r.problem) return "";
   const p = r.problem;
-  const said = p.symptoms.length ? ` (matched “${p.symptoms.map(esc).join("”, “")}”)` : "";
   const alts = p.alternatives.map((a) => `<button type="button" class="example" data-cat="${esc(a.category)}">${esc(a.label)}</button>`).join("");
-  return `<div class="problem">${icon("check")}<div>Your problem looks like: <b>${esc(p.label)}</b>${said}.
-    Showing ${p.category === "EV_CHARGING" ? "charging stations" : "shops that can help"}${r.near ? ", nearest first" : ""}.</div>
-    ${alts ? `<span class="alts">Not it? ${alts}</span>` : ""}</div>`;
+  return `<div class="problem">${icon("check")}<div>Looks like: <b>${esc(p.label)}</b></div>
+    ${alts ? `<span class="alts">Not right? ${alts}</span>` : ""}</div>`;
 }
 
 /** Crawled information pages for the problem, with the credit their terms ask for. */
@@ -745,9 +746,9 @@ function guidesHtml(r) {
   const guides = (r.guides || []).filter((g) => safeUrl(g.url));
   if (!guides.length) return "";
   const gov = guides.some((g) => g.source === "Natural Resources Canada");
-  return `<div class="notice info guides">${icon("file")}<div><b>Helpful guides:</b> ${guides.map((g) =>
+  return `<div class="notice info guides">${icon("file")}<div><b>Helpful reading:</b> ${guides.map((g) =>
       `<a href="${esc(safeUrl(g.url))}" target="_blank" rel="noopener">${esc(g.title.replace(/ - Natural Resources Canada$/, ""))}</a>`).join(" · ")}
-    <div class="guide-credit">${gov ? "Source: Natural Resources Canada. Copies of official works published by the Government of Canada, used for a non-commercial student project; not produced in affiliation with, or with the endorsement of, the Government of Canada."
+    <div class="guide-credit">${gov ? "Copies of official works by Natural Resources Canada (Government of Canada); not affiliated with or endorsed by the Government of Canada."
                                     : "Source: " + esc(guides[0].source) + "."}</div></div></div>`;
 }
 
@@ -756,7 +757,7 @@ function renderResults(r) {
     showState(stateHtml("", "info", "Try more specific words", "Your search only has very common words (like \"the\" or \"and\")."));
     return;
   }
-  let notices = problemHtml(r) + guidesHtml(r);
+  let notices = problemHtml(r);
   const sugg = Object.entries(r.suggestions || {});
   if (sugg.length) {
     notices += `<div class="notice info">${icon("spell")}<div>Did you mean: ${sugg.map(([w, s]) => `<b>${esc(w)}</b> → ${s.map(esc).join(", ")}`).join("; ")}?
@@ -764,13 +765,13 @@ function renderResults(r) {
   } else if (!r.problem && !$("category").value && r.results.length === 0) {
     notices += `<div class="notice info">${icon("info")}<span>Tip: describe what the car does, e.g. “won't start”, “squealing brakes” or “flat tire”, or pick a service.</span></div>`;
   }
-  const where = r.near ? `within ${r.near.radiusKm} km of you` : r.location ? `in ${esc(r.location)}` : "in all places";
+  const where = r.near ? `within ${r.near.radiusKm} km` : r.location ? `in ${esc(r.location)}` : "found";
 
   if (r.results.length === 0) {
     const actions = [];
     if (r.openNowOnly) actions.push(`<button class="btn ghost" id="showClosed">${icon("clock")}Show closed places too</button>`);
     if (r.location || r.near) actions.push(`<button class="btn ghost" id="widen">${icon("map")}${r.near ? "Search a bigger area" : "Search everywhere"}</button>`);
-    showState(notices + stateHtml("", "search", "No places found " + (r.near ? "near you" : r.location ? "in " + r.location : ""),
+    showState(notices + guidesHtml(r) + stateHtml("", "search", "No places found " + (r.near ? "near you" : r.location ? "in " + r.location : ""),
       esc(r.noResultsMessage || "Try other words."), actions.join("")));
     $("widen")?.addEventListener("click", () => {
       if (r.near) { const n = nearState.search; n.radius = RADII.find((x) => x > n.radius) || 50; renderNear("search"); }
@@ -785,10 +786,9 @@ function renderResults(r) {
   $("searchStatus").innerHTML = notices;
   bindNoticeButtons();
   const hasPoints = r.results.some((x) => x.lat !== undefined);
-  const what = r.problem ? r.problem.label : "“" + r.query + "”";
+  const noun = r.problem?.category === "EV_CHARGING" || $("category").value === "EV_CHARGING" ? "charging station" : "place";
   $("resultsHead").innerHTML = `
-      <h3>${r.results.length}${r.moreResults ? "+" : ""} result${r.results.length === 1 ? "" : "s"}</h3>
-      <span class="meta">${esc(what)} · ${esc(r.vehicle)} · ${where}${r.openNowOnly ? " · open now" : ""}</span>
+      <h3>${r.results.length}${r.moreResults ? "+" : ""} ${noun}${r.results.length === 1 ? "" : "s"} ${where}${r.openNowOnly ? ", open now" : ""}</h3>
       <span class="spacer"></span>
       ${r.near ? `<div class="field" style="width:170px"><select id="sortSel" aria-label="Sort results" style="height:36px">
          <option value="distance" ${sortMode === "distance" ? "selected" : ""}>Nearest first</option>
@@ -799,6 +799,7 @@ function renderResults(r) {
   $("layout").classList.toggle("no-map", !hasPoints);
   $("layout").dataset.view = viewMode;
   $("list").innerHTML = r.results.map(resultCard).join("");
+  $("guidesArea").innerHTML = guidesHtml(r);
   $("resultsArea").hidden = false;
 
   $("sortSel")?.addEventListener("change", (e) => { sortMode = e.target.value; runSearch(); });
@@ -810,10 +811,11 @@ function renderResults(r) {
   }));
   $("list").querySelectorAll(".result").forEach((card) => {
     const x = r.results.find((item) => item.rank === Number(card.dataset.rank));
-    card.querySelector(".contact-btn").addEventListener("click", (e) => {
-      const panel = card.querySelector(".contact-panel");
+    card.querySelector(".more-btn").addEventListener("click", (e) => {
+      const panel = card.querySelector(".details");
       panel.hidden = !panel.hidden;
       e.currentTarget.setAttribute("aria-expanded", String(!panel.hidden));
+      e.currentTarget.textContent = panel.hidden ? "More" : "Less";
     });
     card.querySelector(".copy-btn").addEventListener("click", async () => {
       try { await navigator.clipboard.writeText(contactText(x)); toast("Contact details copied."); }
@@ -837,23 +839,6 @@ function bindNoticeButtons() {
   }));
 }
 
-/**
- * "Contact" panel: everything opens on the driver's own phone or email app
- * (tel:, mailto:), so CarCare+ never sends a message itself.
- */
-function contactPanel(x) {
-  const rows = [];
-  x.phones.forEach((p) => rows.push(`<a class="btn ghost small" href="${esc(telHref(p))}">${icon("phone", "sm")}Call ${esc(p)}</a>`));
-  x.emails.forEach((m) => rows.push(`<a class="btn ghost small" href="${esc(mailtoHref(m, x))}">${icon("mail", "sm")}Email ${esc(m)}</a>`));
-  if (safeUrl(x.website)) rows.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="${esc(safeUrl(x.website))}">${icon("globe", "sm")}Website</a>`);
-  rows.push(`<button type="button" class="btn ghost small copy-btn">${icon("file", "sm")}Copy details</button>`);
-  const none = x.phones.length || x.emails.length ? "" :
-    `<div class="who">No phone or email is listed for this place. Try its website, the OpenStreetMap page or directions.</div>`;
-  const fromSite = safeUrl(x.contactSource)
-    ? ` Extra details found on <a href="${esc(safeUrl(x.contactSource))}" target="_blank" rel="noopener">the shop's own website</a>.` : "";
-  return `${none}<div class="row-inline">${rows.join("")}</div>
-    <div class="who">Contact details from ${esc(x.source)}.${fromSite} Calls and emails go from your own phone or email app.</div>`;
-}
 /** mailto: with the problem already written, so the driver only has to press Send. */
 function mailtoHref(email, x) {
   const r = lastSearch || {};
@@ -869,46 +854,59 @@ function contactText(x) {
     .filter(Boolean).join("\n");
 }
 
+/**
+ * One shop, kept simple: name, distance, address, open/closed, and the two things a
+ * driver needs most (Call, Directions). Everything else is behind "More".
+ * Calls and emails open the driver's own phone or email app (tel:, mailto:), so
+ * CarCare+ never sends a message itself.
+ */
 function resultCard(x, i) {
+  const place = [x.address, x.city].filter(Boolean).join(", ");
+  const av = x.availability || { state: "UNKNOWN", label: "Hours unknown – call ahead" };
+  const avClass = { OPEN: "open", CLOSING_SOON: "soon", CLOSED: "closed", UNKNOWN: "unknown" }[av.state];
+
+  const actions = [];
+  if (x.phones.length) actions.push(`<a class="btn primary small" style="width:auto" href="${esc(telHref(x.phones[0]))}">${icon("phone", "sm")}Call</a>`);
+  else if (x.emails.length) actions.push(`<a class="btn primary small" style="width:auto" href="${esc(mailtoHref(x.emails[0], x))}">${icon("mail", "sm")}Email</a>`);
+  if (x.lat !== undefined) actions.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}">${icon("nav", "sm")}Directions</a>`);
+  actions.push(`<button type="button" class="btn ghost small more-btn" aria-expanded="false">More</button>`);
+
+  return `<article class="card result" data-rank="${x.rank}" style="--i:${Math.min(i, 8)}">
+    <div class="r-top"><div class="rank">${x.rank}</div>
+      <div class="r-title"><h4>${esc(x.title)}</h4>${place ? `<div class="r-place">${esc(place)}</div>` : ""}</div>
+      ${x.distanceKm !== undefined ? `<div class="dist">${km(x.distanceKm)}</div>` : ""}</div>
+    <div class="r-status"><div class="fact status ${avClass}">${icon("clock", "sm")}<span>${esc(av.label)}</span></div>
+      ${x.testFixture ? `<span class="tag fixture">${icon("alert", "sm")}Test page</span>` : ""}</div>
+    <div class="actions">${actions.join("")}</div>
+    <div class="details" hidden>${detailsHtml(x)}</div>
+  </article>`;
+}
+
+/** The "More" panel: every contact, website, hours, map, and how the rank was computed. */
+function detailsHtml(x) {
+  const buttons = [];
+  x.phones.forEach((p) => buttons.push(`<a class="btn ghost small" href="${esc(telHref(p))}">${icon("phone", "sm")}${esc(p)}</a>`));
+  x.emails.forEach((m) => buttons.push(`<a class="btn ghost small" href="${esc(mailtoHref(m, x))}">${icon("mail", "sm")}${esc(m)}</a>`));
+  if (safeUrl(x.website)) buttons.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="${esc(safeUrl(x.website))}">${icon("globe", "sm")}Website</a>`);
+  if (x.lat !== undefined) buttons.push(`<button type="button" class="btn ghost small show-map">${icon("map", "sm")}Show on map</button>`);
+  buttons.push(`<button type="button" class="btn ghost small copy-btn">${icon("file", "sm")}Copy details</button>`);
+
+  const hours = (x.weeklyHours || []).length
+    ? `<div class="hours-list">${x.weeklyHours.map((line, d) => `<div class="${d === (new Date().getDay() + 6) % 7 ? "today" : ""}">${esc(line)}</div>`).join("")}</div>`
+    : x.openingHours ? `<div>${esc(x.openingHours)}</div>` : "";
+  const none = x.phones.length || x.emails.length ? "" : `<div class="who">No phone or email is listed for this place.</div>`;
+  const fromSite = safeUrl(x.contactSource)
+    ? ` Extra details found on <a href="${esc(safeUrl(x.contactSource))}" target="_blank" rel="noopener">the shop's own website</a>.` : "";
+  const source = safeUrl(x.url) ? `<a href="${esc(safeUrl(x.url))}" target="_blank" rel="noopener">${esc(x.source)}</a>` : esc(x.source);
   const parts = x.breakdown.split(" = ")[0].split(" + ").map((p) =>
     `<span class="chip${p.includes("+") ? " bonus" : ""}">${esc(p)}</span>`).join("");
   const counts = Object.entries(x.termCounts).map(([t, c]) => `${esc(t)} ×${c}`).join(", ");
-  const place = [x.address, x.city].filter(Boolean).join(", ");
-  const tags = [];
-  if (x.testFixture) tags.push(`<span class="tag fixture">${icon("alert", "sm")}Test page</span>`);
-  const av = x.availability || { state: "UNKNOWN", label: "Hours unknown – call ahead" };
-  const avClass = { OPEN: "open", CLOSING_SOON: "soon", CLOSED: "closed", UNKNOWN: "unknown" }[av.state];
-  if (x.distanceKm !== undefined) tags.push(`<span class="tag dist">${icon("nav", "sm")}${km(x.distanceKm)}</span>`);
-  (x.categories || []).slice(0, 3).forEach((c) => tags.push(`<span class="tag">${esc(c)}</span>`));
-  const facts = [];
-  // Location first, then whether the shop is open there, then the postal code on its own line
-  if (place) facts.push(`<div class="fact">${icon("pin", "sm")}<span>${esc(place)}</span></div>`);
-  facts.push(`<div class="fact status ${avClass}">${icon("clock", "sm")}<span>${esc(av.label)}</span></div>`);
-  if (x.postalCodes.length) facts.push(`<div class="fact">${icon("mail", "sm")}<span>Postal code: ${esc(x.postalCodes.join(", "))}</span></div>`);
-  if (x.openingHours && !(x.weeklyHours || []).length) facts.push(`<div class="fact">${icon("clock", "sm")}<span>${esc(x.openingHours)}</span></div>`);
-  if (x.phones.length) facts.push(`<div class="fact">${icon("phone", "sm")}<span>${x.phones.map((p) => `<a href="${esc(telHref(p))}">${esc(p)}</a>`).join(", ")}</span></div>`);
-  if (x.emails.length) facts.push(`<div class="fact">${icon("msg", "sm")}<span>${x.emails.map((m) => `<a href="mailto:${esc(m)}">${esc(m)}</a>`).join(", ")}</span></div>`);
-  const actions = [];
-  const canContact = x.phones.length || x.emails.length;
-  actions.push(`<button type="button" class="btn ${canContact ? "primary" : "ghost"} small contact-btn" style="width:auto" aria-expanded="false">${icon("msg", "sm")}Contact</button>`);
-  if (x.lat !== undefined) {
-    actions.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}">${icon("nav", "sm")}Directions</a>`);
-    actions.push(`<button type="button" class="btn ghost small show-map">${icon("map", "sm")}Show on map</button>`);
-  }
-  if (safeUrl(x.url)) actions.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="${esc(safeUrl(x.url))}">${icon("external", "sm")}${x.source === "OpenStreetMap" ? "OpenStreetMap" : "Source page"}</a>`);
-  return `<article class="card result" data-rank="${x.rank}" style="--i:${Math.min(i, 8)}">
-    <div class="r-top"><div class="rank">${x.rank}</div>
-      <div class="r-title"><h4>${esc(x.title)}</h4><div class="r-sub">${esc(x.source)}</div></div>
-      <div class="score"><b>${esc(x.score)}</b><span>score</span></div></div>
-    ${tags.length ? `<div class="tags">${tags.join("")}</div>` : ""}
-    ${facts.length ? `<div class="facts">${facts.join("")}</div>` : ""}
-    ${actions.length ? `<div class="actions">${actions.join("")}</div>` : ""}
-    <div class="contact-panel" hidden>${contactPanel(x)}</div>
-    ${(x.weeklyHours || []).length ? `<details class="why"><summary>Weekly hours</summary><div class="hours-list">${
-      x.weeklyHours.map((line, d) => `<div class="${d === (new Date().getDay() + 6) % 7 ? "today" : ""}">${esc(line)}</div>`).join("")}</div></details>` : ""}
-    <details class="why"><summary>Why this rank</summary>
-      <div class="chips">${parts}</div><div style="margin-top:6px;color:var(--muted)">Word counts: ${counts}</div></details>
-  </article>`;
+
+  return `${none}<div class="row-inline">${buttons.join("")}</div>
+    ${hours}
+    <div class="who">Details from ${source}.${fromSite} Calls and emails go from your own phone or email app.</div>
+    <details class="why"><summary>Why this rank (score ${esc(x.score)})</summary>
+      <div class="chips">${parts}</div><div style="margin-top:6px;color:var(--muted)">Word counts: ${counts}</div></details>`;
 }
 
 // ========================================================================== map
