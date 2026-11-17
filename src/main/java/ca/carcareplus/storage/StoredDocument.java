@@ -50,7 +50,8 @@ record StoredDocument(
         Double latitude,
         Double longitude,
         String openingHours,
-        String website) {
+        String website,
+        String contactSource) {
 
     private static final Logger LOG = Logger.getLogger(StoredDocument.class.getName());
 
@@ -87,7 +88,8 @@ record StoredDocument(
                 doc.hasLocation() ? doc.getLocation().latitude() : null,
                 doc.hasLocation() ? doc.getLocation().longitude() : null,
                 doc.getOpeningHours(),
-                doc.getWebsite());
+                doc.getWebsite(),
+                doc.getContactSource());
     }
 
     /**
@@ -135,6 +137,7 @@ record StoredDocument(
         }
         doc.setOpeningHours(openingHours);
         doc.setWebsite(website);
+        doc.setContactSource(contactSource); // null in files saved before this field existed -> ""
         return doc;
     }
 

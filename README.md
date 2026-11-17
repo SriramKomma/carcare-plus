@@ -44,6 +44,7 @@ Run with `mvn -q compile exec:java -Dexec.args="<command>"`. With no command, th
 | `crawl` | List the sources in `config/sources.txt` |
 | `crawl "<source>" [maxPages]` | Crawl one source and save raw HTML, e.g. `crawl "Natural Resources Canada"` |
 | `fixtures` | Load the invented test pages as raw pages |
+| `contacts [maxSites]` | Visit each shop's own website (from OpenStreetMap) and keep only phones/emails found there, in `data/contacts/contacts.json` (then run `parse`) |
 | `osm` | Download Ontario car-repair shops, tyre shops, EV chargers and places from OpenStreetMap into `data/osm/` (then run `parse`) |
 | `parse` | Turn all saved raw pages into documents (full rebuild) |
 | `search ev\|gas <words> [location=<place>]` | One search without the menu |
@@ -148,6 +149,7 @@ src/test/resources/             HTML and text fixtures used only by tests
 
 - The crawler reads and obeys each site's `robots.txt` (`Disallow`, `Crawl-delay`), waits between requests (the longer of the source's delay — 3 s for every configured source, never below 1 s — and robots.txt `Crawl-delay`), and stops a source after repeated 403/429 answers. It never bypasses bot protection.
 - Only sites whose terms allow reuse are active in `config/sources.txt` (Natural Resources Canada: non-commercial reproduction allowed with credit; the page shows that credit under each guide). A test (`CrawlConfigTest`) fails if a restricted site is switched back on.
+- Contact scraping (`crawler/ContactScraper`) visits only a shop's **own** website: robots.txt obeyed with the crawler's rules, at most the homepage and one "contact" page, 3 s between requests. It keeps only phone numbers and emails (our regex extractor plus `tel:`/`mailto:` links), never page text. Social media, directories and websites shared by several shops (chains) are skipped; toll-free head-office numbers give way to local ones, and job/no-reply addresses are dropped. The web page's **Contact** button only opens the driver's own phone or email app (`tel:`, `mailto:` with the problem filled in) — CarCare+ never sends messages itself.
 - The OpenStreetMap download rejects answers that were cut short (fewer elements than all of Ontario must have) and downloads them again on the next run. Some networks are refused by the public Overpass servers (HTTP 406); run `osm` from another network then.
 - Test pages are invented and flagged `testFixture = true`; they are never presented as real businesses.
 - OpenStreetMap data is used under the ODbL; the app shows "© OpenStreetMap contributors" wherever OSM places appear. The download is two requests per run, and the files stay out of Git (`data/osm/`).

@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 
+import ca.carcareplus.crawler.ContactScraper;
+import ca.carcareplus.crawler.ContactStore;
 import ca.carcareplus.crawler.CrawlConfig;
 import ca.carcareplus.crawler.CrawlResult;
 import ca.carcareplus.crawler.HttpPageFetcher;
@@ -61,6 +63,7 @@ public class Main {
     static final Path CATEGORIES_FILE = Path.of("config", "categories.txt");
     static final Path FIXTURES_DIR = Path.of("fixtures", "html");
     static final Path OSM_DIR = Path.of("data", "osm");
+    static final Path CONTACTS_FILE = Path.of("data", "contacts", "contacts.json");
     static final Path BENCHMARK_FILE = Path.of("docs", "performance-results.md");
 
     public static void main(String[] args) {
@@ -79,6 +82,7 @@ public class Main {
                 case "help" -> printUsage();
                 case "web" -> runWeb(args);
                 case "osm" -> runOsm(args);
+                case "contacts" -> runContacts(args);
                 case "crawl" -> runCrawl(args);
                 case "fixtures" -> runFixtures();
                 case "parse" -> runParse();
@@ -110,6 +114,7 @@ public class Main {
         System.out.println("  crawl \"<source>\" [maxPages]  crawl one source and save raw HTML");
         System.out.println("  fixtures                     load the invented test pages (fixtures/html)");
         System.out.println("  osm [server]                 download Ontario repair shops from OpenStreetMap (then: parse)");
+        System.out.println("  contacts [maxSites]          find phones/emails on the shops' own websites (then: parse)");
         System.out.println("  parse                        turn saved raw pages into searchable documents");
         System.out.println("  search ev|gas <words> [location=<place>]");
         System.out.println("  complete <start of a word>   word completion");
@@ -194,6 +199,49 @@ public class Main {
         System.out.println("Data (c) OpenStreetMap contributors, ODbL 1.0 - https://www.openstreetmap.org/copyright");
     }
 
+    /**
+     * Visits each shop's own website (see ContactScraper) and saves what it finds
+     * after every shop, so stopping and starting again loses nothing.
+     */
+    private static void runContacts(String[] args) throws CarCareException {
+        int maxSites = args.length >= 2 ? parsePageLimit(args[1]) : Integer.MAX_VALUE;
+        List<ServiceDocument> shops = new OsmImporter(ServiceCategorizer.loadFile(CATEGORIES_FILE)).load(OSM_DIR);
+        if (shops.isEmpty()) {
+            System.out.println("No OpenStreetMap shops yet. Run 'osm' first.");
+            return;
+        }
+        ContactStore store = new ContactStore(CONTACTS_FILE);
+        java.util.Map<String, ContactScraper.Contact> contacts = store.load();
+        List<ContactScraper.Site> sites = ContactScraper.selectSites(shops, contacts.keySet());
+        if (sites.size() > maxSites) {
+            sites = sites.subList(0, maxSites);
+        }
+        if (sites.isEmpty()) {
+            System.out.println("Every shop website has been checked already (" + contacts.size() + " in "
+                    + CONTACTS_FILE + "). Delete that file to check again.");
+            return;
+        }
+        System.out.println("Visiting " + sites.size() + " shop websites: robots.txt obeyed, at most 2 pages each, "
+                + "3 s between requests (about " + Math.max(1, sites.size() * 7 / 60) + " min).");
+        System.out.println("Only each shop's own site; chains, social media and directories are skipped.");
+        ContactScraper scraper = new ContactScraper(new HttpPageFetcher(WebCrawler.USER_AGENT));
+        int found = 0;
+        for (ContactScraper.Site site : sites) {
+            ContactScraper.Contact contact = scraper.scrape(site);
+            contacts.put(contact.shopUrl(), contact);
+            store.save(contacts);
+            if (contact.found()) {
+                found++;
+                System.out.println("  found  " + site.website() + "  " + String.join(", ", contact.phones())
+                        + (contact.emails().isEmpty() ? "" : "  " + String.join(", ", contact.emails())));
+            } else {
+                System.out.println("  none   " + site.website() + "  (" + contact.note() + ")");
+            }
+        }
+        System.out.println("Found details on " + found + " of " + sites.size() + " sites. Saved in " + CONTACTS_FILE
+                + ". Next: parse");
+    }
+
     private static void runCrawl(String[] args) throws CarCareException {
         List<CrawlConfig> configs = CrawlConfig.loadFile(SOURCES_FILE);
         if (args.length < 2) {
@@ -234,11 +282,15 @@ public class Main {
         ServiceCategorizer categorizer = ServiceCategorizer.loadFile(CATEGORIES_FILE);
         HTMLParser parser = new HTMLParser(categorizer);
         List<ServiceDocument> osmShops = new OsmImporter(categorizer).load(OSM_DIR);
+        int withContacts = ContactScraper.applyTo(osmShops, new ContactStore(CONTACTS_FILE).load());
         ParsePipeline.ParseReport report = new ParsePipeline(new RawPageStore(RAW_PAGES_DIR), parser, PARSED_DIR)
                 .parseSources(sources, osmShops);
         System.out.println(report);
         if (!osmShops.isEmpty()) {
             System.out.println("Including " + osmShops.size() + " OpenStreetMap places. " + OsmImporter.ATTRIBUTION);
+            if (withContacts > 0) {
+                System.out.println(withContacts + " shops got extra phone/email details from their own websites.");
+            }
         }
         if (report.pagesRead() == 0) {
             System.out.println("Nothing to parse. Run 'osm', 'fixtures' or 'crawl' (when approved) first.");

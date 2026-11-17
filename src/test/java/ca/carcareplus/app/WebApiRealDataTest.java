@@ -226,4 +226,13 @@ class WebApiRealDataTest {
         Map<String, Object> words = guideApi.search(params("vehicle", "gas", "q", "brake pads"));
         assertTrue(((List<Object>) words.get("guides")).isEmpty(), "no service known -> no guides");
     }
+
+    @Test
+    void everyResultSaysWhereExtraContactDetailsCameFrom() throws Exception {
+        // "" for the sample shops: no contacts were scraped for them
+        for (Map<String, Object> result : results(api.search(params("vehicle", "gas", "q", "my brakes are squealing",
+                "lat", LAT, "lon", LON, "radius", "25")))) {
+            assertEquals("", result.get("contactSource"), String.valueOf(result.get("title")));
+        }
+    }
 }

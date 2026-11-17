@@ -317,6 +317,7 @@ public class WebApi {
         OpeningHours hours = OpeningHours.parse(doc.getOpeningHours());
         item.put("weeklyHours", hours == null ? List.of() : hours.weeklySchedule());
         item.put("website", doc.getWebsite());
+        item.put("contactSource", doc.getContactSource()); // "" unless details came from the shop's own site
         List<String> categories = new ArrayList<>();
         doc.getCategories().forEach(c -> categories.add(c.displayName()));
         item.put("categories", categories);

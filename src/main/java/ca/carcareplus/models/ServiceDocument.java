@@ -57,6 +57,8 @@ public class ServiceDocument {
     private GeoPoint location;
     private String openingHours = "";
     private String website = "";
+    /** Page on the shop's own website where extra phones/emails were found; "" if none. */
+    private String contactSource = "";
 
     /** Used only by the JSON library when loading saved documents (Phase 6). */
     private ServiceDocument() {
@@ -320,6 +322,15 @@ public class ServiceDocument {
 
     public void setWebsite(String website) {
         this.website = clean(website);
+    }
+
+    /** The shop-website page the scraped contact details came from, or "". */
+    public String getContactSource() {
+        return contactSource;
+    }
+
+    public void setContactSource(String contactSource) {
+        this.contactSource = clean(contactSource);
     }
 
     public boolean isTestFixture() {

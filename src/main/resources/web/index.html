@@ -226,6 +226,11 @@
   .results-area.loading { opacity: .5; pointer-events: none; }
   .layout.no-map .map-wrap { display: none; }
   .guides a { color: var(--primary); font-weight: 600; }
+  .contact-panel { margin-top: 12px; padding: 12px; border-radius: var(--radius-sm); background: var(--surface-2);
+                   border: 1px solid var(--line); display: grid; gap: 10px; animation: pop .14s var(--ease); }
+  .contact-panel .row-inline { gap: 8px; }
+  .contact-panel .who { font-size: 12.5px; color: var(--muted); }
+  .contact-panel .who a { color: var(--primary); }
   .guide-credit { margin-top: 4px; font-size: 12px; color: var(--muted); }
   .sk { border-radius: 6px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 37%, var(--surface-2) 63%);
         background-size: 400% 100%; animation: shimmer 1.3s ease infinite; height: 12px; margin-top: 10px; }
@@ -804,6 +809,16 @@ function renderResults(r) {
     if (viewMode === "map" && map) requestAnimationFrame(() => { map.invalidateSize(); fitMap(); });
   }));
   $("list").querySelectorAll(".result").forEach((card) => {
+    const x = r.results.find((item) => item.rank === Number(card.dataset.rank));
+    card.querySelector(".contact-btn").addEventListener("click", (e) => {
+      const panel = card.querySelector(".contact-panel");
+      panel.hidden = !panel.hidden;
+      e.currentTarget.setAttribute("aria-expanded", String(!panel.hidden));
+    });
+    card.querySelector(".copy-btn").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(contactText(x)); toast("Contact details copied."); }
+      catch { toast("Could not copy. Select the details and copy them by hand."); }
+    });
     card.addEventListener("mouseenter", () => highlight(Number(card.dataset.rank), false));
     card.querySelector(".show-map")?.addEventListener("click", () => {
       if (window.matchMedia("(max-width: 980px)").matches) $("resultsHead").querySelector('.view-toggle [data-view="map"]')?.click();
@@ -820,6 +835,38 @@ function bindNoticeButtons() {
     $("category").value = b.dataset.cat;   // the user picks the service: no more guessing
     runSearch();
   }));
+}
+
+/**
+ * "Contact" panel: everything opens on the driver's own phone or email app
+ * (tel:, mailto:), so CarCare+ never sends a message itself.
+ */
+function contactPanel(x) {
+  const rows = [];
+  x.phones.forEach((p) => rows.push(`<a class="btn ghost small" href="${esc(telHref(p))}">${icon("phone", "sm")}Call ${esc(p)}</a>`));
+  x.emails.forEach((m) => rows.push(`<a class="btn ghost small" href="${esc(mailtoHref(m, x))}">${icon("mail", "sm")}Email ${esc(m)}</a>`));
+  if (safeUrl(x.website)) rows.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="${esc(safeUrl(x.website))}">${icon("globe", "sm")}Website</a>`);
+  rows.push(`<button type="button" class="btn ghost small copy-btn">${icon("file", "sm")}Copy details</button>`);
+  const none = x.phones.length || x.emails.length ? "" :
+    `<div class="who">No phone or email is listed for this place. Try its website, the OpenStreetMap page or directions.</div>`;
+  const fromSite = safeUrl(x.contactSource)
+    ? ` Extra details found on <a href="${esc(safeUrl(x.contactSource))}" target="_blank" rel="noopener">the shop's own website</a>.` : "";
+  return `${none}<div class="row-inline">${rows.join("")}</div>
+    <div class="who">Contact details from ${esc(x.source)}.${fromSite} Calls and emails go from your own phone or email app.</div>`;
+}
+/** mailto: with the problem already written, so the driver only has to press Send. */
+function mailtoHref(email, x) {
+  const r = lastSearch || {};
+  const problem = r.problem ? `${r.problem.text} (${r.problem.label})` : (r.category || r.query || "");
+  const body = [`Hello ${x.title},`, "", "I found your shop on CarCare+.",
+    r.vehicle ? `Vehicle: ${r.vehicle}` : "", problem ? `Problem: ${problem}` : "", "",
+    "Could you let me know if you can help, and when I could bring the car in?", "", "Thank you"]
+    .filter((line, i, all) => line !== "" || all[i - 1] !== "").join("\n");
+  return `mailto:${email}?subject=${encodeURIComponent("Car problem: " + (r.problem ? r.problem.label : problem || "service request"))}&body=${encodeURIComponent(body)}`;
+}
+function contactText(x) {
+  return [x.title, [x.address, x.city].filter(Boolean).join(", "), ...x.phones, ...x.emails, safeUrl(x.website)]
+    .filter(Boolean).join("\n");
 }
 
 function resultCard(x, i) {
@@ -842,12 +889,12 @@ function resultCard(x, i) {
   if (x.phones.length) facts.push(`<div class="fact">${icon("phone", "sm")}<span>${x.phones.map((p) => `<a href="${esc(telHref(p))}">${esc(p)}</a>`).join(", ")}</span></div>`);
   if (x.emails.length) facts.push(`<div class="fact">${icon("msg", "sm")}<span>${x.emails.map((m) => `<a href="mailto:${esc(m)}">${esc(m)}</a>`).join(", ")}</span></div>`);
   const actions = [];
+  const canContact = x.phones.length || x.emails.length;
+  actions.push(`<button type="button" class="btn ${canContact ? "primary" : "ghost"} small contact-btn" style="width:auto" aria-expanded="false">${icon("msg", "sm")}Contact</button>`);
   if (x.lat !== undefined) {
-    actions.push(`<a class="btn primary small" style="width:auto" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}">${icon("nav", "sm")}Directions</a>`);
+    actions.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}">${icon("nav", "sm")}Directions</a>`);
     actions.push(`<button type="button" class="btn ghost small show-map">${icon("map", "sm")}Show on map</button>`);
   }
-  if (x.phones.length) actions.push(`<a class="btn ghost small" href="${esc(telHref(x.phones[0]))}">${icon("phone", "sm")}Call</a>`);
-  if (safeUrl(x.website)) actions.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="${esc(safeUrl(x.website))}">${icon("globe", "sm")}Website</a>`);
   if (safeUrl(x.url)) actions.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="${esc(safeUrl(x.url))}">${icon("external", "sm")}${x.source === "OpenStreetMap" ? "OpenStreetMap" : "Source page"}</a>`);
   return `<article class="card result" data-rank="${x.rank}" style="--i:${Math.min(i, 8)}">
     <div class="r-top"><div class="rank">${x.rank}</div>
@@ -856,6 +903,7 @@ function resultCard(x, i) {
     ${tags.length ? `<div class="tags">${tags.join("")}</div>` : ""}
     ${facts.length ? `<div class="facts">${facts.join("")}</div>` : ""}
     ${actions.length ? `<div class="actions">${actions.join("")}</div>` : ""}
+    <div class="contact-panel" hidden>${contactPanel(x)}</div>
     ${(x.weeklyHours || []).length ? `<details class="why"><summary>Weekly hours</summary><div class="hours-list">${
       x.weeklyHours.map((line, d) => `<div class="${d === (new Date().getDay() + 6) % 7 ? "today" : ""}">${esc(line)}</div>`).join("")}</div></details>` : ""}
     <details class="why"><summary>Why this rank</summary>

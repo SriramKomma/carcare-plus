@@ -26,3 +26,6 @@ data/search-history.txt
 
 # OpenStreetMap downloads (ODbL data, regenerated with the osm command)
 data/osm/
+
+# Contact details scraped from shop websites (regenerated with the contacts command)
+data/contacts/

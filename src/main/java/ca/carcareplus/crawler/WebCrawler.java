@@ -50,7 +50,7 @@ public class WebCrawler {
     }
 
     /** Result of reading robots.txt: the rules, plus a problem message if access is refused. */
-    private record RobotsLookup(RobotsTxtParser rules, String problem) {
+    record RobotsLookup(RobotsTxtParser rules, String problem) {
     }
 
     private final PageFetcher fetcher;
@@ -212,7 +212,7 @@ public class WebCrawler {
             if (robotsByOrigin.containsKey(origin)) {
                 continue;
             }
-            RobotsLookup lookup = fetchRobots(origin);
+            RobotsLookup lookup = fetchRobots(fetcher, origin);
             if (lookup.problem() != null) {
                 throw new CrawlException("Cannot crawl " + config.sourceName() + ": " + lookup.problem());
             }
@@ -227,7 +227,7 @@ public class WebCrawler {
         if (cached != null) {
             return cached;
         }
-        RobotsLookup lookup = fetchRobots(origin);
+        RobotsLookup lookup = fetchRobots(fetcher, origin);
         if (lookup.problem() != null) {
             LOG.warning(lookup.problem());
         }
@@ -241,8 +241,9 @@ public class WebCrawler {
      *  - 404, 410.. -> no robots.txt: everything allowed
      *  - 401, 403   -> the site refuses automated clients: do not crawl
      *  - 429, 5xx, timeout, network error -> unknown: assume nothing is allowed
+     * Static and package-private so ContactScraper follows exactly the same rules.
      */
-    private RobotsLookup fetchRobots(String origin) {
+    static RobotsLookup fetchRobots(PageFetcher fetcher, String origin) {
         FetchResult result = fetcher.fetch(origin + "/robots.txt");
         if (result.isOk()) {
             return new RobotsLookup(RobotsTxtParser.parse(result.body(), USER_AGENT), null);
