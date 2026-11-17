@@ -42,8 +42,8 @@
   :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
   /* ------------------------------------------------------------ header */
-  header { position: sticky; top: 0; z-index: 1000; background: rgba(255, 255, 255, .92);
-           backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  header { position: sticky; top: 0; z-index: 1000; background: #fff; border-bottom: 1px solid var(--line);
+           box-shadow: 0 1px 2px rgba(16, 24, 40, .03); }
   .bar { display: flex; align-items: center; gap: 24px; min-height: 64px; flex-wrap: wrap; }
   .brand { display: flex; align-items: center; gap: 10px; }
   .logo { width: 38px; height: 38px; flex: none; filter: drop-shadow(0 2px 4px rgba(37, 99, 235, .25));
@@ -438,6 +438,72 @@
   .guides a:hover, footer a:hover { background-size: 100% 1px; text-decoration: none; }
   .near-chip .icon-btn { transition: background .15s, transform .2s var(--ease); }
   .near-chip .icon-btn:hover { transform: rotate(90deg); }
+  /* ------------------------------------------------ landing area */
+  .search-card { position: relative; overflow: hidden;
+                 background: radial-gradient(600px 220px at 100% 0%, #eef4ff 0%, rgba(238, 244, 255, 0) 70%),
+                             radial-gradient(400px 200px at 0% 100%, #f0fdf4 0%, rgba(240, 253, 244, 0) 70%), var(--surface); }
+  .eyebrow { display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+             color: var(--primary); background: var(--primary-soft); border: 1px solid var(--primary-line);
+             padding: 3px 10px; border-radius: 999px; margin-bottom: 10px; }
+  .search-card h2 { margin-bottom: 6px; font-size: 28px; }
+  .search-card .sub { margin: 0 0 20px; color: var(--muted); max-width: 640px; }
+  .q-big:hover > input:not(:focus) { box-shadow: 0 0 0 4px rgba(37, 99, 235, .06); }
+  .sec-title { font-size: 15px; font-weight: 600; margin: 30px 2px 12px; color: var(--text); }
+
+  /* problem tiles: soft coloured icon; on hover the card lifts, the icon fills, the arrow slides in */
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .tile { --tone: var(--primary); --tone-soft: var(--primary-soft);
+          display: flex; align-items: center; gap: 14px; text-align: left; padding: 16px; cursor: pointer;
+          background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm);
+          font: inherit; color: var(--text); animation: rise .35s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 45ms);
+          transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s; }
+  .tile:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--tone) 35%, white); }
+  .tile:active { transform: translateY(-1px) scale(.99); }
+  .tile-icon { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
+               background: var(--tone-soft); color: var(--tone); transition: background .2s, color .2s, transform .3s var(--ease); }
+  .tile:hover .tile-icon { background: var(--tone); color: #fff; transform: rotate(-6deg) scale(1.05); }
+  .tile-text { flex: 1; min-width: 0; display: grid; }
+  .tile-text b { font-weight: 600; }
+  .tile-text small { color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tile-go { color: var(--tone); opacity: 0; transform: translateX(-6px); transition: opacity .2s, transform .2s var(--ease); }
+  .tile:hover .tile-go { opacity: 1; transform: none; }
+  .tone-blue { --tone: #2563eb; --tone-soft: #eff4ff; }
+  .tone-slate { --tone: #475467; --tone-soft: #f2f4f7; }
+  .tone-red { --tone: #d92d20; --tone-soft: #fef3f2; }
+  .tone-orange { --tone: #e04f16; --tone-soft: #fef6ee; }
+  .tone-amber { --tone: #b54708; --tone-soft: #fffaeb; }
+  .tone-green { --tone: #079455; --tone-soft: #ecfdf3; }
+  .tone-violet { --tone: #6941c6; --tone-soft: #f4f3ff; }
+
+  /* how it works: the number fills and the icon moves on hover */
+  .steps3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .step { position: relative; padding: 18px; background: var(--surface); border: 1px solid var(--line);
+          border-radius: var(--radius); transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s; }
+  .step:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--line-strong); }
+  .step > .icon { color: var(--primary); width: 22px; height: 22px; transition: transform .3s var(--ease); }
+  .step:hover > .icon { transform: translateY(-2px) scale(1.1); }
+  .step h4 { margin: 10px 0 4px; font-size: 15px; font-weight: 600; }
+  .step p { margin: 0; color: var(--muted); font-size: 13.5px; }
+  .step-n { position: absolute; top: 14px; right: 14px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
+            font-size: 12px; font-weight: 700; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line);
+            transition: background .2s, color .2s, border-color .2s; }
+  .step:hover .step-n { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+  /* course tools in a grid */
+  .tools-head { margin: 4px 2px 16px; }
+  .tools-head h2 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
+  .tools-head .sub { margin: 4px 0 0; color: var(--muted); }
+  .tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+  .tools-grid .tool { margin: 0; }
+  .tools-grid .tool.wide { grid-column: 1 / -1; }
+  .tool h2 .icon { width: 34px; height: 34px; padding: 7px; border-radius: 10px; background: var(--primary-soft);
+                   transition: background .2s, color .2s, transform .3s var(--ease); }
+  .tool:hover h2 .icon { background: var(--primary); color: #fff; transform: rotate(-6deg); }
+
+  @media (max-width: 900px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps3 { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .tools-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 600px) { .tiles { grid-template-columns: 1fr; } .search-card h2 { font-size: 23px; } }
+
   @keyframes ring { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 50% { transform: rotate(12deg); } 75% { transform: rotate(-6deg); } }
 </style>
 </head>
@@ -473,6 +539,14 @@
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
   <symbol id="i-loader" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2"/><path d="M6 12h4M8 10v4M13 12h3"/></symbol>
+  <symbol id="i-tire" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M12 3v5.5M12 15.5V21M3 12h5.5M15.5 12H21"/></symbol>
+  <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="M19.5 7.5a9.5 9.5 0 0 1 0 9"/><path d="M8.5 8.5l.01 0M15.5 15.5l.01 0M8.5 15.5l.01 0M15.5 8.5l.01 0"/></symbol>
+  <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M14 14.76V4.5a2.5 2.5 0 0 0-5 0v10.26a4.5 4.5 0 1 0 5 0z"/><path d="M11.5 9v7"/></symbol>
+  <symbol id="i-engine" viewBox="0 0 24 24"><path d="M5 10h2V8h3V6h4v2h3l2 2h2v6h-2l-2 2H9l-2-2H5z"/><path d="M2 11v4M12 11v3"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 2v5M15 2v5"/><path d="M6 7h12v4a6 6 0 0 1-12 0z"/><path d="M12 17v5"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24"><path d="M1 6h13v10H1z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="5.5" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
   <symbol id="i-car" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></symbol>
 </svg>
@@ -504,7 +578,9 @@
   <!-- =============================================================== Find help -->
   <section data-panel="search">
     <div class="card search-card">
+      <span class="eyebrow">Roadside help for Ontario drivers</span>
       <h2>What's wrong with your car?</h2>
+      <p class="sub">Describe it in your own words. CarCare+ works out which service you need and finds the nearest shops that can fix it.</p>
       <div class="ask">
         <div class="field q-big">
           <svg class="icon"><use href="#i-search"/></svg>
@@ -527,7 +603,6 @@
           <datalist id="cityList"></datalist>
         </div>
       </div>
-      <div class="examples" id="examples">Try:</div>
       <details class="more-options">
         <summary>More options</summary>
         <div class="row-inline" style="margin-top:10px;gap:16px">
@@ -535,6 +610,21 @@
           <label class="switch"><input type="checkbox" id="openNow"><span class="track"></span>Open now only</label>
         </div>
       </details>
+    </div>
+
+    <!-- Shown until the first search -->
+    <div id="startArea">
+      <h3 class="sec-title">Common problems</h3>
+      <div class="tiles" id="tiles"></div>
+      <h3 class="sec-title">How it works</h3>
+      <div class="steps3">
+        <div class="step"><span class="step-n">1</span><svg class="icon"><use href="#i-search"/></svg>
+          <h4>Describe the problem</h4><p>Type what the car is doing, like "won't start" or "squealing brakes".</p></div>
+        <div class="step"><span class="step-n">2</span><svg class="icon"><use href="#i-pin"/></svg>
+          <h4>Find shops nearby</h4><p>CarCare+ matches the problem to a service and lists the closest real shops.</p></div>
+        <div class="step"><span class="step-n">3</span><svg class="icon"><use href="#i-phone"/></svg>
+          <h4>Contact in one tap</h4><p>Call, email or get directions straight from the result.</p></div>
+      </div>
     </div>
 
     <!-- Built once; each search only fills these in, so the map is never rebuilt -->
@@ -577,8 +667,13 @@
     <div id="liveResults"></div>
   </section>
 
-  <!-- ========================================================= Word completion -->
+  <!-- ============================================================ Course tools -->
   <section data-panel="tools" hidden>
+    <div class="tools-head">
+      <h2>Course tools</h2>
+      <p class="sub">The data structures and algorithms behind the search, each one you can try on the real pages.</p>
+    </div>
+    <div class="tools-grid">
     <div class="card tool">
       <h2><svg class="icon"><use href="#i-type"/></svg>Word completion</h2>
       <p class="lead">A Trie of every word in the pages. The most frequent words come first.</p>
@@ -586,11 +681,7 @@
       <div class="field"><svg class="icon"><use href="#i-type"/></svg><input id="prefix" autocomplete="off" placeholder="e.g. bat"></div>
       <div class="out" id="completeOut"></div>
     </div>
-  </section>
-
-  <!-- ============================================================= Spell check -->
-  <section data-panel="tools" hidden>
-    <div class="card tool">
+<div class="card tool">
       <h2><svg class="icon"><use href="#i-spell"/></svg>Spell check</h2>
       <p class="lead">Levenshtein edit distance against the vocabulary from the text files. Up to 1 edit for words of 4 letters or fewer, otherwise 2.</p>
       <div class="form">
@@ -600,7 +691,7 @@
       </div>
       <div class="out" id="spellOut"></div>
     </div>
-    <div class="card tool">
+    <div class="card tool wide">
       <h2><svg class="icon"><use href="#i-grid"/></svg>Edit-distance table</h2>
       <p class="lead">The dynamic-programming matrix. Highlighted cells show one cheapest path.</p>
       <div class="form">
@@ -610,11 +701,7 @@
       </div>
       <div class="out" id="matrixOut"></div>
     </div>
-  </section>
-
-  <!-- ========================================================== Word frequency -->
-  <section data-panel="tools" hidden>
-    <div class="card tool">
+<div class="card tool">
       <h2><svg class="icon"><use href="#i-chart"/></svg>Word frequency on a page</h2>
       <p class="lead">Counts come from the inverted index. Leave the word empty to see the page's most frequent words.</p>
       <div class="form">
@@ -626,17 +713,14 @@
       </div>
       <div class="out" id="freqOut"></div>
     </div>
-  </section>
-
-  <!-- ========================================================== Search history -->
-  <section data-panel="tools" hidden>
-    <div class="card tool">
+<div class="card tool">
       <div class="row-inline" style="justify-content:space-between">
         <h2><svg class="icon"><use href="#i-history"/></svg>Search history</h2>
         <button class="btn ghost small" id="historyRefresh"><svg class="icon sm"><use href="#i-refresh"/></svg>Refresh</button>
       </div>
       <p class="lead">How often each word has been searched (saved in data/search-history.txt).</p>
       <div class="out" id="historyOut"></div>
+    </div>
     </div>
   </section>
 </main>
@@ -767,14 +851,26 @@ $("llocation").addEventListener("input", () => { if (nearState.live && $("llocat
 
 // ================================================================== find help
 let vehicle = "ev";
-const EXAMPLES = {
-  ev:  ["my car won't start", "flat tire", "I need to charge my car"],
-  gas: ["my car won't start", "flat tire", "brakes are squealing"]
+// Common problems: one click types the description and searches (SymptomMatcher does the rest)
+const COMMON = [
+  { title: "Won't start", text: "my car won't start", icon: "battery", tone: "blue" },
+  { title: "Flat tire", text: "flat tire", icon: "tire", tone: "slate" },
+  { title: "Brake noise", text: "brakes are squealing", icon: "disc", tone: "red" },
+  { title: "Overheating", text: "engine is overheating", icon: "thermo", tone: "orange" },
+  { title: "Warning light", text: "check engine light is on", icon: "engine", tone: "amber" }
+];
+const LAST_TILE = {
+  ev:  { title: "Need to charge", text: "I need to charge my car", icon: "plug", tone: "green" },
+  gas: { title: "Need a tow", text: "my car broke down, need a tow", icon: "truck", tone: "violet" }
 };
-function renderExamples() {
-  $("examples").innerHTML = "Try:" + EXAMPLES[vehicle].map((t) => `<button type="button" class="example">${esc(t)}</button>`).join("");
-  $("examples").querySelectorAll(".example").forEach((b) => b.addEventListener("click", () => {
-    $("q").value = b.textContent; $("category").value = ""; runSearch();
+function renderTiles() {
+  $("tiles").innerHTML = [...COMMON, LAST_TILE[vehicle]].map((t, i) =>
+    `<button type="button" class="tile tone-${t.tone}" data-text="${esc(t.text)}" style="--i:${i}">
+       <span class="tile-icon">${icon(t.icon)}</span>
+       <span class="tile-text"><b>${esc(t.title)}</b><small>“${esc(t.text)}”</small></span>
+       <span class="tile-go">${icon("arrow", "sm")}</span></button>`).join("");
+  $("tiles").querySelectorAll(".tile").forEach((b) => b.addEventListener("click", () => {
+    $("q").value = b.dataset.text; $("category").value = ""; runSearch();
   }));
 }
 async function loadCategories() {
@@ -791,7 +887,7 @@ document.querySelectorAll("#vehicle button").forEach((btn) => btn.addEventListen
   if (vehicle === btn.dataset.v) return;
   vehicle = btn.dataset.v;
   document.querySelectorAll("#vehicle button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
-  renderExamples();
+  renderTiles();
   await loadCategories();
   if (lastSearch) runSearch();   // show the same search for the other vehicle straight away
 }));
@@ -820,6 +916,7 @@ async function runSearch(queryOverride) {
   searchAbort = new AbortController();
   const mySeq = ++searchSeq;
 
+  $("startArea").hidden = true;   // the landing blocks make room for the results
   const button = $("searchBtn");
   setBusy(button, true);
   if ($("resultsArea").hidden) $("searchStatus").innerHTML = skeletons();
@@ -1296,7 +1393,7 @@ async function loadHistory() {
 }
 $("historyRefresh").addEventListener("click", loadHistory);
 
-renderExamples();
+renderTiles();
 loadCategories();
 $("q").focus();
 </script>
