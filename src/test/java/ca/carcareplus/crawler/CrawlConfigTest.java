@@ -119,4 +119,13 @@ class CrawlConfigTest {
         List<CrawlConfig> configs = CrawlConfig.loadFile(Path.of("config", "sources.txt"));
         assertFalse(configs.isEmpty());
     }
+
+    @Test
+    void onlySitesWhoseTermsAllowCopyingAreActive() throws Exception {
+        // Terms-of-use decision of 2026-11-17 (PROJECT_PLAN.md section 10): the sites whose
+        // terms forbid copying must stay commented out; NRCan's terms allow non-commercial use.
+        List<String> domains = CrawlConfig.loadFile(Path.of("config", "sources.txt")).stream()
+                .map(CrawlConfig::allowedDomain).toList();
+        assertEquals(List.of("natural-resources.canada.ca"), domains);
+    }
 }

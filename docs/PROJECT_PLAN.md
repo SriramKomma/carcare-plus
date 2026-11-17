@@ -606,7 +606,9 @@ Have a recorded backup and screenshots in case live demo fails; never crawl live
 | jsoup, Gson | Both **approved** (added 2026-11-11) |
 | Crawler-per-student interpretation | **Needs instructor clarification** |
 | AI assistance & disclosure | **Needs course-policy check** |
-| Sources: Fountain Tire, Electrify Canada (+ Kal Tire services, NRCan, FLO) | robots.txt verified 2026-10-31; **ToS still to read** |
+| Sources: Fountain Tire, Electrify Canada (+ Kal Tire services, NRCan, FLO) | robots.txt verified 2026-10-31; Fountain Tire / Electrify Canada / Kal Tire **disabled** 2026-11-17 (terms restrict copying) |
+| Real data = OpenStreetMap shops + crawl of Natural Resources Canada driver pages only | **Confirmed** by user 2026-11-17. NRCan terms (corporate/terms-conditions) allow non-commercial reproduction with credit and a no-endorsement note; first real crawl 2026-11-17: 13 pages |
+| Problem described in free text -> service via `config/symptoms.txt` (`SymptomMatcher`), nearest shops first | **Confirmed** by user 2026-11-17 |
 | Drop login/GPS/ETA/booking | **Confirmed** (our scope decision) |
 | Plurals: fixed `WORD_FORMS` list in `Tokenizer` (not a stemmer, not a blind "strip s" rule) | **Confirmed** by user 2026-11-11 |
 | Search uses OR (any term) + ranking; vehicle type is a hard filter; category/location are score bonuses | Our design (2026-11-11) |

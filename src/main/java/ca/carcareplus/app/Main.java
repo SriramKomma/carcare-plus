@@ -180,8 +180,16 @@ public class Main {
             System.out.println("All parts are in " + OSM_DIR + ". Next: parse");
         } else {
             System.out.println("Still missing: " + String.join("; ", report.failed()));
-            System.out.println("The servers are busy. Run 'osm' again later: only the missing parts are downloaded."
-                    + " You can already run 'parse' to use the parts you have.");
+            String reasons = String.join(" ", report.failed());
+            if (reasons.contains("HTTP 406") || reasons.contains("HTTP 403")) {
+                // The server refuses this network itself; waiting will not help
+                System.out.println("A server refused this network (HTTP 406/403). Run 'osm' again from another"
+                        + " network, e.g. campus Wi-Fi or a phone hotspot.");
+            } else {
+                System.out.println("The servers are busy or cut the answer short. Run 'osm' again later:"
+                        + " only the missing or incomplete parts are downloaded.");
+            }
+            System.out.println("You can already run 'parse' to use the parts you have.");
         }
         System.out.println("Data (c) OpenStreetMap contributors, ODbL 1.0 - https://www.openstreetmap.org/copyright");
     }

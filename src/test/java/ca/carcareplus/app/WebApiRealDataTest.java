@@ -181,4 +181,49 @@ class WebApiRealDataTest {
         List<String> cities = api.cities().stream().map(c -> (String) c.get("city")).toList();
         assertEquals(List.of("Tecumseh", "Toronto", "Windsor"), cities);
     }
+
+    // ------------------------------------------------------------- helpful guides
+
+    /** The OSM sample shops plus one crawled information page (no address). */
+    private WebApi apiWithGuide() throws CarCareException {
+        ServiceCategorizer categorizer = ServiceCategorizer.loadFile(Path.of("config", "categories.txt"));
+        RawPageStore raw = new RawPageStore(dir.resolve("raw-guides"));
+        raw.save(new ca.carcareplus.models.CrawledPage("https://guides.carcareplus.invalid/brake-care", "Test Guides",
+                0, 200, "text/html", """
+                <html><head><title>Brake care for drivers</title></head><body>
+                <h1>Brake care</h1><p>Squealing brakes usually mean worn brake pads. Brake repair is cheaper
+                when the brake pads are replaced early. Have the brake fluid checked every year.</p></body></html>
+                """, java.time.Instant.parse("2026-11-17T12:00:00Z")));
+        Path parsed = dir.resolve("parsed-guides");
+        new ParsePipeline(raw, new HTMLParser(categorizer), parsed).parseSources(List.of("Test Guides"),
+                new OsmImporter(categorizer).load(Path.of("src", "test", "resources", "osm")));
+        return new WebApi(SearchSystem.load(parsed, dir.resolve("history-guides.txt")));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void problemSearchNearMeShowsShopsAndAGuideSeparately() throws Exception {
+        Map<String, Object> answer = apiWithGuide().search(params("vehicle", "gas", "q", "my brakes are squealing",
+                "lat", LAT, "lon", LON, "radius", "25", "sort", "distance"));
+
+        // the guide has no address, so it is never listed as a place near you...
+        for (Map<String, Object> result : results(answer)) {
+            assertTrue(result.containsKey("lat"), "only places with a position: " + result.get("title"));
+        }
+        // ...but it is offered as a guide for the detected problem
+        List<Map<String, Object>> guides = (List<Map<String, Object>>) answer.get("guides");
+        assertEquals(1, guides.size());
+        assertEquals("Brake care for drivers", guides.get(0).get("title"));
+        assertEquals("Test Guides", guides.get(0).get("source"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void guidesOnlyForTheMatchingService() throws Exception {
+        WebApi guideApi = apiWithGuide();
+        Map<String, Object> tire = guideApi.search(params("vehicle", "gas", "q", "flat tire", "lat", LAT, "lon", LON));
+        assertTrue(((List<Object>) tire.get("guides")).isEmpty(), "a brake guide is not offered for a flat tire");
+        Map<String, Object> words = guideApi.search(params("vehicle", "gas", "q", "brake pads"));
+        assertTrue(((List<Object>) words.get("guides")).isEmpty(), "no service known -> no guides");
+    }
 }

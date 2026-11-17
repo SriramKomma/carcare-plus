@@ -47,6 +47,9 @@ public class WebApi {
     /** Longest word for the edit-distance table (a bigger table is unreadable anyway). */
     static final int MAX_MATRIX_WORD = 20;
 
+    /** Information pages shown under the shops ("Helpful guides"). */
+    static final int GUIDES_SHOWN = 2;
+
     /** Most results the page shows at once. */
     static final int PAGE_RESULTS = 20;
 
@@ -185,6 +188,7 @@ public class WebApi {
             results.add(resultToMap(rank++, result, near, clock));
         }
         answer.put("results", results);
+        answer.put("guides", guidesFor(category, outcome.terms()));
         answer.put("moreResults", outcome.candidateCount() > shown.size() + closedHidden);
         answer.put("openNowOnly", openNowOnly);
         answer.put("closedHidden", closedHidden);
@@ -197,6 +201,45 @@ public class WebApi {
                   + " Turn off \"Open now\" to see them."
                 : noResultsMessage(request, outcome));
         return answer;
+    }
+
+    /**
+     * Crawled information pages (they have no address, so a "near me" search never
+     * lists them as places) about the chosen or detected service. Ranked by how often
+     * the search words occur in them, using the inverted index: O(G * t) for G
+     * candidate pages and t search words.
+     */
+    private List<Map<String, Object>> guidesFor(ServiceCategory category, List<String> terms) {
+        List<Map<String, Object>> guides = new ArrayList<>();
+        if (category == null || category == ServiceCategory.OTHER) {
+            return guides;
+        }
+        record Scored(ServiceDocument doc, int count) {
+        }
+        List<Scored> scored = new ArrayList<>();
+        for (ServiceDocument doc : system.documents()) {
+            if (doc.hasLocation() || doc.isTestFixture() || !doc.hasId() || !doc.hasCategory(category)) {
+                continue;
+            }
+            int count = 0;
+            for (String term : terms) {
+                count += system.index().termFrequency(term, doc.getId());
+            }
+            if (count > 0) {
+                scored.add(new Scored(doc, count));
+            }
+        }
+        scored.sort((a, b) -> b.count() != a.count() ? Integer.compare(b.count(), a.count())
+                : a.doc().getTitle().compareTo(b.doc().getTitle()));
+        for (Scored item : scored.subList(0, Math.min(GUIDES_SHOWN, scored.size()))) {
+            Map<String, Object> guide = new LinkedHashMap<>();
+            guide.put("title", item.doc().getTitle());
+            guide.put("url", item.doc().getUrl());
+            guide.put("source", item.doc().getSourceName());
+            guide.put("description", item.doc().getDescription());
+            guides.add(guide);
+        }
+        return guides;
     }
 
     /** Symptom matches whose service applies to this vehicle (no "EV charging" for a gas car). */

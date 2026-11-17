@@ -129,6 +129,14 @@ class SymptomMatcherTest {
     }
 
     @Test
+    void rejectsSymptomThatTheTokenizerMakesIdentical() {
+        // "won't start" and "wont start" both become [wont, start]: counting both doubles the score
+        InvalidInputException e = assertThrows(InvalidInputException.class,
+                () -> SymptomMatcher.fromLines(List.of("BATTERY | won't start, wont start")));
+        assertTrue(e.getMessage().contains("same as"), e.getMessage());
+    }
+
+    @Test
     void rejectsCategoryWithNoSymptoms() {
         assertThrows(InvalidInputException.class, () -> SymptomMatcher.fromLines(List.of("BRAKES | , ,")));
     }

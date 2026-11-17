@@ -133,6 +133,13 @@ public final class SymptomMatcher {
                 // e.g. "the" -- only stop words, so it would match every description
                 throw new InvalidInputException("symptom '" + text + "' has no searchable words.");
             }
+            for (Symptom earlier : symptoms) {
+                if (earlier.words().equals(words)) {
+                    // e.g. "won't start" and "wont start": the Tokenizer makes them the same,
+                    // and counting both would double the score
+                    throw new InvalidInputException("symptom '" + text + "' is the same as '" + earlier.text() + "'.");
+                }
+            }
             symptoms.add(new Symptom(text, List.copyOf(words)));
         }
         if (symptoms.isEmpty()) {

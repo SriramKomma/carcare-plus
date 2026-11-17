@@ -191,4 +191,78 @@ class OverpassDownloaderTest {
         assertTrue(OverpassDownloader.PUBLIC_ENDPOINTS.stream().noneMatch(u -> u.contains("mail.ru")),
                 "its certificate is not trusted by Java");
     }
+
+    // ------------------------------------------------------------- cut-off answers
+
+    /** An Overpass answer with n nodes. */
+    private static String nodes(int n) {
+        StringBuilder json = new StringBuilder("{\"elements\": [");
+        for (int i = 0; i < n; i++) {
+            json.append(i == 0 ? "" : ",").append("{\"type\": \"node\", \"id\": ").append(i).append("}");
+        }
+        return json.append("]}").toString();
+    }
+
+    @Test
+    void cutOffAnswerIsNotSavedAndIsReportedAsIncomplete(@TempDir Path dir) throws Exception {
+        // What happened on 2026-11-17: "200 OK", no error message, but far too few shops
+        AtomicInteger calls = new AtomicInteger();
+        String server = fake(calls, (call, q) -> new Object[] {200, nodes(isChargers(q) ? 3 : 10)});
+
+        OverpassDownloader.Report report = new OverpassDownloader(List.of(server), Duration.ofMillis(10), 5)
+                .downloadOntario(dir);
+
+        assertFalse(Files.exists(dir.resolve(OverpassDownloader.CHARGERS_FILE)), "3 < 5: not saved");
+        assertTrue(Files.exists(dir.resolve(OverpassDownloader.REPAIRS_FILE)));
+        assertEquals(1, report.failed().size());
+        assertTrue(report.failed().get(0).contains("only 3 elements"), report.failed().toString());
+    }
+
+    @Test
+    void incompleteFileOnDiskIsDownloadedAgainNotSkipped(@TempDir Path dir) throws Exception {
+        Files.writeString(dir.resolve(OverpassDownloader.REPAIRS_FILE), nodes(2));   // cut off earlier
+        AtomicInteger calls = new AtomicInteger();
+        String server = fake(calls, (call, q) -> new Object[] {200, nodes(8)});
+
+        OverpassDownloader.Report report = new OverpassDownloader(List.of(server), Duration.ofMillis(10), 5)
+                .downloadOntario(dir);
+
+        assertTrue(report.complete());
+        assertTrue(report.downloaded().contains(OverpassDownloader.REPAIRS_FILE), report.toString());
+        assertTrue(OverpassDownloader.isComplete(dir.resolve(OverpassDownloader.REPAIRS_FILE), 5));
+    }
+
+    @Test
+    void incompleteFileIsKeptWhenTheNewDownloadAlsoFails(@TempDir Path dir) throws Exception {
+        // a partial file is still better than nothing for 'parse'
+        Path repairs = dir.resolve(OverpassDownloader.REPAIRS_FILE);
+        Files.writeString(repairs, nodes(2));
+        AtomicInteger calls = new AtomicInteger();
+        String refusing = fake(calls, (call, q) -> new Object[] {406, "Not Acceptable"});
+
+        OverpassDownloader.Report report = new OverpassDownloader(List.of(refusing), Duration.ofMillis(10), 5)
+                .downloadOntario(dir);
+
+        assertFalse(report.complete());
+        assertEquals(nodes(2), Files.readString(repairs));
+    }
+
+    @Test
+    void completenessCheckCountsElements(@TempDir Path dir) throws Exception {
+        OverpassDownloader.checkComplete(nodes(5), 5);
+        assertThrows(CarCareException.class, () -> OverpassDownloader.checkComplete(nodes(4), 5));
+        Path file = dir.resolve("x.json");
+        assertFalse(OverpassDownloader.isComplete(file, 1), "missing file");
+        Files.writeString(file, "<html>");
+        assertFalse(OverpassDownloader.isComplete(file, 1), "not JSON");
+        Files.writeString(file, nodes(1));
+        assertTrue(OverpassDownloader.isComplete(file, 1));
+    }
+
+    @Test
+    void realRunsUseOntarioSizedMinimums() {
+        assertTrue(OverpassDownloader.MIN_ELEMENTS.get(OverpassDownloader.REPAIRS_FILE) > 210,
+                "the 210-shop answer of 2026-11-17 must be rejected");
+        assertEquals(3, OverpassDownloader.MIN_ELEMENTS.size());
+    }
 }

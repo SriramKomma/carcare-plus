@@ -10,7 +10,16 @@
 # The person responsible for each source must also read that site's terms of use.
 # 2026-11-06: terms of Electrify Canada and Fountain Tire restrict copying content;
 # do not run a real crawl until the instructor confirms it is acceptable (PROJECT_PLAN.md section 10).
+# 2026-11-17: those three are commented out so 'crawl' cannot reach them by mistake.
+#
+# Natural Resources Canada: terms checked 2026-11-17
+# (https://natural-resources.canada.ca/corporate/terms-conditions): reproducing Government of
+# Canada works for personal or public NON-COMMERCIAL purposes needs no permission, if the source
+# is credited and the copy is not presented as endorsed by the Government of Canada.
+# robots.txt allows these paths. Driver-facing EV and driving pages only; 3 s between requests.
 
-Fountain Tire    | fountaintire.com     | 2 | 80 | 3000 | /auto-services, /stores, /all-stores | https://www.fountaintire.com/auto-services, https://www.fountaintire.com/all-stores
-Electrify Canada | electrify-canada.ca  | 1 | 70 | 3000 | /locate-charger/                     | https://www.electrify-canada.ca/sitemap-locations.xml
-Kal Tire         | kaltire.com          | 1 | 25 | 3000 | /en/services/                        | https://www.kaltire.com/en/services/
+# Fountain Tire    | fountaintire.com     | 2 | 80 | 3000 | /auto-services, /stores, /all-stores | https://www.fountaintire.com/auto-services, https://www.fountaintire.com/all-stores
+# Electrify Canada | electrify-canada.ca  | 1 | 70 | 3000 | /locate-charger/                     | https://www.electrify-canada.ca/sitemap-locations.xml
+# Kal Tire         | kaltire.com          | 1 | 25 | 3000 | /en/services/                        | https://www.kaltire.com/en/services/
+
+Natural Resources Canada | natural-resources.canada.ca | 1 | 30 | 3000 | /energy-efficiency/transportation-energy-efficiency/electric-vehicles/, /energy-efficiency/transportation-energy-efficiency/personal-vehicles, /energy-efficiency/transportation-energy-efficiency/travelling-electric-vehicle | https://natural-resources.canada.ca/energy-efficiency/transportation-energy-efficiency/personal-vehicles, https://natural-resources.canada.ca/energy-efficiency/transportation-energy-efficiency/travelling-electric-vehicle, https://natural-resources.canada.ca/energy-efficiency/transportation-energy-efficiency/electric-vehicles/electric-vehicle-charging

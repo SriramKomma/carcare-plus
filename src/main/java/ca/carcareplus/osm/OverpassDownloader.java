@@ -79,6 +79,18 @@ public final class OverpassDownloader {
     public static final String CHARGERS_FILE = "ontario-chargers.json";
     public static final String PLACES_FILE = "ontario-places.json";
 
+    /**
+     * Fewest elements a COMPLETE answer for all of Ontario can have. Ontario has
+     * thousands of repair shops, chargers and named places in OpenStreetMap, so
+     * these limits are deliberately low: they only catch an answer that was cut
+     * short. Why needed: on 2026-11-17 a public server answered "200 OK" with only
+     * 210 shops, all in south-western Ontario, and no error message at all.
+     */
+    static final Map<String, Integer> MIN_ELEMENTS = Map.of(
+            REPAIRS_FILE, 500,
+            CHARGERS_FILE, 500,
+            PLACES_FILE, 300);
+
     /** What one run did with each part. */
     public record Report(List<String> downloaded, List<String> skipped, List<String> failed, long bytes) {
         public boolean complete() {
@@ -91,6 +103,8 @@ public final class OverpassDownloader {
     private final HttpClient client;
     private final List<String> endpoints;
     private final Duration retryDelay;
+    /** Smallest acceptable answer; null means use MIN_ELEMENTS for each part. */
+    private final Integer minElementsOverride;
     private String usedEndpoint = "";
 
     /** One server only. */
@@ -100,12 +114,21 @@ public final class OverpassDownloader {
 
     /** Several servers, tried in order until one answers. */
     public OverpassDownloader(List<String> endpoints) {
-        this(endpoints, DEFAULT_RETRY_DELAY);
+        this(endpoints, DEFAULT_RETRY_DELAY, null);
     }
 
-    /** @param retryDelay wait before retrying a busy server (tests use a short one) */
+    /** For tests: short retry delay, and tiny sample answers count as complete. */
     OverpassDownloader(List<String> endpoints, Duration retryDelay) {
+        this(endpoints, retryDelay, 1);
+    }
+
+    /**
+     * @param retryDelay  wait before retrying a busy server (tests use a short one)
+     * @param minElements smallest complete answer for every part, or null for MIN_ELEMENTS
+     */
+    OverpassDownloader(List<String> endpoints, Duration retryDelay, Integer minElements) {
         this.retryDelay = retryDelay;
+        this.minElementsOverride = minElements;
         if (endpoints == null || endpoints.isEmpty() || endpoints.stream().anyMatch(e -> e == null || e.isBlank())) {
             throw new InvalidInputException("Overpass endpoint is required.");
         }
@@ -144,13 +167,20 @@ public final class OverpassDownloader {
         long bytes = 0;
         for (Map.Entry<String, String> part : parts.entrySet()) {
             Path target = folder.resolve(part.getKey());
+            int minimum = minElementsOverride != null ? minElementsOverride : MIN_ELEMENTS.get(part.getKey());
             if (Files.exists(target)) {
-                skipped.add(part.getKey());
-                continue;
+                if (isComplete(target, minimum)) {
+                    skipped.add(part.getKey());
+                    continue;
+                }
+                // A cut-off file from an earlier run: download it again. If that fails,
+                // the old file stays, so 'parse' can still use what we have.
+                LOG.info(() -> part.getKey() + " on disk is incomplete; downloading it again.");
             }
             try {
                 String body = download(part.getValue());
                 checkElements(body);
+                checkComplete(body, minimum);
                 save(body, target);
                 downloaded.add(part.getKey());
                 bytes += body.getBytes(StandardCharsets.UTF_8).length;
@@ -173,6 +203,34 @@ public final class OverpassDownloader {
             }
         } catch (RuntimeException e) {
             throw new CarCareException("The answer was not Overpass JSON: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Rejects an answer that was cut short (see MIN_ELEMENTS).
+     *
+     * @throws CarCareException naming how many elements arrived and how many were expected
+     */
+    static void checkComplete(String body, int minimum) throws CarCareException {
+        int count = countElements(body);
+        if (count < minimum) {
+            throw new CarCareException("Incomplete answer: only " + count + " elements (all of Ontario has at least "
+                    + minimum + "). The server probably cut it short.");
+        }
+    }
+
+    private static int countElements(String body) {
+        return JsonParser.parseString(body).getAsJsonObject().getAsJsonArray("elements").size();
+    }
+
+    /** True if a saved file is valid Overpass JSON with at least minimum elements. */
+    static boolean isComplete(Path file, int minimum) {
+        try {
+            String body = Files.readString(file, StandardCharsets.UTF_8);
+            checkElements(body);
+            return countElements(body) >= minimum;
+        } catch (IOException | CarCareException | RuntimeException e) {
+            return false;
         }
     }
 

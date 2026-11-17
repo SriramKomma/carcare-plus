@@ -6,7 +6,9 @@ A Java console backend that crawls selected Canadian car-repair and EV-charging 
 
 Full plan and progress tracker: [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) · Performance results: [docs/performance-results.md](docs/performance-results.md) · Demo script: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) · Report draft: [docs/REPORT.md](docs/REPORT.md)
 
-> **Data status:** website crawling is paused until the instructor confirms the source websites' terms of use allow it (plan §10). Real Ontario shop data comes from **OpenStreetMap** (`osm` command, Open Database Licence, "© OpenStreetMap contributors"). The **6 invented test pages** in `fixtures/html/` are labelled `[TEST FIXTURE]` in every result.
+> **Data status:** real Ontario shop data comes from **OpenStreetMap** (`osm` command, Open Database Licence, "© OpenStreetMap contributors"). The crawler runs only on **Natural Resources Canada** driver pages, whose terms allow non-commercial reproduction with credit (checked 2026-11-17); Fountain Tire, Electrify Canada and Kal Tire stay disabled in `config/sources.txt` because their terms restrict copying (plan §10). The **6 invented test pages** in `fixtures/html/` are labelled `[TEST FIXTURE]` in every result.
+>
+> **Describe the problem:** the web page takes the driver's own words ("my car won't start", "brakes are squealing"). `query/SymptomMatcher` maps them to a service with the rules in `config/symptoms.txt` and lists the nearest shops for that service, plus crawled NRCan guides on the topic.
 
 **Location search:** a typed location is a filter, not just a bonus. "Windsor" shows only places whose city is Windsor (OpenStreetMap's `addr:city`, or else the nearest city/town/village within 25 km). "Windsor, ON", a postal code (same first three characters) or a province ("ON") also work.
 
@@ -40,7 +42,7 @@ Run with `mvn -q compile exec:java -Dexec.args="<command>"`. With no command, th
 
 **Web page extras:** "Use my location" (browser location, 2–50 km radius, nearest-first sorting), a map of results (Leaflet + OpenStreetMap tiles), and a **Live nearby** tab with Google Places ratings, reviews and opening hours. Live nearby is off unless the server is started with a Google Places API key: `export GOOGLE_MAPS_API_KEY=...` (Places API (New), billing enabled). Google results are fetched per search and never stored or indexed, as Google's terms require; the graded search features run on OpenStreetMap / crawled data. Once real data is loaded, the invented test pages are hidden on the web page.
 | `crawl` | List the sources in `config/sources.txt` |
-| `crawl "<source>" [maxPages]` | Crawl one source and save raw HTML (only after approval, see above) |
+| `crawl "<source>" [maxPages]` | Crawl one source and save raw HTML, e.g. `crawl "Natural Resources Canada"` |
 | `fixtures` | Load the invented test pages as raw pages |
 | `osm` | Download Ontario car-repair shops, tyre shops, EV chargers and places from OpenStreetMap into `data/osm/` (then run `parse`) |
 | `parse` | Turn all saved raw pages into documents (full rebuild) |
@@ -145,6 +147,7 @@ src/test/resources/             HTML and text fixtures used only by tests
 ## Ethics and data
 
 - The crawler reads and obeys each site's `robots.txt` (`Disallow`, `Crawl-delay`), waits between requests (the longer of the source's delay — 3 s for every configured source, never below 1 s — and robots.txt `Crawl-delay`), and stops a source after repeated 403/429 answers. It never bypasses bot protection.
-- Real crawling waits for the instructor's confirmation on terms of use (plan §10).
+- Only sites whose terms allow reuse are active in `config/sources.txt` (Natural Resources Canada: non-commercial reproduction allowed with credit; the page shows that credit under each guide). A test (`CrawlConfigTest`) fails if a restricted site is switched back on.
+- The OpenStreetMap download rejects answers that were cut short (fewer elements than all of Ontario must have) and downloads them again on the next run. Some networks are refused by the public Overpass servers (HTTP 406); run `osm` from another network then.
 - Test pages are invented and flagged `testFixture = true`; they are never presented as real businesses.
 - OpenStreetMap data is used under the ODbL; the app shows "© OpenStreetMap contributors" wherever OSM places appear. The download is two requests per run, and the files stay out of Git (`data/osm/`).

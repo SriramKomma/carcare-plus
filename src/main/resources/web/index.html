@@ -225,6 +225,8 @@
   .results-area { transition: opacity .15s var(--ease); }
   .results-area.loading { opacity: .5; pointer-events: none; }
   .layout.no-map .map-wrap { display: none; }
+  .guides a { color: var(--primary); font-weight: 600; }
+  .guide-credit { margin-top: 4px; font-size: 12px; color: var(--muted); }
   .sk { border-radius: 6px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 37%, var(--surface-2) 63%);
         background-size: 400% 100%; animation: shimmer 1.3s ease infinite; height: 12px; margin-top: 10px; }
   .sk.title { height: 18px; width: 60%; margin-top: 0; }
@@ -517,7 +519,7 @@
 <footer>
   <div class="wrap">
     <span>CarCare+ · COMP 8547 course project</span>
-    <span id="credits">Map tiles and shop data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL)</span>
+    <span id="credits">Map tiles and shop data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> (ODbL) · Guides: Natural Resources Canada (non-commercial reproduction)</span>
   </div>
 </footer>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -729,8 +731,19 @@ function problemHtml(r) {
   const said = p.symptoms.length ? ` (matched “${p.symptoms.map(esc).join("”, “")}”)` : "";
   const alts = p.alternatives.map((a) => `<button type="button" class="example" data-cat="${esc(a.category)}">${esc(a.label)}</button>`).join("");
   return `<div class="problem">${icon("check")}<div>Your problem looks like: <b>${esc(p.label)}</b>${said}.
-    Showing shops that can help${r.near ? ", nearest first" : ""}.</div>
+    Showing ${p.category === "EV_CHARGING" ? "charging stations" : "shops that can help"}${r.near ? ", nearest first" : ""}.</div>
     ${alts ? `<span class="alts">Not it? ${alts}</span>` : ""}</div>`;
+}
+
+/** Crawled information pages for the problem, with the credit their terms ask for. */
+function guidesHtml(r) {
+  const guides = (r.guides || []).filter((g) => safeUrl(g.url));
+  if (!guides.length) return "";
+  const gov = guides.some((g) => g.source === "Natural Resources Canada");
+  return `<div class="notice info guides">${icon("file")}<div><b>Helpful guides:</b> ${guides.map((g) =>
+      `<a href="${esc(safeUrl(g.url))}" target="_blank" rel="noopener">${esc(g.title.replace(/ - Natural Resources Canada$/, ""))}</a>`).join(" · ")}
+    <div class="guide-credit">${gov ? "Source: Natural Resources Canada. Copies of official works published by the Government of Canada, used for a non-commercial student project; not produced in affiliation with, or with the endorsement of, the Government of Canada."
+                                    : "Source: " + esc(guides[0].source) + "."}</div></div></div>`;
 }
 
 function renderResults(r) {
@@ -738,7 +751,7 @@ function renderResults(r) {
     showState(stateHtml("", "info", "Try more specific words", "Your search only has very common words (like \"the\" or \"and\")."));
     return;
   }
-  let notices = problemHtml(r);
+  let notices = problemHtml(r) + guidesHtml(r);
   const sugg = Object.entries(r.suggestions || {});
   if (sugg.length) {
     notices += `<div class="notice info">${icon("spell")}<div>Did you mean: ${sugg.map(([w, s]) => `<b>${esc(w)}</b> → ${s.map(esc).join(", ")}`).join("; ")}?
