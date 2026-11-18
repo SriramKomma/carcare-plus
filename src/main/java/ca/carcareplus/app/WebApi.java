@@ -50,6 +50,12 @@ public class WebApi {
     /** Information pages shown under the shops ("Helpful guides"). */
     static final int GUIDES_SHOWN = 2;
 
+    /** Priority: how far to look for a shop, and how many to offer (the first is called). */
+    static final double PRIORITY_MAX_KM = 50;
+    static final int PRIORITY_SHOPS = 3;
+    /** "Not urgent": the repair should happen within this many days. */
+    static final int LATER_DAYS = 2;
+
     /** Most results the page shows at once. */
     static final int PAGE_RESULTS = 20;
 
@@ -316,6 +322,7 @@ public class WebApi {
         item.put("availability", Map.of("state", availability.state().name(), "label", availability.label()));
         OpeningHours hours = OpeningHours.parse(doc.getOpeningHours());
         item.put("weeklyHours", hours == null ? List.of() : hours.weeklySchedule());
+        item.put("next2Days", hours == null ? List.of() : openingLabels(hours, clock));
         item.put("website", doc.getWebsite());
         item.put("contactSource", doc.getContactSource()); // "" unless details came from the shop's own site
         List<String> categories = new ArrayList<>();
@@ -329,6 +336,79 @@ public class WebApi {
             }
         }
         return item;
+    }
+
+    /** "Today 2:00 PM – 5:00 PM", ... for the next LATER_DAYS days, in Ontario time. */
+    private static List<String> openingLabels(OpeningHours hours, java.time.Clock clock) {
+        List<String> labels = new ArrayList<>();
+        for (OpeningHours.Window window : hours.openingsWithin(
+                java.time.LocalDateTime.now(clock.withZone(Availability.ONTARIO)), LATER_DAYS)) {
+            labels.add(window.label());
+        }
+        return labels;
+    }
+
+    /**
+     * GET /api/priority?vehicle=gas&lat=..&lon=..&q=my brakes failed
+     *
+     * Priority help: the nearest shops the driver can call right now. A shop must
+     * have a phone number, a position within PRIORITY_MAX_KM, suit the vehicle, and not
+     * be closed now (unknown hours are allowed: the driver can still call). When
+     * the description is about charging, chargers are offered instead of garages.
+     * The PRIORITY_SHOPS nearest are kept with TopK (a heap of size k: O(n log k));
+     * the page calls the first one straight away. Nothing is sent by the server.
+     */
+    public Map<String, Object> priority(Map<String, String> params) {
+        VehicleType vehicle = VehicleType.fromUserInput(params.get("vehicle"));
+        GeoPoint near = GeoPoint.parse(params.get("lat"), params.get("lon"));
+        if (near == null) {
+            throw new InvalidInputException("Priority help needs your location. Allow location access, or call 911 if you are in danger.");
+        }
+        String query = params.getOrDefault("q", "").trim();
+        List<SymptomMatcher.Match> matches = query.isEmpty() ? List.of() : matchesFor(vehicle, query);
+        ServiceCategory category = matches.isEmpty() ? null : matches.get(0).category();
+        boolean wantCharger = category == ServiceCategory.EV_CHARGING;
+
+        List<ServiceDocument> candidates = new ArrayList<>();
+        for (ServiceDocument doc : system.documents()) {
+            if (!shown(doc) || !doc.hasLocation() || doc.getPhones().isEmpty()
+                    || doc.hasCategory(ServiceCategory.EV_CHARGING) != wantCharger
+                    || !(doc.getVehicleTypes().isEmpty() || doc.getVehicleTypes().contains(vehicle))
+                    || doc.getLocation().distanceKm(near) > PRIORITY_MAX_KM
+                    || Availability.of(doc.getOpeningHours(), clock).state() == Availability.State.CLOSED) {
+                continue;
+            }
+            candidates.add(doc);
+        }
+        java.util.Comparator<ServiceDocument> nearestFirst = java.util.Comparator
+                .comparingDouble((ServiceDocument doc) -> doc.getLocation().distanceKm(near))
+                .thenComparing(ServiceDocument::getTitle);
+        List<Map<String, Object>> shops = new ArrayList<>();
+        for (ServiceDocument doc : ca.carcareplus.search.TopK.best(candidates, PRIORITY_SHOPS, nearestFirst)) {
+            Map<String, Object> shop = new LinkedHashMap<>();
+            shop.put("title", doc.getTitle());
+            shop.put("phone", doc.getPhones().get(0));
+            shop.put("phones", doc.getPhones());
+            shop.put("distanceKm", Math.round(doc.getLocation().distanceKm(near) * 10) / 10.0);
+            shop.put("address", doc.getAddress());
+            shop.put("city", doc.getCity());
+            shop.put("availability", Availability.of(doc.getOpeningHours(), clock).label());
+            shop.put("matchesProblem", category != null && doc.hasCategory(category));
+            shop.put("lat", doc.getLocation().latitude());
+            shop.put("lon", doc.getLocation().longitude());
+            shop.put("url", doc.getUrl());
+            shops.add(shop);
+        }
+
+        Map<String, Object> answer = new LinkedHashMap<>();
+        answer.put("problem", matches.isEmpty() ? null : problemToMap(query, matches));
+        answer.put("near", Map.of("lat", near.latitude(), "lon", near.longitude()));
+        answer.put("emergencyNumber", "911");
+        answer.put("shops", shops);
+        answer.put("message", !shops.isEmpty() ? ""
+                : "No " + (wantCharger ? "charging station" : "repair shop") + " with a phone number is open within "
+                  + formatKm(PRIORITY_MAX_KM) + ". If you are in danger, call 911; otherwise call a roadside assistance service.");
+        return answer;
     }
 
     /** Category name such as "BATTERY"; blank means any category. */

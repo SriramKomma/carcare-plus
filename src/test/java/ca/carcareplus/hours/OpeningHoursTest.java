@@ -113,4 +113,43 @@ class OpeningHoursTest {
         assertEquals(Availability.UNSUPPORTED_HOURS, Availability.of("sunrise-sunset", clock));
         assertFalse(Availability.UNKNOWN_HOURS.isOpen(), "unknown is never shown as open");
     }
+
+    // ------------------------------------------------------------- next 2 days
+
+    private static List<String> openings(String hours, String now) {
+        return OpeningHours.parse(hours).openingsWithin(at(now), 2).stream().map(OpeningHours.Window::label).toList();
+    }
+
+    @org.junit.jupiter.api.Test
+    void openingsWithinTwoDaysStartNowAndEndFortyEightHoursLater() {
+        // Monday 10:30: rest of today, all of Tuesday, Wednesday until 10:30
+        assertEquals(List.of("Today 10:30 AM – 5:00 PM", "Tomorrow 8:00 AM – 5:00 PM", "Wed 8:00 AM – 10:30 AM"),
+                openings("Mo-Fr 08:00-17:00", "2026-11-16T10:30"));
+    }
+
+    @org.junit.jupiter.api.Test
+    void closedDaysAndFinishedHoursAreLeftOut() {
+        // Friday 18:00: closed for the rest of Friday and all weekend
+        assertEquals(List.of(), openings("Mo-Fr 08:00-17:00", "2026-11-20T18:00"));
+        // Saturday 08:00: only Monday... which is 48 h later at 08:00, before opening
+        assertEquals(List.of(), openings("Mo-Fr 09:00-17:00", "2026-11-21T08:00"));
+        assertEquals(List.of("Mon 9:00 AM – 9:30 AM"), openings("Mo-Fr 09:00-17:00", "2026-11-21T09:30"));
+    }
+
+    @org.junit.jupiter.api.Test
+    void todayStartsAtTheNextQuarterHourAndTinySlotsAreDropped() {
+        // 16:32 -> "4:45 PM"; 16:40 leaves only 15 minutes today, which is not worth booking
+        assertEquals("Today 4:45 PM – 5:30 PM", openings("Mo-Fr 08:00-17:30", "2026-11-16T16:32").get(0));
+        assertEquals("Tomorrow 8:00 AM – 5:00 PM", openings("Mo-Fr 08:00-17:00", "2026-11-16T16:40").get(0));
+        // the last day ends at the quarter hour before "now": Wednesday 4:33 PM -> 4:30 PM
+        assertEquals("Wed 8:00 AM – 4:30 PM", openings("Mo-Fr 08:00-17:00", "2026-11-16T16:33").get(1));
+    }
+
+    @org.junit.jupiter.api.Test
+    void severalRangesAndDayChangesAreKept() {
+        // 11:00 is inside the morning range, so today's morning still counts (11:00 - 12:00)
+        assertEquals(List.of("Today 11:00 AM – 12:00 PM", "Today 1:00 PM – 5:00 PM", "Tomorrow 9:00 AM – 12:00 PM",
+                        "Tomorrow 1:00 PM – 5:00 PM", "Wed 9:00 AM – 11:00 AM"),
+                openings("Mo-Fr 09:00-12:00,13:00-17:00", "2026-11-16T11:00"));
+    }
 }

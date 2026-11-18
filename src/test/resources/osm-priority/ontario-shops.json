@@ -1,0 +1,13 @@
+{
+  "remark": "INVENTED test data for priority / non-priority tests. Base point: 42.3149, -83.0364 (Windsor). 0.009 deg latitude = about 1 km.",
+  "elements": [
+    {"type": "node", "id": 101, "lat": 42.3194, "lon": -83.0364, "tags": {"shop": "car_repair", "name": "Open Near Garage", "phone": "519-555-0101", "opening_hours": "Mo-Fr 08:00-17:00"}},
+    {"type": "node", "id": 102, "lat": 42.3167, "lon": -83.0364, "tags": {"shop": "car_repair", "name": "Closest But Closed", "phone": "519-555-0102", "opening_hours": "Sa 09:00-12:00"}},
+    {"type": "node", "id": 103, "lat": 42.3158, "lon": -83.0364, "tags": {"shop": "car_repair", "name": "No Phone Garage", "opening_hours": "Mo-Su 00:00-24:00"}},
+    {"type": "node", "id": 104, "lat": 42.3284, "lon": -83.0364, "tags": {"shop": "car_repair", "name": "Unknown Hours Garage", "phone": "519-555-0104"}},
+    {"type": "node", "id": 105, "lat": 42.3419, "lon": -83.0364, "tags": {"shop": "car_repair", "name": "Brake Specialist", "phone": "519-555-0105", "opening_hours": "Mo-Su 00:00-24:00", "service:vehicle:brakes": "yes"}},
+    {"type": "node", "id": 106, "lat": 43.0349, "lon": -83.0364, "tags": {"shop": "car_repair", "name": "Far Away Garage", "phone": "519-555-0106"}},
+    {"type": "node", "id": 107, "lat": 42.3122, "lon": -83.0364, "tags": {"amenity": "charging_station", "name": "Test Charger", "phone": "519-555-0107", "socket:type2": "2"}},
+    {"type": "node", "id": 108, "lat": 42.2969, "lon": -83.0364, "tags": {"amenity": "charging_station", "name": "Second Charger", "phone": "519-555-0108", "socket:chademo": "1"}}
+  ]
+}

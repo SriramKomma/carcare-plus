@@ -42,6 +42,7 @@ import ca.carcareplus.live.GooglePlacesClient;
  * GET /api/frequency     ?url=&word=
  * GET /api/history
  * GET /api/cities        cities that have pages (location suggestions)
+ * GET /api/priority      ?vehicle=&lat=&lon=&q=   priority: nearest shops to call right now
  * GET /api/live          ?q=&location=&lat=&lon=&radius=   Google Places (needs GOOGLE_MAPS_API_KEY)
  * </pre>
  *
@@ -108,6 +109,7 @@ public final class WebServer {
         route(server, "/api/frequency", searchLock, api::frequency);
         route(server, "/api/history", searchLock, params -> api.history());
         route(server, "/api/cities", searchLock, params -> api.cities());
+        route(server, "/api/priority", searchLock, api::priority);
         route(server, "/api/live", null, api::live); // network call to Google; no shared state
         ExecutorService pool = Executors.newFixedThreadPool(THREADS, task -> {
             Thread thread = new Thread(task, "carcare-web");

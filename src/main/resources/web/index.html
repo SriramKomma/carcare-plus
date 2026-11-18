@@ -504,6 +504,71 @@
   @media (max-width: 760px) { .tools-grid { grid-template-columns: 1fr; } }
   @media (max-width: 600px) { .tiles { grid-template-columns: 1fr; } .search-card h2 { font-size: 23px; } }
 
+  /* ------------------------------------------------ urgency: priority and non-priority */
+  .urgency { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .u-btn { display: flex; align-items: center; gap: 14px; padding: 14px 16px; text-align: left; cursor: pointer; font: inherit;
+           border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--text);
+           transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s, background .2s; }
+  .u-icon { flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+            transition: transform .3s var(--ease), background .2s, color .2s; }
+  .u-text { display: grid; }
+  .u-text b { font-weight: 600; }
+  .u-text small { color: var(--muted); font-size: 13px; }
+  .u-priority { background: #fff5f5; border-color: #fecdca; }
+  .u-priority .u-icon { background: #d92d20; color: #fff; }
+  .u-priority b { color: #b42318; }
+  .u-priority:hover { transform: translateY(-2px); border-color: #f97066; box-shadow: 0 8px 20px rgba(217, 45, 32, .18); }
+  .u-priority:hover .u-icon { animation: pri-pulse 1.2s infinite; transform: scale(1.05); }
+  .u-nonpriority .u-icon { background: var(--primary-soft); color: var(--primary); }
+  .u-nonpriority:hover { transform: translateY(-2px); border-color: var(--primary-line); box-shadow: var(--shadow); }
+  .u-nonpriority:hover .u-icon { background: var(--primary); color: #fff; transform: rotate(-6deg); }
+  .u-btn:active { transform: translateY(0) scale(.99); }
+  @keyframes pri-pulse { 0% { box-shadow: 0 0 0 0 rgba(217, 45, 32, .45); } 70% { box-shadow: 0 0 0 12px rgba(217, 45, 32, 0); } 100% { box-shadow: 0 0 0 0 rgba(217, 45, 32, 0); } }
+  @media (max-width: 600px) { .urgency { grid-template-columns: 1fr; } }
+
+  /* non-priority: openings in the next 2 days and the request form */
+  .h-note { font-weight: 400; color: var(--muted); font-size: 14px; margin-left: 6px; }
+  .next2 { display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; font-size: 13.5px; color: #344054; }
+  .next2 .icon { color: var(--primary); margin-top: 2px; }
+  .visit { margin-top: 12px; padding: 14px; border: 1px solid var(--primary-line); background: #f8faff; border-radius: var(--radius-sm);
+           display: grid; gap: 12px; animation: pop .15s var(--ease); }
+  .visit-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; }
+  .visit-grid input, .visit-grid select { height: 40px; }
+  .visit .who { font-size: 12.5px; color: var(--muted); }
+  @media (max-width: 700px) { .visit-grid { grid-template-columns: 1fr; } }
+
+  /* priority panel */
+  .pri-overlay { position: fixed; inset: 0; z-index: 3000; background: rgba(16, 24, 40, .45); display: grid; place-items: center;
+                 padding: 16px; animation: fade .15s ease; }
+  .pri-box { width: min(480px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--surface); border-radius: 16px;
+             box-shadow: var(--shadow-lg); padding: 20px; display: grid; gap: 14px; animation: pop .2s var(--ease); }
+  .pri-head { display: flex; align-items: center; gap: 10px; }
+  .pri-head h3 { margin: 0; font-size: 18px; flex: 1; }
+  .pri-badge { background: #d92d20; color: #fff; font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+               padding: 4px 8px; border-radius: 6px; }
+  .pri-911 { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); justify-self: start; }
+  .pri-911 .icon { width: 14px; height: 14px; color: #d92d20; }
+  .pri-911:hover { color: #b42318; }
+  .pri-for { font-size: 14px; color: var(--muted); }
+  .pri-main { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 6px; }
+  .pri-main h4 { margin: 2px 0 0; font-size: 19px; }
+  .pri-now { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: #067647;
+             text-transform: uppercase; letter-spacing: .05em; }
+  .pri-now .dot { width: 8px; height: 8px; border-radius: 50%; background: #17b26a; animation: pri-dot 1.2s infinite; }
+  @keyframes pri-dot { 50% { opacity: .3; } }
+  .pri-meta { color: var(--muted); font-size: 14px; }
+  .pri-main .row-inline { margin-top: 8px; }
+  .btn.pri-call { background: #079455; color: #fff; flex: 1; box-shadow: 0 1px 2px rgba(16, 24, 40, .08); }
+  .btn.pri-call:hover { background: #067647; transform: translateY(-1px); box-shadow: 0 6px 14px rgba(7, 148, 85, .25); text-decoration: none; }
+  .pri-sub { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .pri-alt { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px;
+             border: 1px solid var(--line); border-radius: var(--radius-sm); transition: border-color .15s, background .15s; }
+  .pri-alt:hover { border-color: var(--line-strong); background: var(--surface-2); }
+  .pri-share { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pri-wait { display: flex; gap: 10px; align-items: center; color: var(--muted); padding: 10px 0; }
+  .pri-box .who { font-size: 12.5px; color: var(--muted); }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
   @keyframes ring { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-14deg); } 50% { transform: rotate(12deg); } 75% { transform: rotate(-6deg); } }
 </style>
 </head>
@@ -547,6 +612,8 @@
   <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 2v5M15 2v5"/><path d="M6 7h12v4a6 6 0 0 1-12 0z"/><path d="M12 17v5"/></symbol>
   <symbol id="i-truck" viewBox="0 0 24 24"><path d="M1 6h13v10H1z"/><path d="M14 9h4l3 3v4h-7"/><circle cx="5.5" cy="18" r="2"/><circle cx="17.5" cy="18" r="2"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
   <symbol id="i-car" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></symbol>
 </svg>
@@ -602,6 +669,16 @@
           <input id="location" list="cityList" autocomplete="off" aria-label="City or postal code" placeholder="or type a city / postal code">
           <datalist id="cityList"></datalist>
         </div>
+      </div>
+      <div class="urgency">
+        <button type="button" class="u-btn u-priority" id="priorityBtn">
+          <span class="u-icon"><svg class="icon"><use href="#i-phone"/></svg></span>
+          <span class="u-text"><b>Priority</b><small>One tap contacts the nearest top shop now</small></span>
+        </button>
+        <button type="button" class="u-btn u-nonpriority" id="nonPriorityBtn">
+          <span class="u-icon"><svg class="icon"><use href="#i-calendar"/></svg></span>
+          <span class="u-text"><b>Non-priority</b><small>A repairer within 2 days, not now</small></span>
+        </button>
       </div>
       <details class="more-options">
         <summary>More options</summary>
@@ -724,6 +801,11 @@
     </div>
   </section>
 </main>
+
+<!-- priority panel -->
+<div class="pri-overlay" id="priorityPanel" hidden>
+  <div class="pri-box" role="dialog" aria-modal="true" aria-labelledby="priorityTitle" id="priorityBox"></div>
+</div>
 
 <footer>
   <div class="wrap">
@@ -870,7 +952,7 @@ function renderTiles() {
        <span class="tile-text"><b>${esc(t.title)}</b><small>“${esc(t.text)}”</small></span>
        <span class="tile-go">${icon("arrow", "sm")}</span></button>`).join("");
   $("tiles").querySelectorAll(".tile").forEach((b) => b.addEventListener("click", () => {
-    $("q").value = b.dataset.text; $("category").value = ""; runSearch();
+    $("q").value = b.dataset.text; $("category").value = ""; startNormal(); runSearch();
   }));
 }
 async function loadCategories() {
@@ -895,6 +977,9 @@ function hasSomethingToSearch() { return $("q").value.trim() !== "" || $("catego
 
 let lastSearch = null;
 let sortMode = "distance";       // with "use my location", nearest first is what a driver wants
+let urgency = "normal";          // "later" = non-priority: best match first, fix within 2 days
+/** A normal search (Find shops, Enter, a problem tile): nearest first again. */
+function startNormal() { urgency = "normal"; sortMode = "distance"; }
 let viewMode = "list";
 let searchSeq = 0, searchAbort = null;
 
@@ -999,7 +1084,8 @@ function renderResults(r) {
   const hasPoints = r.results.some((x) => x.lat !== undefined);
   const noun = r.problem?.category === "EV_CHARGING" || $("category").value === "EV_CHARGING" ? "charging station" : "place";
   $("resultsHead").innerHTML = `
-      <h3>${r.results.length}${r.moreResults ? "+" : ""} ${noun}${r.results.length === 1 ? "" : "s"} ${where}${r.openNowOnly ? ", open now" : ""}</h3>
+      <h3>${urgency === "later" ? `Shops that can fix it within 2 days <span class="h-note">${r.near ? `up to ${r.near.radiusKm} km away` : where} · best match first</span>`
+            : `${r.results.length}${r.moreResults ? "+" : ""} ${noun}${r.results.length === 1 ? "" : "s"} ${where}${r.openNowOnly ? ", open now" : ""}`}</h3>
       <span class="spacer"></span>
       ${r.near ? `<div class="field" style="width:170px"><select id="sortSel" aria-label="Sort results" style="height:36px">
          <option value="distance" ${sortMode === "distance" ? "selected" : ""}>Nearest first</option>
@@ -1022,6 +1108,7 @@ function renderResults(r) {
   }));
   $("list").querySelectorAll(".result").forEach((card) => {
     const x = r.results.find((item) => item.rank === Number(card.dataset.rank));
+    bindVisit(card, x);
     card.querySelector(".more-btn").addEventListener("click", (e) => {
       const panel = card.querySelector(".details");
       panel.hidden = !panel.hidden;
@@ -1077,7 +1164,9 @@ function resultCard(x, i) {
   const avClass = { OPEN: "open", CLOSING_SOON: "soon", CLOSED: "closed", UNKNOWN: "unknown" }[av.state];
 
   const actions = [];
-  if (x.phones.length) actions.push(`<a class="btn primary small" style="width:auto" href="${esc(telHref(x.phones[0]))}">${icon("phone", "sm")}Call</a>`);
+  const later = urgency === "later";
+  if (later) actions.push(`<button type="button" class="btn primary small visit-btn" style="width:auto" aria-expanded="false">${icon("calendar", "sm")}Request a visit</button>`);
+  else if (x.phones.length) actions.push(`<a class="btn primary small" style="width:auto" href="${esc(telHref(x.phones[0]))}">${icon("phone", "sm")}Call</a>`);
   else if (x.emails.length) actions.push(`<a class="btn primary small" style="width:auto" href="${esc(mailtoHref(x.emails[0], x))}">${icon("mail", "sm")}Email</a>`);
   if (x.lat !== undefined) actions.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${x.lat},${x.lon}">${icon("nav", "sm")}Directions</a>`);
   actions.push(`<button type="button" class="btn ghost small more-btn" aria-expanded="false"><span>More</span>${icon("chevron", "sm")}</button>`);
@@ -1088,10 +1177,158 @@ function resultCard(x, i) {
       ${x.distanceKm !== undefined ? `<div class="dist">${km(x.distanceKm)}</div>` : ""}</div>
     <div class="r-status"><div class="fact status ${avClass}">${icon("clock", "sm")}<span>${esc(av.label)}</span></div>
       ${x.testFixture ? `<span class="tag fixture">${icon("alert", "sm")}Test page</span>` : ""}</div>
+    ${later && (x.next2Days || []).length ? `<div class="next2">${icon("calendar", "sm")}<span>Open: ${
+        x.next2Days.slice(0, 2).map(esc).join(" · ") + (x.next2Days.length > 2 ? " …" : "")}</span></div>` : ""}
     <div class="actions">${actions.join("")}</div>
+    ${later ? `<div class="visit" hidden>${visitFormHtml(x)}</div>` : ""}
     <div class="details" hidden>${detailsHtml(x)}</div>
   </article>`;
 }
+
+// ===================================================== non-priority: request a visit
+/** Pick a time in the next 2 days; the request opens in the driver's own email/phone app. */
+function visitFormHtml(x) {
+  const times = (x.next2Days || []).length ? x.next2Days : ["Any time in the next 2 days"];
+  const send = [];
+  if (x.emails.length) send.push(`<button type="button" class="btn primary small visit-email">${icon("mail", "sm")}Email request</button>`);
+  if (x.phones.length) send.push(`<a class="btn ${x.emails.length ? "ghost" : "primary"} small" href="${esc(telHref(x.phones[0]))}">${icon("phone", "sm")}Call to book</a>`);
+  send.push(`<button type="button" class="btn ghost small visit-copy">${icon("file", "sm")}Copy request</button>`);
+  return `<div class="visit-grid">
+      <label><span class="lbl">When suits you?</span><select class="visit-when">${times.map((t) => `<option>${esc(t)}</option>`).join("")}</select></label>
+      <label><span class="lbl">Your name</span><input class="visit-name" autocomplete="name" placeholder="e.g. Sam Lee"></label>
+      <label><span class="lbl">Your phone (optional)</span><input class="visit-phone" autocomplete="tel" placeholder="e.g. 519-555-0100"></label>
+    </div>
+    <div class="row-inline">${send.join("")}</div>
+    <div class="who">${x.phones.length || x.emails.length ? "The request opens in your own email app, or call and read it out." : "No phone or email is listed: copy the request and use the website or visit."}</div>`;
+}
+function visitText(x, card) {
+  const r = lastSearch || {};
+  const problem = r.problem ? `${r.problem.text} (${r.problem.label})` : (r.category || r.query || "car repair");
+  const name = card.querySelector(".visit-name").value.trim();
+  const phone = card.querySelector(".visit-phone").value.trim();
+  return [`Hello ${x.title},`, "",
+    "I found your shop on CarCare+ and would like to book a repair. It is not urgent: any time within the next 2 days works.", "",
+    `Problem: ${problem}`, r.vehicle ? `Vehicle: ${r.vehicle}` : "", `Preferred time: ${card.querySelector(".visit-when").value}`,
+    name ? `Name: ${name}` : "", phone ? `Phone: ${phone}` : "", "", "Could you confirm a time? Thank you."]
+    .filter((line, i, all) => line !== "" || all[i - 1] !== "").join("\n");
+}
+function bindVisit(card, x) {
+  card.querySelector(".visit-btn")?.addEventListener("click", (e) => {
+    const form = card.querySelector(".visit");
+    form.hidden = !form.hidden;
+    e.currentTarget.setAttribute("aria-expanded", String(!form.hidden));
+    if (!form.hidden) card.querySelector(".visit-name").focus();
+  });
+  card.querySelector(".visit-email")?.addEventListener("click", () => {
+    const subject = "Repair request (within 2 days): " + (lastSearch?.problem?.label || "car repair");
+    window.location.href = `mailto:${x.emails[0]}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(visitText(x, card))}`;
+  });
+  card.querySelector(".visit-copy")?.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(visitText(x, card)); toast("Request copied."); }
+    catch { toast("Could not copy. Select the text and copy it by hand."); }
+  });
+}
+
+// ================================================================ priority
+function getPosition() {
+  return new Promise((resolve, reject) => {
+    if (!("geolocation" in navigator)) { reject(Object.assign(new Error("Your browser cannot share its location."), { code: 0 })); return; }
+    navigator.geolocation.getCurrentPosition((p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
+      reject, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+  });
+}
+/** Starts a phone call. On a phone this opens the dialer; the phone asks for the final tap. */
+function dial(phone) { window.location.href = telHref(phone); }
+
+function openPriority(html) {
+  $("priorityBox").innerHTML = html;
+  $("priorityPanel").hidden = false;
+  document.body.style.overflow = "hidden";
+  $("priorityBox").querySelector(".pri-close")?.focus();
+}
+function closePriority() { $("priorityPanel").hidden = true; document.body.style.overflow = ""; $("priorityBtn").focus(); }
+$("priorityPanel").addEventListener("click", (e) => { if (e.target === $("priorityPanel")) closePriority(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("priorityPanel").hidden) closePriority(); });
+
+function priorityShell(body) {
+  return `<div class="pri-head"><span class="pri-badge">Priority</span><h3 id="priorityTitle">Contacting the nearest shop</h3>
+      <button type="button" class="icon-btn pri-close" aria-label="Close">${icon("x")}</button></div>
+    ${body}
+    <a class="pri-911" href="tel:911">${icon("alert")}<span>Anyone hurt or in danger? <b>Call 911</b></span></a>`;
+}
+function bindPriorityClose() { $("priorityBox").querySelector(".pri-close").addEventListener("click", closePriority); }
+
+async function runPriority() {
+  openPriority(priorityShell(`<div class="pri-wait">${icon("loader", "spin")}<span>Finding the nearest open shop…</span></div>`));
+  bindPriorityClose();
+  let n = nearState.search;
+  if (!n) {
+    try {
+      n = nearState.search = { ...(await getPosition()), radius: 10 };
+      $("location").value = "";
+      renderNear("search");
+    } catch (e) {
+      openPriority(priorityShell(`<div class="notice error">${icon("alert")}<span>${e.code === 1
+        ? "Location access was denied, so CarCare+ cannot find the nearest shop. Allow location for this page, or type your city and press Find shops."
+        : "Could not get your location. Type your city and press Find shops."}</span></div>`));
+      bindPriorityClose();
+      return;
+    }
+  }
+  try {
+    const r = await api("priority", { vehicle, lat: n.lat, lon: n.lon, q: $("q").value });
+    renderPriority(r);
+    if (r.shops.length) dial(r.shops[0].phone);   // one tap: the call starts straight away
+  } catch (e) {
+    openPriority(priorityShell(`<div class="notice error">${icon("alert")}<span>${esc(e.message)}</span></div>`));
+    bindPriorityClose();
+  }
+}
+
+function renderPriority(r) {
+  const where = `https://www.google.com/maps?q=${r.near.lat.toFixed(5)},${r.near.lon.toFixed(5)}`;
+  const need = r.problem ? r.problem.label : "car trouble";
+  const smsBody = `I need help with my car (${need}). I am here: ${where}`;
+  const share = `<div class="pri-share"><a class="btn ghost small" href="sms:?&body=${encodeURIComponent(smsBody)}">${icon("share", "sm")}Text my location</a>
+      <button type="button" class="btn ghost small pri-copy">${icon("pin", "sm")}Copy my location</button></div>`;
+  if (!r.shops.length) {
+    openPriority(priorityShell(`<div class="notice warn">${icon("alert")}<span>${esc(r.message)}</span></div>${share}`));
+  } else {
+    const [first, ...others] = r.shops;
+    const line = (s) => `${km(s.distanceKm)} away · ${esc(s.availability)}`;
+    openPriority(priorityShell(`
+      ${r.problem ? `<div class="pri-for">For: <b>${esc(r.problem.label)}</b></div>` : ""}
+      <div class="pri-main">
+        <span class="pri-now"><span class="dot"></span>Calling now</span>
+        <h4>${esc(first.title)}</h4>
+        <div class="pri-meta">${line(first)}</div>
+        ${[first.address, first.city].filter(Boolean).length ? `<div class="pri-meta">${esc([first.address, first.city].filter(Boolean).join(", "))}</div>` : ""}
+        <div class="row-inline">
+          <a class="btn pri-call" href="${esc(telHref(first.phone))}">${icon("phone")}Call ${esc(first.phone)}</a>
+          <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${first.lat},${first.lon}">${icon("nav", "sm")}Directions</a>
+        </div>
+      </div>
+      ${others.length ? `<div class="pri-sub">If they don't answer</div>
+        ${others.map((s) => `<div class="pri-alt"><div><b>${esc(s.title)}</b><div class="pri-meta">${line(s)}</div></div>
+          <a class="btn ghost small" href="${esc(telHref(s.phone))}">${icon("phone", "sm")}Call</a></div>`).join("")}` : ""}
+      ${share}
+      <div class="who">Calls go from your own phone. CarCare+ does not send anything for you.</div>`));
+  }
+  bindPriorityClose();
+  $("priorityBox").querySelector(".pri-copy")?.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(where); toast("Location link copied."); }
+    catch { toast(where); }
+  });
+}
+$("priorityBtn").addEventListener("click", runPriority);
+
+$("nonPriorityBtn").addEventListener("click", () => {
+  if (!hasSomethingToSearch()) { toast("Describe the problem first, then press Non-priority."); $("q").focus(); return; }
+  urgency = "later";
+  sortMode = "best";                       // non-priority: the best shop for the job, not just the closest
+  if (nearState.search && nearState.search.radius < 25) { nearState.search.radius = 25; renderNear("search"); }
+  runSearch();
+});
 
 /** The "More" panel: every contact, website, hours, map, and how the rank was computed. */
 function detailsHtml(x) {
@@ -1215,13 +1452,13 @@ $("q").addEventListener("keydown", (e) => {
     $("q").setAttribute("aria-activedescendant", "opt" + acIndex);
   } else if (e.key === "Enter") {
     if (!$("qList").hidden && acIndex >= 0) { $("q").value = items[acIndex].textContent + " "; closeList(); }
-    else runSearch();
+    else { startNormal(); runSearch(); }
   } else if (e.key === "Escape") closeList();
 });
 $("q").addEventListener("blur", () => setTimeout(closeList, 100));
-$("location").addEventListener("keydown", (e) => { if (e.key === "Enter") runSearch(); });
+$("location").addEventListener("keydown", (e) => { if (e.key === "Enter") { startNormal(); runSearch(); } });
 $("openNow").addEventListener("change", () => { if (lastSearch) runSearch(); });
-$("searchBtn").addEventListener("click", () => runSearch());
+$("searchBtn").addEventListener("click", () => { startNormal(); runSearch(); });
 
 // ================================================================= live nearby
 function loadLiveIntro() {

@@ -1,6 +1,7 @@
 package ca.carcareplus.hours;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
@@ -211,6 +212,44 @@ public final class OpeningHours {
             }
         }
         return new Availability(Availability.State.CLOSED, "Closed");
+    }
+
+    /**
+     * A time the shop is open on one date, in minutes after midnight (end may be 1440).
+     * label(): "Today 2:00 PM – 5:00 PM", "Tomorrow 8:00 AM – 5:00 PM", "Thu 8:00 AM – 12:00 PM".
+     */
+    public record Window(LocalDate date, int start, int end, String label) {
+    }
+
+    /** A slot shorter than this is not worth booking ("4:45 PM – 5:00 PM"). */
+    static final int MIN_WINDOW_MINUTES = 30;
+
+    /**
+     * When the shop is open from now until the same time {@code days} days later,
+     * day by day: today's ranges start no earlier than now (rounded up to the next
+     * quarter hour, so "4:32 PM" shows as "4:45 PM"), the last day's ranges end at
+     * the quarter hour before now ("4:33 PM" -> "4:30 PM"), and slots shorter than MIN_WINDOW_MINUTES are left out.
+     * Used for "not urgent: fixed within 2 days". O(days * r) for r ranges per day.
+     */
+    public List<Window> openingsWithin(LocalDateTime now, int days) {
+        List<Window> windows = new ArrayList<>();
+        int nowMinute = now.getHour() * 60 + now.getMinute();
+        int fromMinute = (nowMinute + 14) / 15 * 15;   // today: from the next quarter hour
+        int untilMinute = nowMinute / 15 * 15;         // last day: up to the quarter hour before now
+        for (int offset = 0; offset <= days; offset++) {
+            LocalDate date = now.toLocalDate().plusDays(offset);
+            int day = date.getDayOfWeek().getValue() - 1;
+            for (int[] r : ranges.get(day)) {
+                int start = offset == 0 ? Math.max(r[0], fromMinute) : r[0];
+                int end = offset == days ? Math.min(r[1], untilMinute) : r[1];
+                if (end - start >= MIN_WINDOW_MINUTES) {
+                    String when = offset == 0 ? "Today" : offset == 1 ? "Tomorrow"
+                            : date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.CANADA);
+                    windows.add(new Window(date, start, end, when + " " + clock(start) + " – " + clock(end)));
+                }
+            }
+        }
+        return windows;
     }
 
     /** One line per day, Monday first: "Mon: 8:00 AM – 5:00 PM", "Sun: Closed". */
