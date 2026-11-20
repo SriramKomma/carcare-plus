@@ -25,6 +25,9 @@ import ca.carcareplus.query.SymptomMatcher;
 import ca.carcareplus.search.SearchFrequency.TermCount;
 import ca.carcareplus.search.SearchOutcome;
 import ca.carcareplus.validation.DataValidator;
+import ca.carcareplus.visits.VisitBook;
+import ca.carcareplus.visits.VisitRequest;
+import ca.carcareplus.visits.VisitSlots;
 
 /**
  * The answers behind the web page (see WebServer). Each method takes the
@@ -65,6 +68,8 @@ public class WebApi {
     private final java.time.Clock clock;
     /** True once real places are loaded: the invented test pages are then hidden. */
     private final boolean hideFixtures;
+    /** Saved non-priority visit requests. */
+    private final VisitBook visits;
 
     public WebApi(SearchSystem system) {
         this(system, null);
@@ -76,7 +81,13 @@ public class WebApi {
     }
 
     WebApi(SearchSystem system, GooglePlacesClient live, java.time.Clock clock) {
+        this(system, live, clock, new VisitBook());
+    }
+
+    /** @param visits where visit requests are saved (in memory in tests) */
+    WebApi(SearchSystem system, GooglePlacesClient live, java.time.Clock clock, VisitBook visits) {
         this.clock = clock;
+        this.visits = visits == null ? new VisitBook() : visits;
         if (system == null) {
             throw new InvalidInputException("WebApi needs a search system.");
         }
@@ -409,6 +420,196 @@ public class WebApi {
                 : "No " + (wantCharger ? "charging station" : "repair shop") + " with a phone number is open within "
                   + formatKm(PRIORITY_MAX_KM) + ". If you are in danger, call 911; otherwise call a roadside assistance service.");
         return answer;
+    }
+
+    // ------------------------------------------------------------- non-priority: visit requests
+
+    /** Longest name, problem text and note kept in a visit request. */
+    static final int MAX_NAME = 60;
+    static final int MAX_PROBLEM = 200;
+    static final int MAX_NOTE = 300;
+    /** Most references the page may ask about at once. */
+    static final int MAX_VISIT_IDS = 20;
+
+    /**
+     * GET /api/visit/slots?url=..  -- the times the driver can choose for this shop
+     * in the next LATER_DAYS days: every 30 minutes while it is open, or morning /
+     * afternoon when its hours are unknown (the shop then confirms the time).
+     */
+    public Map<String, Object> visitSlots(Map<String, String> params) {
+        ServiceDocument shop = shopFor(params.get("url"));
+        VisitSlots slots = slotsFor(shop);
+        List<Map<String, Object>> days = new ArrayList<>();
+        for (VisitSlots.Day day : slots.days()) {
+            List<Map<String, String>> times = new ArrayList<>();
+            day.slots().forEach(slot -> times.add(Map.of("value", slot.value(), "label", slot.label())));
+            days.add(Map.of("date", day.date().toString(), "label", day.label(), "slots", times));
+        }
+        Map<String, Object> answer = new LinkedHashMap<>();
+        answer.put("shop", shopSummary(shop));
+        answer.put("hoursKnown", slots.hoursKnown());
+        answer.put("days", days);
+        answer.put("message", !slots.isEmpty() ? ""
+                : shop.getTitle() + " is not open in the next " + LATER_DAYS + " days. Please pick another shop.");
+        return answer;
+    }
+
+    /**
+     * POST /api/visit  url, slot, name, phone, email, note, q, vehicle
+     *
+     * Checks everything again on the server (the slot must be one that visitSlots
+     * offers right now; a name and a way to reply -- phone or email -- are needed),
+     * saves the request with a reference such as "CC-1001", and returns it with the
+     * message the driver sends to the shop. CarCare+ does not contact the shop itself.
+     */
+    public Map<String, Object> requestVisit(Map<String, String> params) throws StorageException {
+        ServiceDocument shop = shopFor(params.get("url"));
+        VisitSlots slots = slotsFor(shop);
+        String slot = params.getOrDefault("slot", "").trim();
+        if (slot.isEmpty()) {
+            throw new InvalidInputException("Please choose a time.");
+        }
+        if (slots.find(slot) == null) {
+            throw new InvalidInputException("That time is no longer available. Please choose another one.");
+        }
+        String name = clean(params.get("name"));
+        if (name.length() < 2 || name.length() > MAX_NAME || !name.matches("[\\p{L}][\\p{L} .'-]*")) {
+            throw new InvalidInputException("Please enter your name (letters only, up to " + MAX_NAME + " characters).");
+        }
+        String phone = clean(params.get("phone"));
+        String email = clean(params.get("email"));
+        if (phone.isEmpty() && email.isEmpty()) {
+            throw new InvalidInputException("Please give a phone number or an email so the shop can confirm the time.");
+        }
+        if (!phone.isEmpty()) {
+            phone = DataValidator.normalizePhone(phone);
+            if (phone == null) {
+                throw new InvalidInputException("Please enter a 10-digit phone number, e.g. 519-555-0100.");
+            }
+        }
+        if (!email.isEmpty()) {
+            if (!DataValidator.isValidEmail(email)) {
+                throw new InvalidInputException("Please enter a valid email, e.g. name@example.com.");
+            }
+            email = DataValidator.normalizeEmail(email);
+        }
+        String note = clean(params.get("note"));
+        if (note.length() > MAX_NOTE) {
+            throw new InvalidInputException("The note is too long (at most " + MAX_NOTE + " characters).");
+        }
+        String problem = clean(params.get("q"));
+        if (problem.length() > MAX_PROBLEM) {
+            problem = problem.substring(0, MAX_PROBLEM);
+        }
+        String vehicleName = params.getOrDefault("vehicle", "").trim();
+        VehicleType vehicle = vehicleName.isEmpty() ? null : VehicleType.fromUserInput(vehicleName);
+        String service = "";
+        if (vehicle != null && !problem.isEmpty()) {
+            List<SymptomMatcher.Match> matches = matchesFor(vehicle, problem);
+            if (!matches.isEmpty()) {
+                service = matches.get(0).category().displayName();
+            }
+        }
+        VisitRequest saved = visits.add(new VisitRequest(null,
+                java.time.LocalDateTime.now(clock.withZone(Availability.ONTARIO)).withNano(0).toString(),
+                shop.getUrl(), shop.getTitle(), first(shop.getPhones()), first(shop.getEmails()),
+                slot, slots.describe(slot), slots.hoursKnown(), problem, service,
+                vehicle == null ? "" : vehicle.displayName(), name, phone == null ? "" : phone, email, note,
+                VisitRequest.REQUESTED));
+        return visitToMap(saved);
+    }
+
+    /** GET /api/visits?ids=CC-1001,CC-1002 -- the driver's own requests (the page remembers their references). */
+    public List<Map<String, Object>> visits(Map<String, String> params) {
+        List<String> ids = new ArrayList<>();
+        for (String id : params.getOrDefault("ids", "").split(",")) {
+            if (!id.isBlank()) {
+                ids.add(id.trim());
+            }
+        }
+        if (ids.size() > MAX_VISIT_IDS) {
+            ids = ids.subList(ids.size() - MAX_VISIT_IDS, ids.size());
+        }
+        List<Map<String, Object>> answer = new ArrayList<>();
+        visits.find(ids).forEach(request -> answer.add(visitToMap(request)));
+        return answer;
+    }
+
+    /** POST /api/visit/cancel  id=CC-1001 */
+    public Map<String, Object> cancelVisit(Map<String, String> params) throws StorageException {
+        String id = params.getOrDefault("id", "").trim();
+        if (id.isEmpty()) {
+            throw new InvalidInputException("Which request? The reference is missing.");
+        }
+        return visitToMap(visits.cancel(id));
+    }
+
+    private ServiceDocument shopFor(String url) {
+        if (url == null || url.isBlank()) {
+            throw new InvalidInputException("Please choose a shop.");
+        }
+        for (ServiceDocument doc : system.documents()) {
+            if (doc.getUrl().equals(url.trim()) && shown(doc)) {
+                return doc;
+            }
+        }
+        throw new InvalidInputException("That shop is not in CarCare+ any more. Please search again.");
+    }
+
+    private VisitSlots slotsFor(ServiceDocument shop) {
+        return VisitSlots.of(OpeningHours.parse(shop.getOpeningHours()),
+                java.time.LocalDateTime.now(clock.withZone(Availability.ONTARIO)), LATER_DAYS);
+    }
+
+    private Map<String, Object> shopSummary(ServiceDocument shop) {
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("title", shop.getTitle());
+        summary.put("url", shop.getUrl());
+        summary.put("phone", first(shop.getPhones()));
+        summary.put("email", first(shop.getEmails()));
+        summary.put("availability", Availability.of(shop.getOpeningHours(), clock).label());
+        return summary;
+    }
+
+    private Map<String, Object> visitToMap(VisitRequest request) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("id", request.id());
+        item.put("status", request.status());
+        item.put("createdAt", request.createdAt());
+        item.put("shopTitle", request.shopTitle());
+        item.put("shopUrl", request.shopUrl());
+        item.put("shopPhone", request.shopPhone());
+        item.put("shopEmail", request.shopEmail());
+        // website and position from the current data, for shops without a phone or email
+        ServiceDocument shop = system.documents().stream()
+                .filter(doc -> doc.getUrl().equals(request.shopUrl())).findFirst().orElse(null);
+        item.put("shopWebsite", shop == null ? "" : shop.getWebsite());
+        if (shop != null && shop.hasLocation()) {
+            item.put("shopLat", shop.getLocation().latitude());
+            item.put("shopLon", shop.getLocation().longitude());
+        }
+        item.put("slot", request.slot());
+        item.put("slotLabel", request.slotLabel());
+        item.put("exactTime", request.exactTime());
+        item.put("past", java.time.LocalDateTime.parse(request.slot())
+                .isBefore(java.time.LocalDateTime.now(clock.withZone(Availability.ONTARIO)).minusHours(1)));
+        item.put("service", request.service());
+        item.put("problem", request.problem());
+        item.put("name", request.name());
+        item.put("phone", request.phone());
+        item.put("email", request.email());
+        item.put("subject", request.subject());
+        item.put("message", request.message());
+        return item;
+    }
+
+    /** Trims and removes control characters (no line breaks inside one field). */
+    private static String clean(String text) {
+        return text == null ? "" : text.replaceAll("\\p{Cntrl}", " ").replaceAll("\\s+", " ").trim();
+    }
+
+    private static String first(List<String> list) {
+        return list == null || list.isEmpty() ? "" : list.get(0);
     }
 
     /** Category name such as "BATTERY"; blank means any category. */

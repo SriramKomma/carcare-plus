@@ -29,3 +29,6 @@ data/osm/
 
 # Contact details scraped from shop websites (regenerated with the contacts command)
 data/contacts/
+
+# Visit requests: drivers' names and phone numbers, never committed
+data/visits/

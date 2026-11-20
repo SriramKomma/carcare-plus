@@ -91,6 +91,34 @@ class WebServerTest {
     }
 
     @Test
+    void visitRequestsArePostedAsAForm() throws Exception {
+        // real clock here, so take the first time the server offers (fixture pages have no hours: tomorrow morning at the latest)
+        String url = "https://fixtures.carcareplus.invalid/brake-shop-calgary";
+        HttpResponse<String> slots = get("/api/visit/slots?url=" + java.net.URLEncoder.encode(url, "UTF-8"));
+        assertEquals(200, slots.statusCode(), slots.body());
+        java.util.regex.Matcher first = java.util.regex.Pattern.compile("\"value\":\"([^\"]+)\"").matcher(slots.body());
+        assertTrue(first.find(), slots.body());
+
+        String form = "url=" + java.net.URLEncoder.encode(url, "UTF-8") + "&slot=" + first.group(1)
+                + "&name=Sam+Lee&phone=519-555-0100";
+        HttpResponse<String> posted = send(HttpRequest.newBuilder(URI.create(server.url() + "api/visit"))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(form)).build());
+        assertEquals(200, posted.statusCode(), posted.body());
+        assertTrue(posted.body().contains("\"id\":\"CC-1001\""), posted.body());
+
+        assertEquals(405, get("/api/visit?" + form).statusCode(), "saving needs POST");
+        HttpResponse<String> notAForm = send(HttpRequest.newBuilder(URI.create(server.url() + "api/visit"))
+                .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString("{}")).build());
+        assertEquals(400, notAForm.statusCode());
+        HttpResponse<String> tooBig = send(HttpRequest.newBuilder(URI.create(server.url() + "api/visit"))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString("note=" + "x".repeat(WebServer.MAX_BODY_BYTES))).build());
+        assertEquals(400, tooBig.statusCode());
+        assertTrue(get("/api/visits?ids=CC-1001").body().contains("Sam Lee"));
+    }
+
+    @Test
     void portInUseGivesClearError() {
         CarCareException e = assertThrows(CarCareException.class,
                 () -> WebServer.start(SearchSystem.load(dir.resolve("parsed-pages"), dir.resolve("h.txt")), server.port()));

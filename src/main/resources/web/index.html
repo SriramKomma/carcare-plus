@@ -537,6 +537,45 @@
   .visit .who { font-size: 12.5px; color: var(--muted); }
   @media (max-width: 700px) { .visit-grid { grid-template-columns: 1fr; } }
 
+  /* request a visit: day and time picker, confirmation, my requests */
+  .visit .sub, .my-visits .sub { display: block; font-size: 12.5px; color: var(--muted); }
+  .visit label .sub { margin-bottom: 4px; font-weight: 500; }
+  .v-step { margin-bottom: 14px; }
+  .pick { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pick-btn { height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+              font: inherit; font-size: 13.5px; color: var(--text); cursor: pointer; font-variant-numeric: tabular-nums;
+              transition: border-color .15s, background .15s, color .15s, transform .15s var(--ease); }
+  .pick-btn:hover { border-color: var(--primary-line); background: var(--primary-soft); transform: translateY(-1px); }
+  .pick-btn[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .pick-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .v-times { max-height: 128px; overflow: auto; padding: 2px; }
+  .v-hint { display: flex; gap: 6px; align-items: center; margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .v-note { display: block; margin-top: 10px; }
+  .v-nocontact { flex-basis: 100%; font-size: 13px; color: var(--muted); }
+  .v-note textarea { width: 100%; resize: vertical; font: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid var(--line);
+                     border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
+  .v-note textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+  .v-picked { font-size: 13.5px; color: var(--muted); }
+  .v-picked.on { color: var(--primary); font-weight: 600; }
+  .v-error { margin: 0 0 12px; }
+  .v-done { display: grid; gap: 10px; }
+  .v-done-head { display: flex; gap: 10px; align-items: flex-start; color: #067647; }
+  .v-done-head b { color: var(--text); font-size: 15.5px; }
+  .v-msg summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+  .v-msg pre { white-space: pre-wrap; font: inherit; font-size: 13px; background: var(--surface); border: 1px solid var(--line);
+               border-radius: var(--radius-sm); padding: 10px 12px; margin: 8px 0 0; }
+  .my-visits { margin-bottom: 20px; padding: 16px 18px; }
+  .mv-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .mv-head .sec-title { margin: 0 0 8px; }
+  .mv-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0;
+             border-top: 1px solid var(--line); }
+  .mv-item.cancelled .mv-main b { color: var(--muted); text-decoration: line-through; }
+  .mv-main b { margin-right: 8px; }
+  .mv-sendbox { flex-basis: 100%; }
+  .v-status { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+  .v-status.on { background: var(--primary-soft); color: var(--primary); }
+  .v-status.off { background: var(--surface-2); color: var(--muted); }
+
   /* priority panel */
   .pri-overlay { position: fixed; inset: 0; z-index: 3000; background: rgba(16, 24, 40, .45); display: grid; place-items: center;
                  padding: 16px; animation: fade .15s ease; }
@@ -688,6 +727,9 @@
         </div>
       </details>
     </div>
+
+    <!-- This browser's visit requests (non-priority) -->
+    <section class="card my-visits" id="myVisits" hidden></section>
 
     <!-- Shown until the first search -->
     <div id="startArea">
@@ -1186,48 +1228,193 @@ function resultCard(x, i) {
 }
 
 // ===================================================== non-priority: request a visit
-/** Pick a time in the next 2 days; the request opens in the driver's own email/phone app. */
-function visitFormHtml(x) {
-  const times = (x.next2Days || []).length ? x.next2Days : ["Any time in the next 2 days"];
-  const send = [];
-  if (x.emails.length) send.push(`<button type="button" class="btn primary small visit-email">${icon("mail", "sm")}Email request</button>`);
-  if (x.phones.length) send.push(`<a class="btn ${x.emails.length ? "ghost" : "primary"} small" href="${esc(telHref(x.phones[0]))}">${icon("phone", "sm")}Call to book</a>`);
-  send.push(`<button type="button" class="btn ghost small visit-copy">${icon("file", "sm")}Copy request</button>`);
-  return `<div class="visit-grid">
-      <label><span class="lbl">When suits you?</span><select class="visit-when">${times.map((t) => `<option>${esc(t)}</option>`).join("")}</select></label>
-      <label><span class="lbl">Your name</span><input class="visit-name" autocomplete="name" placeholder="e.g. Sam Lee"></label>
-      <label><span class="lbl">Your phone (optional)</span><input class="visit-phone" autocomplete="tel" placeholder="e.g. 519-555-0100"></label>
+/** POST a form to the API; errors come back like api() errors. */
+async function postApi(path, params = {}) {
+  const clean = Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ""));
+  let response;
+  try {
+    response = await fetch("/api/" + path, { method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(clean).toString() });
+  } catch (e) {
+    throw Object.assign(new Error("Cannot reach the CarCare+ server. Is it still running?"), { status: 0 });
+  }
+  let body = {};
+  try { body = await response.json(); } catch (e) { /* not JSON */ }
+  if (!response.ok) throw Object.assign(new Error(body.error || "Request failed (" + response.status + ")"), { status: response.status });
+  return body;
+}
+
+/* The references of this browser's requests (CC-1001, ...). Only a convenience:
+   the requests themselves are saved on the server. */
+const VISITS_KEY = "carcare.visits";
+function myVisitIds() {
+  try { const ids = JSON.parse(localStorage.getItem(VISITS_KEY) || "[]"); return Array.isArray(ids) ? ids.filter((id) => typeof id === "string") : []; }
+  catch { return []; }
+}
+function rememberVisit(id) {
+  try { localStorage.setItem(VISITS_KEY, JSON.stringify([...myVisitIds().filter((x) => x !== id), id].slice(-20))); } catch { /* private window */ }
+}
+
+function visitFormHtml() {
+  return `<div class="visit-body"><div class="pri-wait">${icon("loader", "spin")}<span>Loading free times…</span></div></div>`;
+}
+
+/** The buttons that send a saved request to the shop from the driver's own phone or email. */
+function sendButtons(v) {
+  const b = [];
+  if (v.shopEmail) b.push(`<a class="btn primary small" href="mailto:${encodeURIComponent(v.shopEmail)}?subject=${encodeURIComponent(v.subject)}&body=${encodeURIComponent(v.message)}">${icon("mail", "sm")}Email the shop</a>`);
+  if (v.shopPhone) {
+    b.push(`<a class="btn ${v.shopEmail ? "ghost" : "primary"} small" href="sms:${esc(v.shopPhone.replace(/[^\d+]/g, ""))}?&body=${encodeURIComponent(v.message)}">${icon("share", "sm")}Text the shop</a>`);
+    b.push(`<a class="btn ghost small" href="${esc(telHref(v.shopPhone))}">${icon("phone", "sm")}Call ${esc(v.shopPhone)}</a>`);
+  }
+  if (!v.shopEmail && !v.shopPhone) {
+    if (safeUrl(v.shopWebsite)) b.push(`<a class="btn primary small" target="_blank" rel="noopener" href="${esc(safeUrl(v.shopWebsite))}">${icon("globe", "sm")}Shop website</a>`);
+    if (v.shopLat !== undefined) b.push(`<a class="btn ghost small" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${v.shopLat},${v.shopLon}">${icon("nav", "sm")}Directions</a>`);
+  }
+  b.push(`<button type="button" class="btn ghost small v-copy">${icon("file", "sm")}Copy message</button>`);
+  if (!v.shopEmail && !v.shopPhone) b.push(`<span class="v-nocontact">This shop lists no phone or email. ${safeUrl(v.shopWebsite) ? "Copy the message and send it through their website." : "Copy the message, or show it at the shop in person."}</span>`);
+  return b.join("");
+}
+function bindCopy(root, v) {
+  root.querySelectorAll(".v-copy").forEach((btn) => btn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(v.message); toast("Message copied. Paste it into an email or text to the shop."); }
+    catch { toast("Could not copy. Open \"See the message\" and copy it by hand."); }
+  }));
+}
+
+async function loadVisitForm(card, x) {
+  const body = card.querySelector(".visit-body");
+  let r;
+  try { r = await api("visit/slots", { url: x.url }); }
+  catch (e) { body.innerHTML = `<div class="notice error">${icon("alert")}<span>${esc(e.message)}</span></div>`; return; }
+  if (!r.days.length) { body.innerHTML = `<div class="notice warn">${icon("alert")}<span>${esc(r.message)}</span></div>`; return; }
+
+  let day = 0, slot = null;
+  body.innerHTML = `
+    <div class="v-step"><span class="lbl">1 · Pick a day</span><div class="pick v-days" role="group" aria-label="Day">${
+      r.days.map((d, i) => `<button type="button" class="pick-btn" data-day="${i}" aria-pressed="${i === 0}">${esc(d.label)}</button>`).join("")}</div></div>
+    <div class="v-step"><span class="lbl">2 · Pick a time</span><div class="pick v-times" role="group" aria-label="Time"></div>
+      ${r.shop.phone || r.shop.email ? "" : `<div class="v-hint">${icon("alert", "sm")}This shop lists no phone or email. You can still save the request and take the message to them.</div>`}
+      ${r.hoursKnown ? "" : `<div class="v-hint">${icon("clock", "sm")}This shop's hours aren't listed, so pick part of the day. The shop will confirm the exact time.</div>`}</div>
+    <div class="v-step"><span class="lbl">3 · Your details</span>
+      <div class="visit-grid">
+        <label><span class="sub">Name</span><input class="v-name" autocomplete="name" maxlength="60" placeholder="e.g. Sam Lee"></label>
+        <label><span class="sub">Phone</span><input class="v-phone" type="tel" autocomplete="tel" placeholder="e.g. 519-555-0100"></label>
+        <label><span class="sub">Email</span><input class="v-email" type="email" autocomplete="email" placeholder="optional if you give a phone"></label>
+      </div>
+      <label class="v-note"><span class="sub">Note for the shop (optional)</span><textarea class="v-note-text" rows="2" maxlength="300" placeholder="e.g. 2015 Honda Civic, noise started last week"></textarea></label>
     </div>
-    <div class="row-inline">${send.join("")}</div>
-    <div class="who">${x.phones.length || x.emails.length ? "The request opens in your own email app, or call and read it out." : "No phone or email is listed: copy the request and use the website or visit."}</div>`;
+    <div class="notice error v-error" hidden></div>
+    <div class="row-inline"><button type="button" class="btn primary v-send">${icon("check", "sm")}Send request</button>
+      <span class="v-picked">No time picked yet</span></div>`;
+
+  const times = body.querySelector(".v-times");
+  const picked = body.querySelector(".v-picked");
+  const showTimes = () => {
+    times.innerHTML = r.days[day].slots.map((t) => `<button type="button" class="pick-btn" data-slot="${esc(t.value)}" aria-pressed="${t.value === slot}">${esc(t.label)}</button>`).join("");
+  };
+  showTimes();
+  body.querySelector(".v-days").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-day]"); if (!b) return;
+    day = +b.dataset.day;
+    body.querySelectorAll(".v-days .pick-btn").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    showTimes();
+  });
+  times.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-slot]"); if (!b) return;
+    slot = b.dataset.slot;
+    times.querySelectorAll(".pick-btn").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    picked.textContent = `${r.days[day].label}, ${b.textContent}`;
+    picked.classList.add("on");
+    body.querySelector(".v-error").hidden = true;
+  });
+
+  const send = body.querySelector(".v-send");
+  send.addEventListener("click", async () => {
+    const error = body.querySelector(".v-error");
+    const fail = (msg, focus) => { error.innerHTML = `${icon("alert")}<span>${esc(msg)}</span>`; error.hidden = false; focus?.focus(); };
+    const name = body.querySelector(".v-name"), phone = body.querySelector(".v-phone"), email = body.querySelector(".v-email");
+    if (!slot) return fail("Please pick a time first.", times.querySelector(".pick-btn"));
+    if (name.value.trim().length < 2) return fail("Please enter your name.", name);
+    if (!phone.value.trim() && !email.value.trim()) return fail("Please give a phone number or an email so the shop can confirm.", phone);
+    send.disabled = true;
+    send.innerHTML = `${icon("loader", "spin")}Sending…`;
+    try {
+      const v = await postApi("visit", { url: x.url, slot, name: name.value, phone: phone.value, email: email.value,
+        note: body.querySelector(".v-note-text").value, q: lastSearch?.problem?.text || $("q").value, vehicle });
+      rememberVisit(v.id);
+      showVisitDone(body, v);
+      loadMyVisits();
+    } catch (e) {
+      fail(e.message);
+      send.disabled = false;
+      send.innerHTML = `${icon("check", "sm")}Send request`;
+    }
+  });
 }
-function visitText(x, card) {
-  const r = lastSearch || {};
-  const problem = r.problem ? `${r.problem.text} (${r.problem.label})` : (r.category || r.query || "car repair");
-  const name = card.querySelector(".visit-name").value.trim();
-  const phone = card.querySelector(".visit-phone").value.trim();
-  return [`Hello ${x.title},`, "",
-    "I found your shop on CarCare+ and would like to book a repair. It is not urgent: any time within the next 2 days works.", "",
-    `Problem: ${problem}`, r.vehicle ? `Vehicle: ${r.vehicle}` : "", `Preferred time: ${card.querySelector(".visit-when").value}`,
-    name ? `Name: ${name}` : "", phone ? `Phone: ${phone}` : "", "", "Could you confirm a time? Thank you."]
-    .filter((line, i, all) => line !== "" || all[i - 1] !== "").join("\n");
+
+function showVisitDone(body, v) {
+  body.innerHTML = `<div class="v-done">
+      <div class="v-done-head">${icon("check")}<div><b>Request ${esc(v.id)} saved</b>
+        <div class="sub">${esc(v.shopTitle)} · ${esc(v.slotLabel)}</div></div></div>
+      <div class="lbl">Last step: send it to the shop so they can confirm</div>
+      <div class="row-inline">${sendButtons(v)}</div>
+      <details class="v-msg"><summary>See the message</summary><pre>${esc(v.message)}</pre></details>
+      <div class="who">CarCare+ saved your request (see "My visit requests" at the top). It does not contact the shop for you: the message goes from your own email or phone.</div>
+    </div>`;
+  bindCopy(body, v);
+  body.querySelector(".v-done-head").scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
+
 function bindVisit(card, x) {
+  let loaded = false;
   card.querySelector(".visit-btn")?.addEventListener("click", (e) => {
     const form = card.querySelector(".visit");
     form.hidden = !form.hidden;
     e.currentTarget.setAttribute("aria-expanded", String(!form.hidden));
-    if (!form.hidden) card.querySelector(".visit-name").focus();
-  });
-  card.querySelector(".visit-email")?.addEventListener("click", () => {
-    const subject = "Repair request (within 2 days): " + (lastSearch?.problem?.label || "car repair");
-    window.location.href = `mailto:${x.emails[0]}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(visitText(x, card))}`;
-  });
-  card.querySelector(".visit-copy")?.addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText(visitText(x, card)); toast("Request copied."); }
-    catch { toast("Could not copy. Select the text and copy it by hand."); }
+    if (!form.hidden && !loaded) { loaded = true; loadVisitForm(card, x); }
   });
 }
+
+/** "My visit requests": this browser's saved requests, with send and cancel. */
+async function loadMyVisits() {
+  const box = $("myVisits");
+  const ids = myVisitIds();
+  if (!ids.length) { box.hidden = true; return; }
+  let list;
+  try { list = await api("visits", { ids: ids.join(",") }); } catch { return; }
+  if (!list.length) { box.hidden = true; return; }
+  list.reverse();   // newest first
+  const status = (v) => v.status === "CANCELLED" ? `<span class="v-status off">Cancelled</span>`
+    : v.past ? `<span class="v-status off">Past</span>` : `<span class="v-status on">Requested</span>`;
+  box.innerHTML = `<div class="mv-head"><h3 class="sec-title">My visit requests</h3><span class="sub">${list.length} saved</span></div>
+    ${list.map((v, i) => `<div class="mv-item${v.status === "CANCELLED" ? " cancelled" : ""}" data-i="${i}">
+      <div class="mv-main"><b>${esc(v.shopTitle)}</b>${status(v)}
+        <div class="sub">${esc(v.slotLabel)} · ${esc(v.id)}${v.service ? " · " + esc(v.service) : ""}</div></div>
+      ${v.status === "CANCELLED" || v.past ? "" : `<div class="row-inline">
+        <button type="button" class="btn ghost small mv-send" aria-expanded="false">${icon("share", "sm")}Send</button>
+        <button type="button" class="btn ghost small mv-cancel">${icon("x", "sm")}Cancel</button></div>
+        <div class="mv-sendbox row-inline" hidden>${sendButtons(v)}</div>`}
+    </div>`).join("")}`;
+  box.hidden = false;
+  box.querySelectorAll(".mv-item").forEach((item) => {
+    const v = list[+item.dataset.i];
+    bindCopy(item, v);
+    item.querySelector(".mv-send")?.addEventListener("click", (e) => {
+      const sendBox = item.querySelector(".mv-sendbox");
+      sendBox.hidden = !sendBox.hidden;
+      e.currentTarget.setAttribute("aria-expanded", String(!sendBox.hidden));
+    });
+    item.querySelector(".mv-cancel")?.addEventListener("click", async (e) => {
+      if (!confirm(`Cancel request ${v.id} at ${v.shopTitle}?\n\nIf you already sent it, also tell the shop.`)) return;
+      e.currentTarget.disabled = true;
+      try { await postApi("visit/cancel", { id: v.id }); toast(`Request ${v.id} cancelled.`); }
+      catch (err) { toast(err.message); }
+      loadMyVisits();
+    });
+  });
+}
+loadMyVisits();
 
 // ================================================================ priority
 function getPosition() {

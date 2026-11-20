@@ -64,6 +64,8 @@ public class Main {
     static final Path FIXTURES_DIR = Path.of("fixtures", "html");
     static final Path OSM_DIR = Path.of("data", "osm");
     static final Path CONTACTS_FILE = Path.of("data", "contacts", "contacts.json");
+    /** Non-priority visit requests (drivers' names and phone numbers, so git-ignored). */
+    static final Path VISITS_FILE = Path.of("data", "visits", "visits.json");
     static final Path BENCHMARK_FILE = Path.of("docs", "performance-results.md");
 
     public static void main(String[] args) {
@@ -140,7 +142,7 @@ public class Main {
         int port = args.length >= 2 ? parsePort(args[1]) : DEFAULT_WEB_PORT;
         SearchSystem system = loadSearchSystem();
         GooglePlacesClient live = GooglePlacesClient.fromEnvironment();
-        WebServer server = WebServer.start(system, port, live);
+        WebServer server = WebServer.start(system, port, live, ca.carcareplus.visits.VisitBook.open(VISITS_FILE));
         System.out.println("CarCare+ is running at " + server.url());
         System.out.println(live == null
                 ? "Live nearby (Google Places) is off: set " + GooglePlacesClient.API_KEY_VARIABLE + " to turn it on."

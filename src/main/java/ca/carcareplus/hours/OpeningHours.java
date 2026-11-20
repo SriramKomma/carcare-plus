@@ -271,7 +271,7 @@ public final class OpeningHours {
     }
 
     /** 510 -> "8:30 AM", 1440 -> "12:00 AM" (midnight). */
-    static String clock(int minutes) {
+    public static String clock(int minutes) {
         int m = minutes % DAY_MINUTES;
         int hour = m / 60;
         String suffix = hour < 12 ? "AM" : "PM";
