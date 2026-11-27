@@ -1,11 +1,16 @@
-# CarCare+ repairers for the live dispatch demo (the team members).
+# CarCare+ repairers for the live dispatch demo: EXAMPLE with made-up 555 numbers.
+#
+# The real list (with the team's real phone numbers) is config/repairers.txt.
+# It is git-ignored, so no one's phone number ends up on GitHub. To make it:
+#     cp config/repairers.example.txt config/repairers.txt   and put the real numbers in.
+# Without it, the server uses this file (as it does on Render).
 #
 # Format:   id | name | phone | area | specialties
 #   id          short name used in addresses, e.g. /live-demo?as=sriram (a-z, 0-9, -)
 #   phone       any Canadian format; it is checked and shown as (XXX) XXX-XXXX
 #   specialties "all" means every type of repair
 #
-# Read by RepairerDirectory when the web server starts.
+# Read by RepairerDirectory when the web server starts (WebServer.repairersFile).
 
 sriram     | Sriram Komma | 519 555 0101      | Windsor | all
 sarvesh    | Sarvesh      | +1 (519) 555-0102 | London  | all

@@ -32,3 +32,6 @@ data/contacts/
 
 # Visit requests: drivers' names and phone numbers, never committed
 data/visits/
+
+# The repairers' real phone numbers (config/repairers.example.txt is the committed example)
+config/repairers.txt

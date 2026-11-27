@@ -35,7 +35,7 @@ class SmsDispatcherTest {
         clock = new MutableClock(Instant.parse("2026-11-26T15:00:00Z"));
         board = new JobBoard(clock);
         phones = new SimulatedSmsGateway(clock);
-        sms = new SmsDispatcher(phones, RepairerDirectory.load(Path.of("config", "repairers.txt")), board, Runnable::run);
+        sms = new SmsDispatcher(phones, RepairerDirectory.load(Path.of("config", "repairers.example.txt")), board, Runnable::run);
     }
 
     private RepairJob post(List<String> invited) {
@@ -181,7 +181,7 @@ class SmsDispatcherTest {
             }
         };
         JobBoard other = new JobBoard(clock);
-        SmsDispatcher failing = new SmsDispatcher(broken, RepairerDirectory.load(Path.of("config", "repairers.txt")), other, Runnable::run);
+        SmsDispatcher failing = new SmsDispatcher(broken, RepairerDirectory.load(Path.of("config", "repairers.example.txt")), other, Runnable::run);
         other.post(new JobBoard.JobRequest("Alex", "(519) 555-0100", "", "Gas Vehicle", "flat", "", List.of("sriram")));
         assertEquals(SmsDispatcher.Delivery.FAILED, failing.delivery("JOB-1", "sriram"));
         assertEquals("The number is unverified.", failing.deliveryError("JOB-1", "sriram"));

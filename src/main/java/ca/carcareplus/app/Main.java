@@ -144,9 +144,12 @@ public class Main {
         GooglePlacesClient live = GooglePlacesClient.fromEnvironment();
         ca.carcareplus.sms.TwilioSmsGateway sms = ca.carcareplus.sms.TwilioSmsGateway.fromEnvironment();
         WebServer server = WebServer.start(system, port, live, ca.carcareplus.visits.VisitBook.open(VISITS_FILE),
-                ca.carcareplus.dispatch.RepairerDirectory.load(WebServer.REPAIRERS_FILE), sms);
+                ca.carcareplus.dispatch.RepairerDirectory.load(WebServer.repairersFile()), sms);
         System.out.println("CarCare+ is running at " + server.url());
         System.out.println("Live dispatch demo: " + server.url() + "live-demo  (SMS: " + server.smsDescription() + ")");
+        System.out.println("  Repairers from " + WebServer.repairersFile()
+                + (WebServer.repairersFile().equals(WebServer.REPAIRERS_FILE) ? "" : " (made-up numbers: copy it to "
+                + WebServer.REPAIRERS_FILE + " and put in the real ones)"));
         if (sms == null) {
             System.out.println("  For real SMS set " + ca.carcareplus.sms.TwilioSmsGateway.SID_VARIABLE + ", "
                     + ca.carcareplus.sms.TwilioSmsGateway.TOKEN_VARIABLE + ", "

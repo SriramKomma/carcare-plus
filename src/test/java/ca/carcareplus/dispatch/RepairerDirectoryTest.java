@@ -19,8 +19,8 @@ class RepairerDirectoryTest {
     Path dir;
 
     @Test
-    void readsTheRealConfigFile() throws Exception {
-        RepairerDirectory directory = RepairerDirectory.load(Path.of("config", "repairers.txt"));
+    void readsTheCommittedExampleFile() throws Exception {
+        RepairerDirectory directory = RepairerDirectory.load(Path.of("config", "repairers.example.txt"));
         assertEquals(4, directory.size());
         Repairer sriram = directory.get("sriram");
         assertEquals("Sriram Komma", sriram.name());

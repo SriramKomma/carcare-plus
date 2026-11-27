@@ -21,7 +21,7 @@ import ca.carcareplus.dispatch.MutableClock;
 import ca.carcareplus.dispatch.RepairerDirectory;
 import ca.carcareplus.exceptions.InvalidInputException;
 
-/** The live dispatch demo with the real team list (config/repairers.txt) and a hand-moved clock. */
+/** The live dispatch demo with the team list (config/repairers.example.txt, made-up numbers) and a hand-moved clock. */
 class DispatchApiTest {
 
     private MutableClock clock;
@@ -30,7 +30,7 @@ class DispatchApiTest {
     @BeforeEach
     void setUp() throws Exception {
         clock = new MutableClock(Instant.parse("2026-11-26T15:00:00Z"));
-        RepairerDirectory team = RepairerDirectory.load(Path.of("config", "repairers.txt"));
+        RepairerDirectory team = RepairerDirectory.load(Path.of("config", "repairers.example.txt"));
         // The service finder is WebApi's in the real server; here a stand-in keeps the test small
         api = new DispatchApi(team, new JobBoard(clock),
                 (vehicle, problem) -> problem.contains("flat") ? "Flat tire / puncture" : "");

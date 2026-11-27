@@ -81,8 +81,15 @@ public final class WebServer {
     private static final Gson GSON = new Gson();
     static final String PAGE_RESOURCE = "/web/index.html";
     static final String DEMO_RESOURCE = "/web/live-demo.html";
-    /** The repairers of the live dispatch demo. */
+    /** The repairers of the live dispatch demo, with real phone numbers (git-ignored). */
     static final java.nio.file.Path REPAIRERS_FILE = java.nio.file.Path.of("config", "repairers.txt");
+    /** The committed example with made-up 555 numbers, used when the real file is missing. */
+    static final java.nio.file.Path REPAIRERS_EXAMPLE = java.nio.file.Path.of("config", "repairers.example.txt");
+
+    /** config/repairers.txt if it exists, else the example (a fresh clone, Render). */
+    static java.nio.file.Path repairersFile() {
+        return java.nio.file.Files.exists(REPAIRERS_FILE) ? REPAIRERS_FILE : REPAIRERS_EXAMPLE;
+    }
     static final int THREADS = 8; // the live demo keeps 5+ windows asking twice a second
     static final int MAX_BODY_BYTES = 8 * 1024;
 
@@ -121,7 +128,7 @@ public final class WebServer {
     /** @param visits where visit requests are saved (Main uses data/visits/visits.json) */
     public static WebServer start(SearchSystem system, int port, GooglePlacesClient live, VisitBook visits)
             throws CarCareException {
-        return start(system, port, live, visits, RepairerDirectory.load(REPAIRERS_FILE), null);
+        return start(system, port, live, visits, RepairerDirectory.load(repairersFile()), null);
     }
 
     /**

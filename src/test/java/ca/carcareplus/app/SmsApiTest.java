@@ -29,7 +29,7 @@ class SmsApiTest {
     private final MutableClock clock = new MutableClock(Instant.parse("2026-11-26T15:00:00Z"));
 
     private static RepairerDirectory team() throws Exception {
-        return RepairerDirectory.load(Path.of("config", "repairers.txt"));
+        return RepairerDirectory.load(Path.of("config", "repairers.example.txt"));
     }
 
     private static void post(JobBoard board) {
