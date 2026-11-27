@@ -62,6 +62,9 @@
                     font: inherit; font-size: 14px; font-weight: 500; padding: 0 2px; cursor: pointer; white-space: nowrap;
                     border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
   nav.tabs button:hover { color: var(--text); border-bottom-color: var(--line-strong); }
+  nav.tabs a.tab-link { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 14px; font-weight: 500;
+                       padding: 0 2px; white-space: nowrap; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
+  nav.tabs a.tab-link:hover { color: var(--primary); border-bottom-color: var(--primary-line); text-decoration: none; }
   nav.tabs button[aria-selected="true"] { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
   @media (max-width: 600px) {
     .bar { gap: 6px 16px; padding-top: 10px; }
@@ -655,6 +658,7 @@
       <button role="tab" aria-selected="true" data-tab="search"><svg class="icon sm"><use href="#i-search"/></svg>Find help</button>
       <button role="tab" aria-selected="false" data-tab="live" id="liveTab" hidden><svg class="icon sm"><use href="#i-live"/></svg>Live nearby</button>
       <button role="tab" aria-selected="false" data-tab="tools"><svg class="icon sm"><use href="#i-grid"/></svg>Course tools</button>
+      <a class="tab-link" href="/live-demo" target="_blank" rel="noopener" title="First-come, first-served repairer dispatch (opens a new window)"><svg class="icon sm"><use href="#i-truck"/></svg>Live demo</a>
     </nav>
   </div>
 </header>

@@ -18,6 +18,8 @@ import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
+import ca.carcareplus.dispatch.JobBoard;
+import ca.carcareplus.dispatch.RepairerDirectory;
 import ca.carcareplus.exceptions.CarCareException;
 import ca.carcareplus.exceptions.InvalidInputException;
 import ca.carcareplus.exceptions.ServiceUnavailableException;
@@ -49,6 +51,7 @@ import ca.carcareplus.visits.VisitBook;
  * POST /api/visit        url, slot, name, phone, email, note, q, vehicle   save a visit request
  * GET  /api/visits       ?ids=CC-1001,CC-1002     the driver's saved requests
  * POST /api/visit/cancel id=                       cancel one
+ * GET /live-demo         the live dispatch demo page (web/live-demo.html); routes in DispatchApi
  * </pre>
  *
  * POST bodies are form-encoded (application/x-www-form-urlencoded), at most
@@ -69,7 +72,10 @@ public final class WebServer {
     private static final Logger LOG = Logger.getLogger(WebServer.class.getName());
     private static final Gson GSON = new Gson();
     static final String PAGE_RESOURCE = "/web/index.html";
-    static final int THREADS = 4;
+    static final String DEMO_RESOURCE = "/web/live-demo.html";
+    /** The repairers of the live dispatch demo. */
+    static final java.nio.file.Path REPAIRERS_FILE = java.nio.file.Path.of("config", "repairers.txt");
+    static final int THREADS = 8; // the live demo keeps 5+ windows asking twice a second
     static final int MAX_BODY_BYTES = 8 * 1024;
 
     /** One API route: query parameters in, an object to send as JSON out. */
@@ -103,7 +109,14 @@ public final class WebServer {
     /** @param visits where visit requests are saved (Main uses data/visits/visits.json) */
     public static WebServer start(SearchSystem system, int port, GooglePlacesClient live, VisitBook visits)
             throws CarCareException {
+        return start(system, port, live, visits, RepairerDirectory.load(REPAIRERS_FILE));
+    }
+
+    /** @param repairers who receives requests in the live dispatch demo */
+    public static WebServer start(SearchSystem system, int port, GooglePlacesClient live, VisitBook visits,
+                                  RepairerDirectory repairers) throws CarCareException {
         WebApi api = new WebApi(system, live, java.time.Clock.systemUTC(), visits);
+        DispatchApi dispatch = new DispatchApi(repairers, new JobBoard(java.time.Clock.systemUTC()), api::serviceFor);
         HttpServer server;
         try {
             server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
@@ -131,6 +144,15 @@ public final class WebServer {
         route(server, "/api/visits", searchLock, api::visits);
         route(server, "/api/visit", "POST", searchLock, api::requestVisit);
         route(server, "/api/visit/cancel", "POST", searchLock, api::cancelVisit);
+        // Live dispatch demo. JobBoard has its own lock, so these do not wait for searches;
+        // only posting a job holds the search lock, because it finds the service for the problem.
+        route(server, "/api/repairers", null, params -> dispatch.repairers());
+        route(server, "/api/jobs", "POST", searchLock, dispatch::post);
+        route(server, "/api/jobs/accept", "POST", null, dispatch::accept);
+        route(server, "/api/jobs/reject", "POST", null, dispatch::reject);
+        route(server, "/api/jobs/done", "POST", null, dispatch::done);
+        route(server, "/api/jobs/cancel", "POST", null, dispatch::cancel);
+        route(server, "/api/jobs/live", null, dispatch::live);
         ExecutorService pool = Executors.newFixedThreadPool(THREADS, task -> {
             Thread thread = new Thread(task, "carcare-web");
             thread.setDaemon(true); // do not keep the program alive after the server stops
@@ -215,14 +237,19 @@ public final class WebServer {
     private static void servePage(HttpExchange exchange) throws IOException {
         try (exchange) {
             String path = exchange.getRequestURI().getPath();
-            if (!path.equals("/") && !path.equals("/index.html")) {
+            String resource = switch (path) {
+                case "/", "/index.html" -> PAGE_RESOURCE;
+                case "/live-demo", "/live-demo.html" -> DEMO_RESOURCE;
+                default -> null;
+            };
+            if (resource == null) {
                 send(exchange, 404, "text/plain; charset=utf-8", "Not found".getBytes(StandardCharsets.UTF_8));
                 return;
             }
-            try (InputStream page = WebServer.class.getResourceAsStream(PAGE_RESOURCE)) {
+            try (InputStream page = WebServer.class.getResourceAsStream(resource)) {
                 if (page == null) {
                     send(exchange, 500, "text/plain; charset=utf-8",
-                            ("Missing " + PAGE_RESOURCE).getBytes(StandardCharsets.UTF_8));
+                            ("Missing " + resource).getBytes(StandardCharsets.UTF_8));
                     return;
                 }
                 send(exchange, 200, "text/html; charset=utf-8", page.readAllBytes());

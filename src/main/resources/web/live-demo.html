@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CarCare+ Live dispatch</title>
+<meta name="description" content="Live demo: one repair request goes to several repairers, and the first to accept gets the job.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  /* Same palette as the main page (index.html) */
+  :root {
+    color-scheme: light;
+    --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f9fafb; --text: #101828; --muted: #667085;
+    --line: #eaecf0; --line-strong: #d0d5dd;
+    --primary: #2563eb; --primary-hover: #1d4ed8; --primary-soft: #eff4ff; --primary-line: #c7d7fe;
+    --ok: #067647; --ok-bright: #16a34a; --ok-soft: #ecfdf3; --ok-line: #abefc6;
+    --warn: #b54708; --warn-soft: #fffaeb; --warn-line: #fedf89; --danger: #b42318; --danger-soft: #fef3f2;
+    --shadow-sm: 0 1px 2px rgba(16, 24, 40, .05);
+    --shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 6px 16px rgba(16, 24, 40, .06);
+    --shadow-lg: 0 12px 28px rgba(16, 24, 40, .14);
+    --radius: 12px; --radius-sm: 8px; --ease: cubic-bezier(.2, .7, .2, 1);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.55 "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .icon { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 2;
+          stroke-linecap: round; stroke-linejoin: round; vertical-align: -3px; }
+  .icon.sm { width: 15px; height: 15px; vertical-align: -2px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+
+  /* ------------------------------------------------------------ header */
+  header { position: sticky; top: 0; z-index: 50; background: #fff; border-bottom: 1px solid var(--line); }
+  .bar { display: flex; align-items: center; gap: 10px 16px; min-height: 60px; flex-wrap: wrap; padding: 8px 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; color: var(--text); }
+  .brand:hover { text-decoration: none; }
+  .brand b { font-size: 16px; letter-spacing: -.01em; }
+  .brand b span { color: var(--primary); }
+  .brand small { display: block; color: var(--muted); font-size: 12px; line-height: 1.2; }
+  .bar .spacer { flex: 1; }
+  .role-chip { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px; border-radius: 999px;
+               background: var(--surface-2); border: 1px solid var(--line); font-size: 13.5px; font-weight: 600; }
+  .live { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .live i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); }
+  .live.ok { color: var(--ok); }
+  .live.ok i { background: var(--ok-bright); box-shadow: 0 0 0 0 rgba(22, 163, 74, .5); animation: beat 1.6s infinite; }
+  .live.bad { color: var(--warn); }
+  .live.bad i { background: #f79009; }
+  @keyframes beat { 0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, .45); } 70% { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); } 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); } }
+
+  main { padding: 20px 0 48px; }
+
+  /* ------------------------------------------------------------- basics */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 18px; }
+  .card + .card { margin-top: 16px; }
+  h2 { margin: 0 0 4px; font-size: 20px; letter-spacing: -.015em; }
+  h3 { margin: 0 0 10px; font-size: 15px; }
+  .lead { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 820px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+  .lbl { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin: 12px 0 6px; }
+  input, select { width: 100%; height: 42px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+                  background: var(--surface); color: var(--text); font: inherit; transition: border-color .15s, box-shadow .15s; }
+  input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  @media (max-width: 480px) { .two { grid-template-columns: 1fr; } }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; height: 42px; background: var(--surface-2);
+         border: 1px solid var(--line-strong); border-radius: var(--radius-sm); }
+  .seg button { border: 0; border-radius: 7px; background: none; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: var(--radius-sm);
+         border: 1px solid transparent; font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; color: var(--text);
+         transition: background .15s var(--ease), transform .12s var(--ease), box-shadow .15s, border-color .15s, color .15s; }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--primary); color: #fff; box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 30%, transparent); }
+  .btn.primary:hover { background: var(--primary-hover); }
+  .btn.go { background: var(--ok-bright); color: #fff; box-shadow: 0 2px 8px rgba(22, 163, 74, .3); }
+  .btn.go:hover { background: #15803d; }
+  .btn.ghost { background: var(--surface); border-color: var(--line-strong); }
+  .btn.ghost:hover { border-color: var(--primary); color: var(--primary); }
+  .btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+  .btn.small { height: 32px; padding: 0 12px; font-size: 13px; }
+  .btn.wide { width: 100%; }
+  .btn[disabled] { opacity: .55; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .error { margin-top: 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--danger-soft); color: var(--danger); font-size: 14px; }
+  .linkish { border: 0; background: none; color: var(--primary); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; }
+  .linkish:hover { text-decoration: underline; }
+
+  /* avatars and online dots */
+  .avatar { position: relative; display: inline-grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 50%;
+            color: #fff; font-weight: 700; font-size: 13.5px; letter-spacing: .02em; }
+  .avatar.lg { width: 52px; height: 52px; font-size: 18px; }
+  .avatar.xs { width: 26px; height: 26px; font-size: 11px; }
+  .avatar .dot { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #fff; background: #98a2b3; }
+  .avatar.lg .dot { width: 14px; height: 14px; }
+  .avatar .dot.on { background: var(--ok-bright); }
+
+  /* -------------------------------------------------------- repairer pick list */
+  .pick { display: grid; gap: 8px; }
+  .pick label { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+                cursor: pointer; transition: border-color .15s, background .15s; }
+  .pick label:hover { border-color: var(--primary-line); background: var(--primary-soft); }
+  .pick label:has(input:checked) { border-color: var(--primary-line); background: var(--primary-soft); }
+  .pick input { width: 18px; height: 18px; flex: none; accent-color: var(--primary); }
+  .pick .who { flex: 1; min-width: 0; }
+  .pick .who b { display: block; font-size: 14px; }
+  .pick .who small { color: var(--muted); font-size: 12.5px; }
+  .tag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+         background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); white-space: nowrap; }
+  .tag.on { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-line); }
+
+  /* ------------------------------------------------------------- tracker */
+  .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
+          letter-spacing: .02em; text-transform: uppercase; }
+  .pill.open { background: var(--primary-soft); color: var(--primary); }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.grey { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+  .track-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .track-head .spacer { flex: 1; }
+  .hero { display: flex; align-items: center; gap: 18px; padding: 18px; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--line); }
+  .hero h2 { font-size: 19px; margin: 0; }
+  .hero p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+  .hero.ok { background: var(--ok-soft); border-color: var(--ok-line); }
+  .hero.warn { background: var(--warn-soft); border-color: var(--warn-line); }
+  .radar { position: relative; width: 56px; height: 56px; flex: none; }
+  .radar::before, .radar::after { content: ""; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--primary);
+                                   opacity: 0; animation: radar 2s var(--ease) infinite; }
+  .radar::after { animation-delay: 1s; }
+  .radar span { position: absolute; inset: 16px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 6px var(--primary-soft); }
+  @keyframes radar { 0% { transform: scale(.35); opacity: .9; } 100% { transform: scale(1.15); opacity: 0; } }
+  .tick { width: 56px; height: 56px; flex: none; border-radius: 50%; background: var(--ok-bright); display: grid; place-items: center;
+          box-shadow: 0 6px 16px rgba(22, 163, 74, .35); }
+  .tick svg { width: 30px; height: 30px; stroke: #fff; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .tick.pop { animation: pop .5s var(--ease); }
+  .tick.pop path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: draw .45s .18s var(--ease) forwards; }
+  @keyframes pop { 0% { transform: scale(.3); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .badge-icon { width: 56px; height: 56px; flex: none; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 1px solid var(--line); color: var(--muted); }
+  .badge-icon .icon { width: 26px; height: 26px; }
+  .countdown { margin-top: 14px; }
+  .countdown .row { justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .meter { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+  .meter i { display: block; height: 100%; background: var(--primary); border-radius: 999px; transition: width .25s linear; }
+  .meter.low i { background: #f79009; }
+  .winner { display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 14px; border-radius: var(--radius); background: #fff;
+            border: 1px solid var(--ok-line); box-shadow: var(--shadow); }
+  .winner.enter { animation: rise .5s var(--ease); }
+  .winner .who { flex: 1; min-width: 0; }
+  .winner .who b { display: block; font-size: 16px; }
+  .winner .who small { color: var(--muted); font-size: 13px; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .answers { display: grid; gap: 6px; margin-top: 16px; }
+  .answer { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--line); transition: background .3s, border-color .3s; }
+  .answer .who { flex: 1; min-width: 0; font-size: 14px; }
+  .answer .who small { color: var(--muted); }
+  .answer.accepted { background: var(--ok-soft); border-color: var(--ok-line); }
+  .answer.declined, .answer.noanswer { opacity: .7; }
+  .ans { font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+  .ans.waiting { color: var(--primary); }
+  .ans.accepted { color: var(--ok); }
+  .ans.declined { color: var(--danger); }
+  .ans.noanswer { color: var(--muted); }
+  .typing { display: inline-flex; gap: 3px; margin-left: 4px; vertical-align: 2px; }
+  .typing i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: typing 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+  @keyframes typing { 0%, 60%, 100% { opacity: .25; transform: none; } 30% { opacity: 1; transform: translateY(-2px); } }
+  dl.facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 16px 0 0; font-size: 14px; }
+  dl.facts dt { color: var(--muted); }
+  dl.facts dd { margin: 0; }
+
+  /* --------------------------------------------------------- repairer inbox */
+  .me { display: flex; align-items: center; gap: 14px; }
+  .me .who { flex: 1; min-width: 0; }
+  .me .who b { display: block; font-size: 17px; }
+  .inbox { display: grid; gap: 12px; margin-top: 16px; }
+  .job { position: relative; padding: 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+         transition: opacity .3s, filter .3s, border-color .3s; }
+  .job.enter { animation: slide .45s var(--ease); }
+  @keyframes slide { from { opacity: 0; transform: translateY(-12px) scale(.98); } to { opacity: 1; transform: none; } }
+  .job.new { border: 2px solid var(--primary); padding: 15px; animation: glow 1.8s infinite; }
+  .job.new.enter { animation: slide .45s var(--ease), glow 1.8s .45s infinite; }
+  @keyframes glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, .25); } 50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); } }
+  .job.won { border: 2px solid var(--ok-bright); padding: 15px; background: linear-gradient(0deg, #fff, var(--ok-soft)); }
+  .job.closed { opacity: .62; filter: grayscale(.4); }
+  .job .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .job .top .spacer { flex: 1; }
+  .job h3 { margin: 10px 0 2px; font-size: 16px; }
+  .job .what { margin: 0; color: var(--muted); font-size: 14px; }
+  .job .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .job .meta span { display: inline-flex; align-items: center; gap: 5px; }
+  .job .actions { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-top: 14px; }
+  .job .contact { margin-top: 12px; padding: 12px; border-radius: var(--radius-sm); background: #fff; border: 1px solid var(--ok-line); }
+  .job .contact b { display: block; }
+  .bell { color: var(--primary); display: inline-flex; animation: ring 1.4s infinite; transform-origin: 50% 10%; }
+  @keyframes ring { 0%, 50%, 100% { transform: rotate(0); } 10% { transform: rotate(-16deg); } 20% { transform: rotate(14deg); } 30% { transform: rotate(-8deg); } 40% { transform: rotate(5deg); } }
+  .stamp { position: absolute; right: 14px; top: 46px; padding: 4px 10px; border: 2px solid var(--muted); border-radius: 6px; color: var(--muted);
+           font-weight: 800; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; transform: rotate(-6deg); background: #fff; }
+  .empty { padding: 34px 18px; text-align: center; color: var(--muted); border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--surface); }
+  .empty .radar { margin: 0 auto 12px; }
+
+  /* ------------------------------------------------------------- launcher */
+  .roles { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; margin-top: 14px; }
+  .role { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface);
+          transition: border-color .15s, box-shadow .15s, transform .15s var(--ease); }
+  .role:hover { border-color: var(--primary-line); box-shadow: var(--shadow); transform: translateY(-1px); }
+  .role .who { flex: 1; min-width: 0; }
+  .role .who b { display: block; }
+  .role .who small { color: var(--muted); font-size: 12.5px; }
+  .steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: step; }
+  .steps li { display: flex; gap: 12px; font-size: 14px; }
+  .steps li::before { counter-increment: step; content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%;
+                      display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: 13px; }
+  .note { margin-top: 14px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
+  code { font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+
+  /* --------------------------------------------------------------- toasts */
+  #toasts { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: grid; gap: 8px; max-width: min(360px, calc(100vw - 32px)); }
+  .toast { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius-sm); background: #101828; color: #fff;
+           box-shadow: var(--shadow-lg); font-size: 14px; animation: rise .3s var(--ease); }
+  .toast.ok { background: #065f46; }
+  .toast.warn { background: #93370d; }
+  .toast.out { opacity: 0; transform: translateY(6px); transition: all .3s; }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="M5 17h14M5 17a2 2 0 1 0 4 0M15 17a2 2 0 1 0 4 0M3 17v-5l2-5h14l2 5v5M3 12h18"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/></symbol>
+  <symbol id="i-window" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4zM23 9l-6 6M17 9l6 6"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+</svg>
+
+<header>
+  <div class="bar">
+    <a class="brand" href="/live-demo" title="Demo start page">
+      <svg viewBox="0 0 40 40" width="34" height="34" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#1d4ed8"/></linearGradient></defs>
+        <rect width="40" height="40" rx="11" fill="url(#lg)"/>
+        <path d="M11.5 22.5l2.1-5.6a3 3 0 0 1 2.8-1.9h7.2a3 3 0 0 1 2.8 1.9l2.1 5.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"/>
+        <rect x="9" y="21.8" width="22" height="7.6" rx="2.6" fill="#fff"/>
+        <circle cx="13.6" cy="25.6" r="1.5" fill="#1d4ed8"/><circle cx="26.4" cy="25.6" r="1.5" fill="#1d4ed8"/>
+        <rect x="11" y="28.6" width="4.2" height="3.4" rx="1.2" fill="#fff"/><rect x="24.8" y="28.6" width="4.2" height="3.4" rx="1.2" fill="#fff"/>
+        <circle cx="31" cy="10" r="6.2" fill="#22c55e" stroke="#fff" stroke-width="2"/><path d="M31 7.2v5.6M28.2 10h5.6" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></svg>
+      <div><b>CarCare<span>+</span> Live dispatch</b><small>First to accept gets the job</small></div>
+    </a>
+    <div class="spacer"></div>
+    <span class="role-chip" id="roleChip" hidden></span>
+    <span class="live" id="live"><i></i><span>Connecting…</span></span>
+    <button type="button" class="btn ghost small" id="soundBtn" hidden></button>
+    <a class="btn ghost small" href="/" title="Back to the CarCare+ search"><svg class="icon sm"><use href="#i-home"/></svg>CarCare+</a>
+  </div>
+</header>
+
+<main class="wrap" id="app"></main>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+"use strict";
+/*
+ * One page, three kinds of window (chosen by the address):
+ *   /live-demo                  start page: opens the other windows side by side
+ *   /live-demo?as=customer      the driver who needs a repair
+ *   /live-demo?as=sriram        one repairer's inbox (any id from config/repairers.txt)
+ *
+ * Every window asks the server "anything newer than version N?" every POLL_MS
+ * (GET /api/jobs/live). Nothing changed -> a tiny answer; something changed -> the
+ * whole view, and the window redraws. See JobBoard.java for why this is polling and
+ * not a held-open connection.
+ */
+const POLL_MS = 500;
+const RETRY_MS = 1500;
+const $ = (sel, el = document) => el.querySelector(sel);
+const app = $("#app");
+const query = new URLSearchParams(location.search);
+const role = (query.get("as") || "").trim().toLowerCase();
+
+const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const icon = (id, cls = "icon sm") => `<svg class="${cls}"><use href="#i-${id}"/></svg>`;
+
+/* ---------------------------------------------------------------- server */
+let clockOffset = 0; // server time - this computer's time (both are this computer here, but be safe)
+const serverNow = () => Date.now() + clockOffset;
+
+async function getJson(url) {
+  const response = await fetch(url, { cache: "no-store" });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) { const e = new Error(data.error || `HTTP ${response.status}`); e.status = response.status; throw e; }
+  return data;
+}
+
+async function postForm(url, fields) {
+  const response = await fetch(url, { method: "POST", body: new URLSearchParams(fields) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+  return data;
+}
+
+/** Asks for changes every POLL_MS; onView gets the whole view when something changed. */
+function startPolling(buildUrl, onView, onFatal) {
+  let version = -1, timer = null, busy = false, stopped = false;
+  async function tick() {
+    clearTimeout(timer);
+    if (busy || stopped) return;
+    busy = true;
+    let delay = POLL_MS;
+    try {
+      const data = await getJson(buildUrl(version));
+      clockOffset = data.now - Date.now();
+      setLive(true);
+      if (data.changed) { version = data.version; onView(data); }
+    } catch (e) {
+      if (e.status === 400 && onFatal) { stopped = true; setLive(false); onFatal(e.message); return; }
+      setLive(false);
+      delay = RETRY_MS;
+    } finally {
+      busy = false;
+      if (!stopped) timer = setTimeout(tick, delay);
+    }
+  }
+  // A window brought to the front asks at once (background windows may be slowed by the browser)
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
+  tick();
+  return { now: () => { tick(); }, reset: () => { version = -1; tick(); } };
+}
+
+function setLive(ok) {
+  const el = $("#live");
+  el.className = "live " + (ok ? "ok" : "bad");
+  el.lastElementChild.textContent = ok ? "Live" : "Reconnecting…";
+}
+
+/* --------------------------------------------------------- little helpers */
+const COLOURS = ["#2563eb", "#7c3aed", "#db2777", "#ea580c", "#0d9488", "#4f46e5", "#0891b2", "#65a30d"];
+function colourFor(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return COLOURS[h % COLOURS.length]; }
+function initials(name) { return String(name).split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join(""); }
+function avatar(person, size = "", showOnline = true) {
+  const dot = showOnline ? `<i class="dot${person.online ? " on" : ""}" title="${person.online ? "Online" : "Offline"}"></i>` : "";
+  return `<span class="avatar ${size}" style="background:${colourFor(person.id)}">${esc(initials(person.name))}${dot}</span>`;
+}
+function clock(ms) { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; }
+function ago(ms) { const s = Math.max(0, Math.round(ms / 1000)); return s < 5 ? "just now" : s < 60 ? `${s} s ago` : `${Math.floor(s / 60)} min ago`; }
+function telLink(phone) { return "tel:+1" + String(phone).replace(/\D/g, "").slice(-10); }
+
+function toast(text, kind = "") {
+  const el = document.createElement("div");
+  el.className = "toast " + kind;
+  el.innerHTML = icon(kind === "ok" ? "check" : kind === "warn" ? "x" : "bell", "icon") + `<div>${esc(text)}</div>`;
+  $("#toasts").append(el);
+  setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 320); }, 4200);
+}
+
+let baseTitle = document.title, flashTimer = null;
+function flashTitle(text) {
+  clearInterval(flashTimer);
+  let on = false, n = 0;
+  flashTimer = setInterval(() => {
+    on = !on; document.title = on ? "● " + text : baseTitle;
+    if (++n > 10) { clearInterval(flashTimer); document.title = baseTitle; }
+  }, 800);
+}
+
+/* Sound: browsers only allow it after a click in that window, so it is a button. */
+let audio = null, soundOn = false, soundTouched = false;
+function drawSound() { $("#soundBtn").innerHTML = icon(soundOn ? "sound" : "mute") + (soundOn ? "Sound on" : "Sound off"); }
+function unlockAudio() { try { audio = audio || new AudioContext(); audio.resume(); return true; } catch (e) { return false; } }
+function setupSound() {
+  const btn = $("#soundBtn");
+  btn.hidden = false;
+  btn.addEventListener("click", () => {
+    soundTouched = true;
+    soundOn = !soundOn && unlockAudio();
+    if (soundOn) chime();
+    drawSound();
+  });
+  drawSound();
+}
+/** The customer's "Send" click also counts as permission, unless they switched sound off themselves. */
+function enableSoundFromClick() {
+  if (soundOn || soundTouched) return;
+  soundOn = unlockAudio();
+  drawSound();
+}
+function chime(up = true) {
+  if (!soundOn || !audio) return;
+  const t = audio.currentTime;
+  (up ? [784, 1175] : [660, 880, 1320]).forEach((freq, i) => {
+    const osc = audio.createOscillator(), gain = audio.createGain();
+    osc.type = "sine"; osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t + i * 0.14);
+    gain.gain.exponentialRampToValueAtTime(0.18, t + i * 0.14 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.14 + 0.4);
+    osc.connect(gain).connect(audio.destination);
+    osc.start(t + i * 0.14); osc.stop(t + i * 0.14 + 0.45);
+  });
+}
+
+/* Countdown bars and "sent 12 s ago" labels tick between polls. */
+setInterval(() => {
+  const now = serverNow();
+  document.querySelectorAll("[data-expires]").forEach((el) => {
+    const left = Number(el.dataset.expires) - now, total = Number(el.dataset.total) || 1;
+    const label = el.querySelector("[data-left]"), bar = el.querySelector(".meter");
+    if (label) label.textContent = left > 0 ? clock(left) : "0:00";
+    if (bar) { bar.firstElementChild.style.width = Math.max(0, Math.min(100, (left / total) * 100)) + "%"; bar.classList.toggle("low", left < 30000); }
+  });
+  document.querySelectorAll("[data-since]").forEach((el) => { el.textContent = ago(now - Number(el.dataset.since)); });
+}, 250);
+
+function countdown(job, answerSeconds) {
+  return `<div class="countdown" data-expires="${job.expiresAt}" data-total="${answerSeconds * 1000}">
+      <div class="row"><span>${icon("clock")} Time left to accept</span><b data-left>${clock(job.expiresAt - serverNow())}</b></div>
+      <div class="meter"><i style="width:100%"></i></div></div>`;
+}
+
+function setRole(html) { const chip = $("#roleChip"); chip.innerHTML = html; chip.hidden = false; }
+
+/* =============================================================== start page */
+function startPage() {
+  document.title = baseTitle = "Live dispatch demo · CarCare+";
+  app.innerHTML = `
+    <div class="grid2">
+      <section class="card">
+        <h2>Live dispatch demo</h2>
+        <p class="lead">One repair request goes to every chosen repairer at the same moment. The first repairer to press
+          <b>Accept</b> gets the job; the request is then locked, and everyone else's window shows it as taken.</p>
+        <div class="row">
+          <button type="button" class="btn primary" id="openAll">${icon("window", "icon")}Open all windows side by side</button>
+          <span class="muted small">Customer on the left, repairers on the right.</span>
+        </div>
+        <div class="error" id="popupNote" hidden>Your browser blocked some windows. Allow pop-ups for this site
+          (icon at the right of the address bar), or open each window below.</div>
+        <div class="roles" id="roles"><div class="muted small">Loading repairers…</div></div>
+      </section>
+      <aside class="card">
+        <h3>What to show</h3>
+        <ol class="steps">
+          <li><span>In the <b>customer</b> window, pick a problem and press <b>Send to repairers</b>.</span></li>
+          <li><span>Every repairer window rings and shows the request within half a second.</span></li>
+          <li><span>One repairer presses <b>Accept</b>. The customer instantly sees who is coming, with their phone number.</span></li>
+          <li><span>The other repairers' cards turn grey: <i>already assigned</i>. Their Accept button is gone.</span></li>
+          <li><span>Try it: press Accept in two windows quickly. Only one can win.</span></li>
+        </ol>
+        <div class="note">${icon("lock")} <b>Why only one can win:</b> <code>JobBoard.accept()</code> is <code>synchronized</code>:
+          the check "is it still open?" and the change "assign it to me" happen as one step, so a second click
+          always sees the job already taken. <code>JobBoardTest</code> fires 40 accepts at once to prove it.</div>
+      </aside>
+    </div>`;
+  let repairers = [];
+  const draw = () => {
+    $("#roles").innerHTML = [
+      `<a class="role" href="?as=customer" data-role="customer" data-i="0">
+         <span class="avatar" style="background:#101828">${icon("car")}</span>
+         <span class="who"><b>Customer</b><small>Needs a repair</small></span>${icon("window")}</a>`,
+      ...repairers.map((r, i) => `<a class="role" href="?as=${encodeURIComponent(r.id)}" data-role="${esc(r.id)}" data-i="${i}">
+         ${avatar(r)}<span class="who"><b>${esc(r.name)}</b><small>Repairer · ${esc(r.area)} · ${r.online ? "online" : "offline"}</small></span>${icon("window")}</a>`),
+    ].join("");
+  };
+  // Opens a role in its own window placed on a grid: customer = left half, repairers = 2 columns on the right
+  function openWindow(roleId, index) {
+    const W = screen.availWidth, H = screen.availHeight, left0 = screen.availLeft || 0, top0 = screen.availTop || 0;
+    let x = left0, y = top0, w = Math.floor(W / 2), h = H;
+    if (roleId !== "customer") {
+      const rows = Math.max(1, Math.ceil(repairers.length / 2));
+      w = Math.floor(W / 4); h = Math.floor(H / rows);
+      x = left0 + Math.floor(W / 2) + (index % 2) * w; y = top0 + Math.floor(index / 2) * h;
+    }
+    return window.open(`/live-demo?as=${encodeURIComponent(roleId)}`, `carcare-${roleId}`,
+      `popup=yes,width=${w},height=${h},left=${x},top=${y}`);
+  }
+  $("#roles").addEventListener("click", (event) => {
+    const card = event.target.closest("[data-role]");
+    if (!card || event.ctrlKey || event.metaKey || event.shiftKey) return; // let the browser open a tab instead
+    event.preventDefault();
+    if (!openWindow(card.dataset.role, Number(card.dataset.i))) $("#popupNote").hidden = false;
+  });
+  $("#openAll").addEventListener("click", () => {
+    let blocked = !openWindow("customer", 0);
+    repairers.forEach((r, i) => { blocked = !openWindow(r.id, i) || blocked; });
+    $("#popupNote").hidden = !blocked;
+  });
+  startPolling((v) => `/api/jobs/live?since=${v}`, (data) => { repairers = data.repairers; draw(); });
+}
+
+/* ================================================================= customer */
+const JOB_KEY = "carcare.demo.job";      // per window (sessionStorage): the request this window is following
+const ME_KEY = "carcare.demo.customer";  // remembered name/phone/area (localStorage)
+
+function customerPage() {
+  document.title = baseTitle = "Customer · CarCare+ dispatch";
+  setRole(`<span class="avatar xs" style="background:#101828">${icon("car")}</span>Customer window`);
+  setupSound();
+  const saved = JSON.parse(localStorage.getItem(ME_KEY) || "{}");
+  let vehicle = saved.vehicle || "gas";
+  let repairers = [];
+  const chosen = new Set();
+  let chosenAll = true;           // until the customer unticks someone, new repairers are ticked too
+  let jobId = sessionStorage.getItem(JOB_KEY) || "";
+  let lastJob = null;
+  let answerSecondsSeen = 180;
+
+  app.innerHTML = `
+    <div class="grid2">
+      <div>
+        <section class="card" id="formCard">
+          <h2>Request a repairer</h2>
+          <p class="lead">Your request goes to every repairer you tick, all at once. The first to accept gets the job.</p>
+          <span class="lbl">Vehicle</span>
+          <div class="seg" id="vehicle">
+            <button type="button" data-v="gas" aria-pressed="false">Gas</button>
+            <button type="button" data-v="ev" aria-pressed="false">Electric</button>
+          </div>
+          <label class="lbl" for="problem">What's wrong with your car?</label>
+          <select id="problem"><option value="">Loading problems…</option></select>
+          <label class="lbl" for="details">Details (optional)</label>
+          <input id="details" maxlength="200" placeholder="e.g. front left tire, parked at the mall">
+          <div class="two">
+            <div><label class="lbl" for="name">Your name</label><input id="name" maxlength="60" autocomplete="name"></div>
+            <div><label class="lbl" for="phone">Phone</label><input id="phone" maxlength="20" autocomplete="tel" placeholder="519 555 0100"></div>
+          </div>
+          <label class="lbl" for="area">Where are you?</label>
+          <input id="area" maxlength="50" placeholder="City or street, e.g. Windsor">
+          <div class="row" style="justify-content:space-between;margin-top:16px">
+            <h3 style="margin:0">${icon("users", "icon")} Send to</h3>
+            <button type="button" class="linkish" id="allBtn">Select all</button>
+          </div>
+          <div class="pick" id="pick" style="margin-top:10px"></div>
+          <div class="error" id="formError" hidden></div>
+          <div class="row" style="margin-top:16px">
+            <button type="button" class="btn primary" id="sendBtn" style="flex:1">${icon("send", "icon")}<span>Send to repairers</span></button>
+            <button type="button" class="btn ghost" id="fillBtn" title="Fill in made-up details for the demo">Demo details</button>
+          </div>
+        </section>
+        <section class="card" id="trackCard" hidden></section>
+      </div>
+      <aside class="card">
+        <h3>How it works</h3>
+        <ol class="steps">
+          <li><span>Your request appears on every chosen repairer's screen at the same moment.</span></li>
+          <li><span>Each repairer can accept or decline. The <b>first</b> to accept is assigned, and the request is locked.</span></li>
+          <li><span>You see who accepted, how fast, and their phone number. The others see that the job is taken.</span></li>
+        </ol>
+        <div class="note">Repairers see only your first name and area until one of them accepts; then that repairer, and only
+          that one, gets your full name and phone number. Requests expire if nobody accepts within 3 minutes.</div>
+      </aside>
+    </div>`;
+
+  // --- form
+  const form = { name: $("#name"), phone: $("#phone"), area: $("#area"), details: $("#details"), problem: $("#problem") };
+  form.name.value = saved.name || ""; form.phone.value = saved.phone || ""; form.area.value = saved.area || "";
+  const drawVehicle = () => document.querySelectorAll("#vehicle button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === vehicle)));
+  $("#vehicle").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b || b.dataset.v === vehicle) return;
+    vehicle = b.dataset.v; drawVehicle(); loadProblems();
+  });
+  drawVehicle();
+
+  async function loadProblems() {
+    const keep = form.problem.value;
+    try {
+      const problems = await getJson(`/api/problems?vehicle=${vehicle}`);
+      const common = problems.filter((p) => p.commonRank >= 0).sort((a, b) => a.commonRank - b.commonRank);
+      const groups = new Map();
+      problems.forEach((p) => { if (!groups.has(p.group)) groups.set(p.group, []); groups.get(p.group).push(p); });
+      const opts = (list) => list.map((p) => `<option value="${esc(p.text)}">${esc(p.label)}</option>`).join("");
+      form.problem.innerHTML = `<option value="">Choose a problem…</option>`
+        + (common.length ? `<optgroup label="Common problems">${opts(common)}</optgroup>` : "")
+        + [...groups].map(([g, list]) => `<optgroup label="${esc(g)}">${opts(list)}</optgroup>`).join("");
+      if ([...form.problem.options].some((o) => o.value === keep)) form.problem.value = keep;
+    } catch (e) {
+      form.problem.innerHTML = `<option value="">(could not load problems; type them under Details)</option>`;
+    }
+  }
+  loadProblems();
+
+  function drawPick() {
+    if (!repairers.length) { $("#pick").innerHTML = `<div class="muted small">No repairers are set up (config/repairers.txt).</div>`; return; }
+    $("#pick").innerHTML = repairers.map((r) => `
+      <label><input type="checkbox" value="${esc(r.id)}" ${chosen.has(r.id) ? "checked" : ""}>
+        ${avatar(r)}<span class="who"><b>${esc(r.name)}</b><small>${esc(r.area)} · ${esc(r.specialties)}</small></span>
+        <span class="tag${r.online ? " on" : ""}">${r.online ? "Online" : "Offline"}</span></label>`).join("");
+    $("#sendBtn span").textContent = chosen.size ? `Send to ${chosen.size} repairer${chosen.size === 1 ? "" : "s"}` : "Send to repairers";
+    $("#allBtn").textContent = chosen.size === repairers.length ? "Clear all" : "Select all";
+  }
+  $("#pick").addEventListener("change", (e) => {
+    if (e.target.type !== "checkbox") return;
+    e.target.checked ? chosen.add(e.target.value) : chosen.delete(e.target.value);
+    chosenAll = chosen.size === repairers.length;
+    drawPick();
+  });
+  $("#allBtn").addEventListener("click", () => {
+    const all = chosen.size !== repairers.length;
+    chosen.clear(); if (all) repairers.forEach((r) => chosen.add(r.id));
+    chosenAll = all; drawPick();
+  });
+  $("#fillBtn").addEventListener("click", () => {
+    form.name.value ||= "Alex Morgan"; form.phone.value ||= "519 555 0100"; form.area.value ||= "Windsor";
+    if (!form.problem.value) { const first = [...form.problem.options].find((o) => o.value); if (first) form.problem.value = first.value; }
+  });
+
+  function showError(text) { const el = $("#formError"); el.textContent = text; el.hidden = !text; }
+
+  $("#sendBtn").addEventListener("click", async () => {
+    showError("");
+    if (!form.problem.value && !form.details.value.trim()) return showError("Pick a problem, or describe it under Details.");
+    if (!form.name.value.trim()) return showError("Please enter your name.");
+    if (!form.phone.value.trim()) return showError("Please enter a phone number so the repairer can call you.");
+    if (!chosen.size) return showError("Tick at least one repairer.");
+    enableSoundFromClick();
+    const btn = $("#sendBtn"); btn.disabled = true;
+    try {
+      localStorage.setItem(ME_KEY, JSON.stringify({ name: form.name.value.trim(), phone: form.phone.value.trim(), area: form.area.value.trim(), vehicle }));
+      const job = await postForm("/api/jobs", {
+        name: form.name.value, phone: form.phone.value, area: form.area.value, vehicle,
+        q: form.problem.value, details: form.details.value, repairers: [...chosen].join(","),
+      });
+      jobId = job.id; sessionStorage.setItem(JOB_KEY, jobId);
+      lastJob = null; drawJob(job); poller.reset();
+    } catch (e) {
+      showError(e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // --- tracker
+  function answerRow(r) {
+    const label = { waiting: `Waiting<span class="typing"><i></i><i></i><i></i></span>`, accepted: `${icon("check")} Accepted`,
+                    declined: `${icon("x")} Declined`, "no answer": "No answer" }[r.answer] || esc(r.answer);
+    const cls = r.answer.replace(" ", "");
+    return `<div class="answer ${cls}">${avatar(r, "xs")}<span class="who">${esc(r.name)} <small>· ${esc(r.area)}</small></span>
+      <span class="ans ${cls}">${label}</span></div>`;
+  }
+
+  function drawJob(job) {
+    const first = !lastJob || lastJob.id !== job.id;
+    const justAssigned = job.status === "ASSIGNED" && (!first && lastJob.status === "OPEN");
+    if (!first && lastJob.status !== job.status) {
+      if (job.status === "ASSIGNED") { chime(false); flashTitle("Repairer found!"); toast(job.headline, "ok"); }
+      else if (job.status === "NO_TAKERS" || job.status === "EXPIRED") { toast(job.headline, "warn"); }
+      else if (job.status === "DONE") { chime(); toast(job.headline, "ok"); }
+    }
+    lastJob = job;
+    $("#formCard").hidden = true;
+    const card = $("#trackCard"); card.hidden = false;
+    const pill = { OPEN: ["open", "Finding a repairer"], ASSIGNED: ["ok", "Assigned"], DONE: ["ok", "Done"],
+                   NO_TAKERS: ["warn", "No takers"], EXPIRED: ["warn", "Expired"], CANCELLED: ["grey", "Cancelled"] }[job.status];
+    let hero;
+    if (job.status === "OPEN") {
+      const waiting = job.invited.filter((r) => r.answer === "waiting").length;
+      hero = `<div class="hero"><div class="radar"><span></span></div><div><h2>${esc(job.headline)}</h2>
+        <p>Sent to ${job.invited.length} repairer${job.invited.length === 1 ? "" : "s"} · ${waiting} still deciding</p></div></div>
+        ${countdown(job, answerSecondsSeen)}`;
+    } else if (job.assigned) {
+      const a = job.assigned;
+      hero = `<div class="hero ok"><div class="tick ${justAssigned || first ? "pop" : ""}"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div><h2>${esc(job.headline)}</h2><p>${job.status === "DONE" ? "Thanks for using CarCare+." : `Accepted in ${a.acceptedInSeconds} s · they will call you at ${esc(job.customerPhone)}`}</p></div></div>
+        <div class="winner ${justAssigned ? "enter" : ""}">${avatar(a, "lg")}
+          <div class="who"><b>${esc(a.name)}</b><small>${icon("pin")} ${esc(a.area)} · ${esc(a.specialties)}</small></div>
+          <a class="btn go" href="${telLink(a.phone)}">${icon("phone", "icon")}${esc(a.phone)}</a></div>`;
+    } else {
+      hero = `<div class="hero ${job.status === "CANCELLED" ? "" : "warn"}"><div class="badge-icon">${icon(job.status === "CANCELLED" ? "x" : "clock", "icon")}</div>
+        <div><h2>${esc(job.headline)}</h2></div></div>`;
+    }
+    const live = job.status === "OPEN" || job.status === "ASSIGNED";
+    card.innerHTML = `
+      <div class="track-head"><span class="pill ${pill[0]}">${pill[1]}</span><b>${esc(job.id)}</b>
+        <span class="muted small">sent <span data-since="${job.createdAt}">${ago(serverNow() - job.createdAt)}</span></span>
+        <span class="spacer"></span>
+        ${live ? `<button type="button" class="btn ghost small danger" id="cancelBtn">Cancel request</button>`
+               : `<button type="button" class="btn primary small" id="againBtn">New request</button>`}</div>
+      ${hero}
+      <div class="answers">${job.invited.map(answerRow).join("")}</div>
+      <dl class="facts"><dt>Problem</dt><dd>${esc(job.problem)}</dd>
+        ${job.service ? `<dt>Service</dt><dd>${esc(job.service)}</dd>` : ""}
+        <dt>Vehicle</dt><dd>${esc(job.vehicle)}</dd>${job.area ? `<dt>Where</dt><dd>${esc(job.area)}</dd>` : ""}</dl>`;
+    const cancel = $("#cancelBtn");
+    if (cancel) cancel.addEventListener("click", async () => {
+      cancel.disabled = true;
+      try { drawJob(await postForm("/api/jobs/cancel", { id: job.id })); poller.now(); } catch (e) { toast(e.message, "warn"); cancel.disabled = false; }
+    });
+    const again = $("#againBtn");
+    if (again) again.addEventListener("click", () => {
+      jobId = ""; lastJob = null; sessionStorage.removeItem(JOB_KEY);
+      card.hidden = true; $("#formCard").hidden = false; form.details.value = "";
+    });
+  }
+
+  const poller = startPolling(
+    (v) => `/api/jobs/live?since=${v}&job=${encodeURIComponent(jobId)}`,
+    (data) => {
+      answerSecondsSeen = data.answerSeconds || answerSecondsSeen;
+      repairers = data.repairers || [];
+      if (chosenAll) repairers.forEach((r) => chosen.add(r.id)); // new repairers are ticked until you untick someone
+      [...chosen].forEach((id) => { if (!repairers.some((r) => r.id === id)) chosen.delete(id); });
+      drawPick();
+      if (jobId && data.job) drawJob(data.job);
+      else if (jobId && !data.job) {
+        toast(data.message || "That request is no longer on the board.", "warn");
+        jobId = ""; sessionStorage.removeItem(JOB_KEY); $("#trackCard").hidden = true; $("#formCard").hidden = false;
+      }
+    });
+}
+
+/* ================================================================= repairer */
+function repairerPage(id) {
+  setupSound();
+  let me = null, jobs = [], answerSeconds = 180;
+  const known = new Map();   // job id -> what "mine" was last time (to notice new and taken requests)
+  let firstView = true;
+  let freshIds = new Set();  // requests that arrived in this update: they slide in
+  const busy = new Set();    // jobs with an Accept/Decline on its way
+
+  app.innerHTML = `<section class="card" id="meCard"><div class="muted">Loading…</div></section>
+    <div class="inbox" id="inbox"></div>`;
+
+  function drawMe() {
+    $("#meCard").innerHTML = `<div class="me">${avatar(me, "lg")}
+      <div class="who"><b>${esc(me.name)}</b><span class="muted small">${icon("pin")} ${esc(me.area)} · ${esc(me.specialties)} · ${esc(me.phone)}</span></div>
+      <span class="tag on">Online · receiving requests</span></div>`;
+  }
+
+  function jobCard(job) {
+    const fresh = freshIds.has(job.id);
+    const kind = { NEW: "new", WON: "won", DONE: "won closed" }[job.mine] || "closed";
+    const stamp = { TAKEN: "Taken", CANCELLED: "Cancelled", EXPIRED: "Expired", DECLINED: "Declined", DONE: "Done" }[job.mine];
+    const head = job.mine === "NEW" ? `<span class="bell">${icon("bell", "icon")}</span><span class="pill open">New request</span>`
+               : job.mine === "WON" ? `<span class="pill ok">${icon("check")} Your job</span>`
+               : `<span class="pill grey">${esc(job.headline)}</span>`;
+    let body = "";
+    if (job.mine === "NEW") {
+      const wait = busy.has(job.id) ? "disabled" : "";
+      body = `${countdown(job, answerSeconds)}
+        <div class="actions"><button type="button" class="btn go" data-act="accept" data-id="${esc(job.id)}" ${wait}>${icon("check", "icon")}Accept</button>
+          <button type="button" class="btn ghost danger" data-act="reject" data-id="${esc(job.id)}" ${wait}>Decline</button></div>`;
+    } else if (job.mine === "WON") {
+      body = `<div class="contact"><span class="muted small">Customer</span><b>${esc(job.customerName)}</b>
+          <div class="row" style="margin-top:8px"><a class="btn go small" href="${telLink(job.customerPhone)}">${icon("phone")}${esc(job.customerPhone)}</a>
+          <button type="button" class="btn ghost small" data-act="done" data-id="${esc(job.id)}" ${busy.has(job.id) ? "disabled" : ""}>${icon("check")}Mark job done</button></div></div>`;
+    } else if (job.mine === "TAKEN") {
+      body = `<p class="muted small" style="margin:12px 0 0">${icon("lock")} Another repairer accepted first, so this request is locked.</p>`;
+    }
+    return `<article class="job ${kind}${fresh ? " enter" : ""}">
+      <div class="top">${head}<span class="spacer"></span><span class="muted small"><b>${esc(job.id)}</b> · <span data-since="${job.createdAt}">${ago(serverNow() - job.createdAt)}</span></span></div>
+      ${stamp ? `<span class="stamp">${stamp}</span>` : ""}
+      <h3>${esc(job.service || job.problem)}</h3>
+      ${job.service ? `<p class="what">“${esc(job.problem)}”</p>` : ""}
+      <div class="meta"><span>${icon("car")}${esc(job.vehicle)}</span>${job.area ? `<span>${icon("pin")}${esc(job.area)}</span>` : ""}
+        <span>${icon("users")}${esc(job.customerName)} · sent to ${job.invitedCount}</span></div>
+      ${body}</article>`;
+  }
+
+  function drawInbox() {
+    $("#inbox").innerHTML = jobs.length ? jobs.map(jobCard).join("")
+      : `<div class="empty"><div class="radar"><span></span></div><b>Waiting for repair requests…</b>
+         <div class="small">Keep this window open. New requests ring here the moment a customer sends them.</div></div>`;
+  }
+
+  function notice(newJobs) {
+    freshIds = new Set();
+    for (const job of newJobs) {
+      const before = known.get(job.id);
+      if (!firstView && before === undefined) freshIds.add(job.id);
+      if (!firstView && before === undefined && job.mine === "NEW") {
+        chime(); flashTitle("New repair request"); toast(`New request from ${job.customerName}: ${job.service || job.problem}`);
+      } else if (before === "NEW" && job.mine === "TAKEN") {
+        toast(`${job.id} was taken by another repairer.`, "warn");
+      } else if (before === "NEW" && job.mine === "CANCELLED") {
+        toast(`${job.id} was cancelled by the customer.`, "warn");
+      }
+      known.set(job.id, job.mine);
+    }
+  }
+
+  $("#inbox").addEventListener("click", async (event) => {
+    const btn = event.target.closest("[data-act]"); if (!btn) return;
+    const jobId = btn.dataset.id, act = btn.dataset.act;
+    busy.add(jobId); drawInbox();
+    try {
+      const answer = await postForm(`/api/jobs/${act}`, { id: jobId, repairer: id });
+      if (act === "accept") answer.accepted ? (toast("You got the job! The customer has been told.", "ok"), chime(false))
+                                            : toast(answer.message, "warn");
+      else if (act === "reject" && !answer.declined) toast(answer.message, "warn");
+      else if (act === "done") toast(answer.done ? "Marked as done." : answer.message, answer.done ? "ok" : "warn");
+      known.set(jobId, answer.job.mine);
+      jobs = jobs.map((j) => (j.id === jobId ? answer.job : j));
+    } catch (e) {
+      toast(e.message, "warn");
+    } finally {
+      busy.delete(jobId); drawInbox(); poller.now();
+    }
+  });
+
+  const poller = startPolling(
+    (v) => `/api/jobs/live?since=${v}&repairer=${encodeURIComponent(id)}`,
+    (data) => {
+      answerSeconds = data.answerSeconds || answerSeconds;
+      if (!me) {
+        document.title = baseTitle = `${data.me.name.split(" ")[0]} · CarCare+ dispatch`;
+        setRole(`${avatar({ ...data.me, online: true }, "xs", false)}Repairer: ${esc(data.me.name)}`);
+      }
+      me = data.me; drawMe();
+      notice(data.jobs);
+      jobs = data.jobs; drawInbox();
+      freshIds = new Set(); // later redraws must not replay the slide-in
+      firstView = false;
+    },
+    (message) => {
+      app.innerHTML = `<section class="card"><h2>Unknown repairer</h2><p class="lead">${esc(message)}</p>
+        <a class="btn primary" href="/live-demo">Back to the demo start page</a></section>`;
+    });
+}
+
+/* ------------------------------------------------------------------ start */
+if (!role) startPage();
+else if (role === "customer") customerPage();
+else repairerPage(role);
+</script>
+</body>
+</html>

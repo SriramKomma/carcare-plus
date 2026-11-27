@@ -543,7 +543,7 @@ public class WebApi {
     }
 
     /** The service a visit is for ("Battery problem"), or "" when the problem is not understood. */
-    private String serviceFor(String vehicleName, String problem) {
+    String serviceFor(String vehicleName, String problem) {
         if (vehicleName == null || vehicleName.isBlank() || problem.isEmpty()) {
             return "";
         }

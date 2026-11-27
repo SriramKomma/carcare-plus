@@ -1,0 +1,13 @@
+# CarCare+ repairers for the live dispatch demo (the team members).
+#
+# Format:   id | name | phone | area | specialties
+#   id          short name used in addresses, e.g. /live-demo?as=sriram (a-z, 0-9, -)
+#   phone       any Canadian format; it is checked and shown as (XXX) XXX-XXXX
+#   specialties "all" means every type of repair
+#
+# Read by RepairerDirectory when the web server starts.
+
+sriram     | Sriram Komma | 519 555 0101      | Windsor | all
+sarvesh    | Sarvesh      | +1 (519) 555-0102 | London  | all
+saikrishna | SaiKrishna   | +1 (519) 555-0103 | Windsor | all
+dharanish  | Dharanish    | +1 (519) 555-0104 | Windsor | all

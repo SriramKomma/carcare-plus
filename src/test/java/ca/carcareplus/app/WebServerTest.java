@@ -164,4 +164,59 @@ class WebServerTest {
         String history = get("/api/history").body();
         assertTrue(history.contains("{\"term\":\"towing\",\"count\":20}"), history);
     }
+
+    private HttpResponse<String> postForm(String path, String form) throws Exception {
+        return send(HttpRequest.newBuilder(URI.create(server.url() + path))
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(form)).build());
+    }
+
+    @Test
+    void servesTheLiveDemoPage() throws Exception {
+        HttpResponse<String> response = get("/live-demo");
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("<title>CarCare+ Live dispatch</title>"));
+        assertTrue(get("/").body().contains("href=\"/live-demo\""), "the main page links to it");
+    }
+
+    @Test
+    void liveDispatchOverHttpGivesTheJobToExactlyOneRepairer() throws Exception {
+        String repairers = get("/api/repairers").body();
+        assertTrue(repairers.contains("\"name\":\"Sriram Komma\""), repairers);
+
+        HttpResponse<String> posted = postForm("api/jobs", "name=Sam+Lee&phone=519+555+0100&area=Windsor&vehicle=gas"
+                + "&q=flat+tire&repairers=sriram,sarvesh,saikrishna,dharanish");
+        assertEquals(200, posted.statusCode(), posted.body());
+        assertTrue(posted.body().contains("\"id\":\"JOB-1\""), posted.body());
+        assertTrue(get("/api/jobs/live?repairer=dharanish").body().contains("\"mine\":\"NEW\""));
+
+        // All four press Accept at the same moment, as four separate HTTP requests
+        List<String> team = List.of("sriram", "sarvesh", "saikrishna", "dharanish");
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(team.size());
+        try {
+            java.util.concurrent.CountDownLatch gun = new java.util.concurrent.CountDownLatch(1);
+            List<java.util.concurrent.Future<String>> answers = new java.util.ArrayList<>();
+            for (String repairer : team) {
+                answers.add(pool.submit(() -> {
+                    gun.await();
+                    return postForm("api/jobs/accept", "id=JOB-1&repairer=" + repairer).body();
+                }));
+            }
+            gun.countDown();
+            int winners = 0;
+            for (java.util.concurrent.Future<String> answer : answers) {
+                if (answer.get(10, java.util.concurrent.TimeUnit.SECONDS).contains("\"accepted\":true")) {
+                    winners++;
+                }
+            }
+            assertEquals(1, winners);
+        } finally {
+            pool.shutdownNow();
+        }
+        String customer = get("/api/jobs/live?job=JOB-1").body();
+        assertTrue(customer.contains("\"status\":\"ASSIGNED\""), customer);
+        assertTrue(customer.contains("accepted your request"), customer);
+        assertEquals(405, get("/api/jobs/accept?id=JOB-1&repairer=sriram").statusCode(), "accepting needs POST");
+        assertEquals(400, get("/api/jobs/live?repairer=nobody").statusCode());
+    }
 }
