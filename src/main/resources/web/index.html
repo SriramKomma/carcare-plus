@@ -280,28 +280,6 @@
   code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .92em; background: var(--surface-2);
          border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
 
-  /* tools tabs */
-  .tool { padding: 20px; margin-bottom: 18px; }
-  .tool h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 19px; }
-  .tool h2 .icon { color: var(--primary); }
-  .out { margin-top: 16px; }
-  .word-list { display: flex; flex-wrap: wrap; gap: 8px; }
-  .word { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; background: var(--surface-2);
-          border: 1px solid var(--line); font-weight: 600; animation: rise .25s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 30ms); }
-  .word small { color: var(--muted); font-weight: 500; }
-  .bars { display: grid; gap: 8px; }
-  .bar-row { display: grid; grid-template-columns: minmax(90px, 160px) 1fr 44px; gap: 10px; align-items: center; font-size: 14px; }
-  .bar-track { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--ev));
-              transform-origin: left; animation: grow .5s var(--ease) both; }
-  .bar-row .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
-  .big-number { font-size: 44px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
-  .scroll { overflow-x: auto; margin-top: 12px; }
-  table.dp { border-collapse: separate; border-spacing: 4px; font-variant-numeric: tabular-nums; }
-  table.dp td, table.dp th { width: 36px; height: 36px; text-align: center; border-radius: 8px; font-size: 14px; }
-  table.dp th { color: var(--muted); font-weight: 600; }
-  table.dp td { background: var(--surface-2); border: 1px solid var(--line); }
-  table.dp td.path { background: var(--hl); border-color: transparent; font-weight: 800; }
 
   footer { color: var(--muted); font-size: 13px; padding: 0 0 36px; }
   footer .wrap { display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 16px; }
@@ -324,7 +302,6 @@
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
   @keyframes pop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
   @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
-  @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
   @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(36, 89, 224, .45); } 70% { box-shadow: 0 0 0 14px rgba(36, 89, 224, 0); } 100% { box-shadow: 0 0 0 0 rgba(36, 89, 224, 0); } }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spin { animation: spin .8s linear infinite; }
@@ -335,7 +312,7 @@
     .bar { flex-wrap: wrap; }
     .pills { margin-left: 0; justify-content: flex-start; }
     .brand small { display: none; }
-    .search-card, .tool { padding: 16px; }
+    .search-card { padding: 16px; }
     .result { padding: 14px; }
   }
 
@@ -392,10 +369,6 @@
   .pin { background: var(--primary); }
   .pin.active { background: #101828; }
 
-  .tool { padding: 24px; }
-  .tool h2 { font-size: 18px; font-weight: 600; }
-  .word { background: var(--surface-2); transition: border-color .15s, background .15s; }
-  .word:hover { border-color: var(--primary-line); background: var(--primary-soft); }
   footer { padding-bottom: 40px; }
   footer .wrap { border-top-color: var(--line); }
   footer a:hover { text-decoration: underline; }
@@ -439,8 +412,6 @@
   /* small things */
   .seg button { transition: color .15s, background .15s; }
   .seg button[aria-pressed="false"]:hover { background: rgba(255, 255, 255, .7); }
-  .tool { transition: box-shadow .2s var(--ease), border-color .2s; }
-  .tool:hover { box-shadow: var(--shadow); border-color: var(--line-strong); }
   .guides a, footer a { background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
                         transition: background-size .25s var(--ease); }
   .guides a:hover, footer a:hover { background-size: 100% 1px; text-decoration: none; }
@@ -460,18 +431,6 @@
 
 
 
-  /* course tools in a grid */
-  .tools-head { margin: 4px 2px 16px; }
-  .tools-head h2 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
-  .tools-head .sub { margin: 4px 0 0; color: var(--muted); }
-  .tools-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
-  .tools-grid .tool { margin: 0; }
-  .tools-grid .tool.wide { grid-column: 1 / -1; }
-  .tool h2 .icon { width: 34px; height: 34px; padding: 7px; border-radius: 10px; background: var(--primary-soft);
-                   transition: background .2s, color .2s, transform .3s var(--ease); }
-  .tool:hover h2 .icon { background: var(--primary); color: #fff; transform: rotate(-6deg); }
-
-  @media (max-width: 760px) { .tools-grid { grid-template-columns: 1fr; } }
   @media (max-width: 600px) { .search-card h2 { font-size: 23px; } }
 
   /* ------------------------------------------------ urgency: priority and non-priority */
@@ -583,10 +542,7 @@
   <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
   <symbol id="i-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
   <symbol id="i-fuel" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></symbol>
-  <symbol id="i-type" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></symbol>
   <symbol id="i-spell" viewBox="0 0 24 24"><path d="m6 16 6-12 6 12"/><path d="M8 12h8"/><path d="m16 20 2 2 4-4"/></symbol>
-  <symbol id="i-chart" viewBox="0 0 24 24"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></symbol>
-  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
   <symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
@@ -597,7 +553,6 @@
   <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
   <symbol id="i-map" viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></symbol>
-  <symbol id="i-grid" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
@@ -632,7 +587,6 @@
     <nav class="tabs" role="tablist" id="tabs">
       <button role="tab" aria-selected="true" data-tab="search"><svg class="icon sm"><use href="#i-search"/></svg>Find help</button>
       <button role="tab" aria-selected="false" data-tab="live" id="liveTab" hidden><svg class="icon sm"><use href="#i-live"/></svg>Live nearby</button>
-      <button role="tab" aria-selected="false" data-tab="tools"><svg class="icon sm"><use href="#i-grid"/></svg>Course tools</button>
       <a class="tab-link" href="/live-demo" target="_blank" rel="noopener" title="First-come, first-served repairer dispatch (opens a new window)"><svg class="icon sm"><use href="#i-truck"/></svg>Live demo</a>
     </nav>
   </div>
@@ -726,62 +680,6 @@
     <div id="liveResults"></div>
   </section>
 
-  <!-- ============================================================ Course tools -->
-  <section data-panel="tools" hidden>
-    <div class="tools-head">
-      <h2>Course tools</h2>
-      <p class="sub">The data structures and algorithms behind the search, each one you can try on the real pages.</p>
-    </div>
-    <div class="tools-grid">
-    <div class="card tool">
-      <h2><svg class="icon"><use href="#i-type"/></svg>Word completion</h2>
-      <p class="lead">A Trie of every word in the pages. The most frequent words come first.</p>
-      <label class="lbl" for="prefix">Start of a word</label>
-      <div class="field"><svg class="icon"><use href="#i-type"/></svg><input id="prefix" autocomplete="off" placeholder="e.g. bat"></div>
-      <div class="out" id="completeOut"></div>
-    </div>
-<div class="card tool">
-      <h2><svg class="icon"><use href="#i-spell"/></svg>Spell check</h2>
-      <p class="lead">Levenshtein edit distance against the vocabulary from the text files. Up to 1 edit for words of 4 letters or fewer, otherwise 2.</p>
-      <div class="form">
-        <div class="col-6"><label class="lbl" for="word">Word</label>
-          <div class="field"><svg class="icon"><use href="#i-spell"/></svg><input id="word" placeholder="e.g. battrey"></div></div>
-        <div class="col-3"><button class="btn primary" id="spellBtn"><svg class="icon"><use href="#i-check"/></svg>Check</button></div>
-      </div>
-      <div class="out" id="spellOut"></div>
-    </div>
-    <div class="card tool wide">
-      <h2><svg class="icon"><use href="#i-grid"/></svg>Edit-distance table</h2>
-      <p class="lead">The dynamic-programming matrix. Highlighted cells show one cheapest path.</p>
-      <div class="form">
-        <div class="col-4"><label class="lbl" for="ma">From</label><input id="ma" value="cat"></div>
-        <div class="col-4"><label class="lbl" for="mb">To</label><input id="mb" value="cut"></div>
-        <div class="col-4"><button class="btn primary" id="matrixBtn"><svg class="icon"><use href="#i-grid"/></svg>Show table</button></div>
-      </div>
-      <div class="out" id="matrixOut"></div>
-    </div>
-<div class="card tool">
-      <h2><svg class="icon"><use href="#i-chart"/></svg>Word frequency on a page</h2>
-      <p class="lead">Counts come from the inverted index. Leave the word empty to see the page's most frequent words.</p>
-      <div class="form">
-        <div class="col-12"><label class="lbl" for="page">Page</label>
-          <div class="field"><svg class="icon"><use href="#i-file"/></svg><select id="page"></select></div></div>
-        <div class="col-6"><label class="lbl" for="fword">Word</label>
-          <div class="field"><svg class="icon"><use href="#i-search"/></svg><input id="fword" placeholder="e.g. brake"></div></div>
-        <div class="col-3"><button class="btn primary" id="freqBtn"><svg class="icon"><use href="#i-chart"/></svg>Count</button></div>
-      </div>
-      <div class="out" id="freqOut"></div>
-    </div>
-<div class="card tool">
-      <div class="row-inline" style="justify-content:space-between">
-        <h2><svg class="icon"><use href="#i-history"/></svg>Search history</h2>
-        <button class="btn ghost small" id="historyRefresh"><svg class="icon sm"><use href="#i-refresh"/></svg>Refresh</button>
-      </div>
-      <p class="lead">How often each word has been searched (saved in data/search-history.txt).</p>
-      <div class="out" id="historyOut"></div>
-    </div>
-    </div>
-  </section>
 </main>
 
 <!-- priority panel -->
@@ -849,7 +747,6 @@ function km(d) { return d < 1 ? Math.round(d * 1000) + " m" : d.toFixed(1).repla
 document.querySelectorAll("#tabs button").forEach((btn) => btn.addEventListener("click", () => {
   document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
   document.querySelectorAll("[data-panel]").forEach((p) => p.hidden = p.dataset.panel !== btn.dataset.tab);
-  if (btn.dataset.tab === "tools") loadHistory();
   if (btn.dataset.tab === "search" && map) setTimeout(() => { map.invalidateSize(); fitMap(); }, 50);
   if (btn.dataset.tab === "live") loadLiveIntro();
 }));
@@ -1634,103 +1531,6 @@ function liveCard(item, i) {
 }
 $("liveBtn").addEventListener("click", runLive);
 ["lq", "llocation"].forEach((id) => $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") runLive(); }));
-
-// ============================================================ word completion
-let prefixTimer;
-$("prefix").addEventListener("input", () => {
-  clearTimeout(prefixTimer);
-  prefixTimer = setTimeout(async () => {
-    const prefix = $("prefix").value;
-    if (!prefix.trim()) { $("completeOut").innerHTML = ""; return; }
-    try {
-      const items = await api("complete", { prefix });
-      $("completeOut").innerHTML = items.length
-        ? `<div class="word-list">${items.map((w, i) => `<span class="word" style="--i:${i}"><small>${i + 1}</small>${esc(w)}</span>`).join("")}</div>`
-        : `<div class="notice info">${icon("info")}<span>No words start with “${esc(prefix)}”.</span></div>`;
-    } catch (e) { $("completeOut").innerHTML = `<div class="notice error">${icon("alert")}<span>${esc(e.message)}</span></div>`; }
-  }, 120);
-});
-
-// ================================================================= spell check
-async function runSpell() {
-  $("spellOut").innerHTML = "";
-  try {
-    const r = await api("spell", { word: $("word").value });
-    if (r.known) {
-      $("spellOut").innerHTML = `<div class="notice info" style="background:var(--ok-soft);color:var(--ok)">${icon("check")}<span>“${esc(r.word)}” appears in the pages, so it is spelled correctly.</span></div>`;
-    } else if (!r.suggestions.length) {
-      $("spellOut").innerHTML = `<div class="notice warn">${icon("info")}<span>“${esc(r.word)}” is not in the pages, and no word is within ${r.maxDistance} edit(s) of it.</span></div>`;
-    } else {
-      $("spellOut").innerHTML = `<p class="lead" style="margin:0 0 10px">“${esc(r.word)}” is not in the pages. Did you mean:</p><div class="word-list">` +
-        r.suggestions.map((s, i) => `<span class="word" style="--i:${i}">${esc(s.word)} <small>distance ${s.distance} · ${s.frequency}×</small></span>`).join("") + "</div>";
-      $("ma").value = r.word.toLowerCase(); $("mb").value = r.suggestions[0].word; runMatrix();
-    }
-  } catch (e) { $("spellOut").innerHTML = `<div class="notice error">${icon("alert")}<span>${esc(e.message)}</span></div>`; }
-}
-$("spellBtn").addEventListener("click", runSpell);
-$("word").addEventListener("keydown", (e) => { if (e.key === "Enter") runSpell(); });
-
-async function runMatrix() {
-  $("matrixOut").innerHTML = "";
-  try {
-    const r = await api("matrix", { a: $("ma").value, b: $("mb").value });
-    const m = r.matrix, a = r.a, b = r.b;
-    const path = new Set();          // walk back along one cheapest path
-    let i = a.length, j = b.length;
-    path.add(i + "," + j);
-    while (i > 0 || j > 0) {
-      if (i > 0 && j > 0 && a[i - 1] === b[j - 1] && m[i][j] === m[i - 1][j - 1]) { i--; j--; }
-      else if (i > 0 && j > 0 && m[i][j] === m[i - 1][j - 1] + 1) { i--; j--; }
-      else if (i > 0 && m[i][j] === m[i - 1][j] + 1) { i--; }
-      else { j--; }
-      path.add(i + "," + j);
-    }
-    let html = `<p class="lead" style="margin:0">Edit distance from “${esc(a)}” to “${esc(b)}” = <b>${r.distance}</b></p><div class="scroll"><table class="dp"><tr><th></th><th>ε</th>`;
-    html += [...b].map((c) => `<th>${esc(c)}</th>`).join("") + "</tr>";
-    for (let r2 = 0; r2 <= a.length; r2++) {
-      html += `<tr><th>${r2 === 0 ? "ε" : esc(a[r2 - 1])}</th>`;
-      for (let c2 = 0; c2 <= b.length; c2++) html += `<td class="${path.has(r2 + "," + c2) ? "path" : ""}">${m[r2][c2]}</td>`;
-      html += "</tr>";
-    }
-    $("matrixOut").innerHTML = html + "</table></div>";
-  } catch (e) { $("matrixOut").innerHTML = `<div class="notice error">${icon("alert")}<span>${esc(e.message)}</span></div>`; }
-}
-$("matrixBtn").addEventListener("click", runMatrix);
-
-// ============================================================== word frequency
-api("pages").then((pages) => {
-  $("page").innerHTML = pages.length ? pages.map((p) =>
-    `<option value="${esc(p.url)}">${p.testFixture ? "[Test page] " : ""}${esc(p.title)}</option>`).join("") : `<option value="">No pages loaded</option>`;
-}).catch(() => {});
-async function runFrequency() {
-  $("freqOut").innerHTML = "";
-  try {
-    const r = await api("frequency", { url: $("page").value, word: $("fword").value });
-    if (r.topTerms) {
-      const entries = Object.entries(r.topTerms);
-      const max = Math.max(1, ...entries.map(([, c]) => c));
-      $("freqOut").innerHTML = `<p class="lead" style="margin:0 0 10px">Most frequent words on this page</p><div class="bars">` +
-        entries.map(([t, c]) => `<div class="bar-row"><span>${esc(t)}</span><div class="bar-track"><div class="bar-fill" style="width:${(c / max) * 100}%"></div></div><span class="n">${c}</span></div>`).join("") + "</div>";
-    } else {
-      $("freqOut").innerHTML = `<div class="big-number">${r.count}</div><p class="lead" style="margin:6px 0 0">time${r.count === 1 ? "" : "s"} “${esc(r.word)}” occurs on <a href="${esc(safeUrl(r.url))}" target="_blank" rel="noopener">${esc(r.url)}</a></p>`;
-    }
-  } catch (e) { $("freqOut").innerHTML = `<div class="notice error">${icon("alert")}<span>${esc(e.message)}</span></div>`; }
-}
-$("freqBtn").addEventListener("click", runFrequency);
-$("fword").addEventListener("keydown", (e) => { if (e.key === "Enter") runFrequency(); });
-
-// ============================================================== search history
-async function loadHistory() {
-  $("historyOut").innerHTML = `<div class="sk" style="width:80%"></div><div class="sk" style="width:60%"></div>`;
-  try {
-    const items = await api("history");
-    if (!items.length) { $("historyOut").innerHTML = `<div class="notice info">${icon("info")}<span>No searches yet. Run a search on the Find help tab.</span></div>`; return; }
-    const max = Math.max(...items.map((h) => h.count));
-    $("historyOut").innerHTML = `<div class="bars">` + items.map((h) =>
-      `<div class="bar-row"><span>${esc(h.term)}</span><div class="bar-track"><div class="bar-fill" style="width:${(h.count / max) * 100}%"></div></div><span class="n">${h.count}</span></div>`).join("") + "</div>";
-  } catch (e) { $("historyOut").innerHTML = `<div class="notice error">${icon("alert")}<span>${esc(e.message)}</span></div>`; }
-}
-$("historyRefresh").addEventListener("click", loadHistory);
 
 loadProblems();
 </script>
