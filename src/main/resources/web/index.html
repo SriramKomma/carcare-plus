@@ -507,8 +507,8 @@
   .visit .who { font-size: 12.5px; color: var(--muted); }
   @media (max-width: 700px) { .visit-grid { grid-template-columns: 1fr; } }
 
-  /* request a visit: day and time picker, confirmation, my requests */
-  .visit .sub, .my-visits .sub { display: block; font-size: 12.5px; color: var(--muted); }
+  /* request a visit: day and time picker, confirmation */
+  .visit .sub { display: block; font-size: 12.5px; color: var(--muted); }
   .visit label .sub { margin-bottom: 4px; font-weight: 500; }
   .v-step { margin-bottom: 14px; }
   .pick { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -534,17 +534,6 @@
   .v-msg summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   .v-msg pre { white-space: pre-wrap; font: inherit; font-size: 13px; background: var(--surface); border: 1px solid var(--line);
                border-radius: var(--radius-sm); padding: 10px 12px; margin: 8px 0 0; }
-  .my-visits { margin-top: 24px; padding: 16px 18px; }
-  .mv-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-  .mv-head .sec-title { margin: 0 0 8px; }
-  .mv-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0;
-             border-top: 1px solid var(--line); }
-  .mv-item.cancelled .mv-main b { color: var(--muted); text-decoration: line-through; }
-  .mv-main b { margin-right: 8px; }
-  .mv-sendbox { flex-basis: 100%; }
-  .v-status { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
-  .v-status.on { background: var(--primary-soft); color: var(--primary); }
-  .v-status.off { background: var(--surface-2); color: var(--muted); }
 
   /* priority panel */
   .pri-overlay { position: fixed; inset: 0; z-index: 3000; background: rgba(16, 24, 40, .45); display: grid; place-items: center;
@@ -707,8 +696,6 @@
       <div id="guidesArea" style="margin-top:14px"></div>
     </div>
 
-    <!-- This browser's visit requests (non-priority): last on the page -->
-    <section class="card my-visits" id="myVisits" hidden></section>
   </section>
 
   <!-- ============================================================= Live nearby -->
@@ -1225,17 +1212,6 @@ async function postApi(path, params = {}) {
   return body;
 }
 
-/* The references of this browser's requests (CC-1001, ...). Only a convenience:
-   the requests themselves are saved on the server. */
-const VISITS_KEY = "carcare.visits";
-function myVisitIds() {
-  try { const ids = JSON.parse(localStorage.getItem(VISITS_KEY) || "[]"); return Array.isArray(ids) ? ids.filter((id) => typeof id === "string") : []; }
-  catch { return []; }
-}
-function rememberVisit(id) {
-  try { localStorage.setItem(VISITS_KEY, JSON.stringify([...myVisitIds().filter((x) => x !== id), id].slice(-20))); } catch { /* private window */ }
-}
-
 function visitFormHtml() {
   return `<div class="visit-body"><div class="pri-wait">${icon("loader", "spin")}<span>Loading free times…</span></div></div>`;
 }
@@ -1324,9 +1300,7 @@ async function loadVisitForm(card, x) {
       const v = await postApi("visit", { url: x.url, slot, name: name.value, phone: phone.value, email: email.value,
         note: body.querySelector(".v-note-text").value, q: lastSearch?.problem?.text || problemQuery(),
         details: pickedProblem() ? detailsText() : "", vehicle });
-      rememberVisit(v.id);
       showVisitDone(body, v);
-      loadMyVisits();
     } catch (e) {
       fail(e.message);
       send.disabled = false;
@@ -1342,7 +1316,7 @@ function showVisitDone(body, v) {
       <div class="lbl">Last step: send it to the shop so they can confirm</div>
       <div class="row-inline">${sendButtons(v)}</div>
       <details class="v-msg"><summary>See the message</summary><pre>${esc(v.message)}</pre></details>
-      <div class="who">CarCare+ saved your request (see "My visit requests" at the top). It does not contact the shop for you: the message goes from your own email or phone.</div>
+      <div class="who">CarCare+ saved your request. It does not contact the shop for you: the message goes from your own email or phone.</div>
     </div>`;
   bindCopy(body, v);
   body.querySelector(".v-done-head").scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -1357,46 +1331,6 @@ function bindVisit(card, x) {
     if (!form.hidden && !loaded) { loaded = true; loadVisitForm(card, x); }
   });
 }
-
-/** "My visit requests": this browser's saved requests, with send and cancel. */
-async function loadMyVisits() {
-  const box = $("myVisits");
-  const ids = myVisitIds();
-  if (!ids.length) { box.hidden = true; return; }
-  let list;
-  try { list = await api("visits", { ids: ids.join(",") }); } catch { return; }
-  if (!list.length) { box.hidden = true; return; }
-  list.reverse();   // newest first
-  const status = (v) => v.status === "CANCELLED" ? `<span class="v-status off">Cancelled</span>`
-    : v.past ? `<span class="v-status off">Past</span>` : `<span class="v-status on">Requested</span>`;
-  box.innerHTML = `<div class="mv-head"><h3 class="sec-title">My visit requests</h3><span class="sub">${list.length} saved</span></div>
-    ${list.map((v, i) => `<div class="mv-item${v.status === "CANCELLED" ? " cancelled" : ""}" data-i="${i}">
-      <div class="mv-main"><b>${esc(v.shopTitle)}</b>${status(v)}
-        <div class="sub">${esc(v.slotLabel)} · ${esc(v.id)}${v.service ? " · " + esc(v.service) : ""}</div></div>
-      ${v.status === "CANCELLED" || v.past ? "" : `<div class="row-inline">
-        <button type="button" class="btn ghost small mv-send" aria-expanded="false">${icon("share", "sm")}Send</button>
-        <button type="button" class="btn ghost small mv-cancel">${icon("x", "sm")}Cancel</button></div>
-        <div class="mv-sendbox row-inline" hidden>${sendButtons(v)}</div>`}
-    </div>`).join("")}`;
-  box.hidden = false;
-  box.querySelectorAll(".mv-item").forEach((item) => {
-    const v = list[+item.dataset.i];
-    bindCopy(item, v);
-    item.querySelector(".mv-send")?.addEventListener("click", (e) => {
-      const sendBox = item.querySelector(".mv-sendbox");
-      sendBox.hidden = !sendBox.hidden;
-      e.currentTarget.setAttribute("aria-expanded", String(!sendBox.hidden));
-    });
-    item.querySelector(".mv-cancel")?.addEventListener("click", async (e) => {
-      if (!confirm(`Cancel request ${v.id} at ${v.shopTitle}?\n\nIf you already sent it, also tell the shop.`)) return;
-      e.currentTarget.disabled = true;
-      try { await postApi("visit/cancel", { id: v.id }); toast(`Request ${v.id} cancelled.`); }
-      catch (err) { toast(err.message); }
-      loadMyVisits();
-    });
-  });
-}
-loadMyVisits();
 
 // ================================================================ priority
 function getPosition() {
