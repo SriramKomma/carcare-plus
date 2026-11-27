@@ -4,18 +4,13 @@ Running on Java 27
 Loaded 6 pages and 150 distinct words.
 
 ===== CarCare+ main menu =====
-1. Find help for my vehicle
+1. Find help for my car
 2. Word completion
 3. Spell check a word
 4. Word frequency on a page
 5. Search history (most searched words)
 0. Exit
 Choose an option: 
-What do you drive?
-1. Electric Vehicle (EV)
-2. Gas Vehicle (Petrol/Diesel)
-0. Back
-Choose: 
 What do you need help with?
 1. Flat tire / puncture
 2. Battery problem
@@ -26,11 +21,13 @@ What do you need help with?
 7. Vehicle breakdown / towing
 8. Overheating / cooling system
 9. Fuel problem
-10. Other / custom description
+10. EV maintenance (motor, high-voltage system)
+11. Other / custom description
+12. Find EV charging stations
 0. Back
-Choose: Describe the problem (Enter = "brake problem"). End a word with ? to see completions, e.g. bat?
+Choose: Describe the problem (Enter = "brake problem repair"). End a word with ? to see completions, e.g. bat?
 Search: Location - city or postal code (Enter = anywhere): 
-Search "breke pads" for Gas Vehicle (Petrol/Diesel)
+Search "breke pads"
 Search terms: breke, pad  |  matching pages: 2
 1. [TEST FIXTURE] Brake Repair Calgary | Sample Auto  (score 8)
    https://fixtures.carcareplus.invalid/brake-shop-calgary
@@ -44,7 +41,7 @@ Search terms: breke, pad  |  matching pages: 2
    Phone (604) 555-0142  |  Email abbotsford@example-tire.ca  |  V2S 1A1 BC
 Did you mean: breke -> brake, broken
 Search again for "brake pad"? (y/n): 
-Search "brake pad" for Gas Vehicle (Petrol/Diesel)
+Search "brake pad"
 Search terms: brake, pad  |  matching pages: 4
 1. [TEST FIXTURE] Brake Repair Calgary | Sample Auto  (score 35)
    https://fixtures.carcareplus.invalid/brake-shop-calgary
@@ -68,7 +65,7 @@ Search terms: brake, pad  |  matching pages: 4
    Phone (416) 555-0133  |  Email service@ev-sample.ca  |  M5V 2T6 ON
 
 ===== CarCare+ main menu =====
-1. Find help for my vehicle
+1. Find help for my car
 2. Word completion
 3. Spell check a word
 4. Word frequency on a page

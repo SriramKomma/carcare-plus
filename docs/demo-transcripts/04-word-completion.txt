@@ -4,7 +4,7 @@ Running on Java 27
 Loaded 6 pages and 150 distinct words.
 
 ===== CarCare+ main menu =====
-1. Find help for my vehicle
+1. Find help for my car
 2. Word completion
 3. Spell check a word
 4. Word frequency on a page
@@ -15,7 +15,7 @@ Choose an option: Start of a word: Most frequent words starting with 'bra':
   brands
 
 ===== CarCare+ main menu =====
-1. Find help for my vehicle
+1. Find help for my car
 2. Word completion
 3. Spell check a word
 4. Word frequency on a page

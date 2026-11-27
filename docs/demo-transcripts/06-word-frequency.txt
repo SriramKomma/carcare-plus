@@ -4,7 +4,7 @@ Running on Java 27
 Loaded 6 pages and 150 distinct words.
 
 ===== CarCare+ main menu =====
-1. Find help for my vehicle
+1. Find help for my car
 2. Word completion
 3. Spell check a word
 4. Word frequency on a page
@@ -22,7 +22,7 @@ Pages:
 Choose a page: Word to count (Enter = most frequent words on the page): 'brake' occurs 9 time(s) on https://fixtures.carcareplus.invalid/brake-shop-calgary
 
 ===== CarCare+ main menu =====
-1. Find help for my vehicle
+1. Find help for my car
 2. Word completion
 3. Spell check a word
 4. Word frequency on a page
@@ -50,7 +50,7 @@ Choose a page: Word to count (Enter = most frequent words on the page): Most fre
   rotor  2
 
 ===== CarCare+ main menu =====
-1. Find help for my vehicle
+1. Find help for my car
 2. Word completion
 3. Spell check a word
 4. Word frequency on a page

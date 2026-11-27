@@ -4,7 +4,7 @@ Running on Java 27
 Loaded 6 pages and 150 distinct words.
 
 ===== CarCare+ main menu =====
-1. Find help for my vehicle
+1. Find help for my car
 2. Word completion
 3. Spell check a word
 4. Word frequency on a page
@@ -14,7 +14,7 @@ Choose an option: Word to check: 'battrey' is not in the pages. Did you mean:
   battery  (edit distance 2, appears 8 time(s))
 
 ===== CarCare+ main menu =====
-1. Find help for my vehicle
+1. Find help for my car
 2. Word completion
 3. Spell check a word
 4. Word frequency on a page

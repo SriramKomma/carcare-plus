@@ -18,7 +18,7 @@
 
 > **TODO (group):** paste the exact variant text that was submitted and approved.
 
-**Summary.** CarCare+ is a Java console backend. It crawls selected Canadian car-repair and EV-charging websites, turns their pages into service documents and lets a driver search them. The driver chooses **EV or gas vehicle → problem category → words → location** and gets ranked pages with phone numbers, emails and postal codes taken from the page text. It implements all ten listed features: web crawler, HTML parser, inverted indexing, frequency count, search frequency, page ranking, word completion, spell checking, regex data validation and regex pattern finding.
+**Summary.** CarCare+ is a Java console backend. It crawls selected Canadian car-repair and EV-charging websites, turns their pages into service documents and lets a driver search them. The driver chooses **problem category → words → location** and gets ranked pages with phone numbers, emails and postal codes taken from the page text. It implements all ten listed features: web crawler, HTML parser, inverted indexing, frequency count, search frequency, page ranking, word completion, spell checking, regex data validation and regex pattern finding.
 
 ---
 
@@ -79,7 +79,7 @@ Crawling and searching are separate. A search only uses the in-memory structures
 ## 4. Additional features
 
 - **robots.txt compliance (RFC 9309):** longest-match rule, `Allow` beats an equally long `Disallow`, `*` and `$` wildcards, and the `Crawl-delay` setting.
-- **Vehicle-aware menu:** EV drivers get "Find EV charging stations". Gas-only categories (engine, fuel) are hidden from them, and EV-only categories are hidden from gas drivers.
+- **One menu for every car:** the driver is not asked for a vehicle. Every repair category is listed, with "Find EV charging stations" as the last option.
 - **Recommendation bonuses in ranking:** +5 when the page matches the chosen category and +3 when it matches the typed location (postal-code area, province or city).
 - **EV connector extraction:** CCS, CHAdeMO, J1772 and NACS plus charging power ("350 kW") are found in page text.
 - **Duplicate detection:** the same URL, or the same text under another URL (SHA-256 content hash), is stored once.
@@ -246,7 +246,7 @@ The bare word "Tesla" is deliberately not treated as a connector, because "Tesla
 |---|---|---|
 | Inverted index, ranking, pattern finding, completion | 1 — EV battery near V2S 1A1 | `screenshots/01-ev-battery-completion-ranking.png` |
 | Spell checking + corrected search | 2 — `breke pads` | `screenshots/02-spell-check-corrected-search.png` |
-| EV branch + location | 3 — charging stations near Windsor | `screenshots/03-ev-charging-windsor.png` |
+| EV charging + location | 3 — charging stations near Windsor | `screenshots/03-ev-charging-windsor.png` |
 | Word completion | 4 — `bra` | `screenshots/04-word-completion.png` |
 | Spell checking (edit distance) | 5 — `battrey` | `screenshots/05-spell-check-edit-distance.png` |
 | Frequency count | 6 — `brake` on Brake Repair Calgary | `screenshots/06-word-frequency.png` |

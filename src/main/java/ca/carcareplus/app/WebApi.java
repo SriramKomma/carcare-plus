@@ -115,9 +115,9 @@ public class WebApi {
         return answer;
     }
 
-    /** GET /api/categories?vehicle=ev -- the categories the menu offers for that vehicle. */
+    /** GET /api/categories?vehicle=ev -- the categories the menu offers for that vehicle (none = any car). */
     public List<Map<String, Object>> categories(Map<String, String> params) {
-        VehicleType vehicle = VehicleType.fromUserInput(params.get("vehicle"));
+        VehicleType vehicle = optionalVehicle(params);
         List<Map<String, Object>> answer = new ArrayList<>();
         for (ServiceCategory category : ConsoleMenu.categoryOptions(vehicle)) {
             Map<String, Object> item = new LinkedHashMap<>();

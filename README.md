@@ -2,13 +2,13 @@
 
 Intelligent Roadside Assistance and Service Discovery System — COMP 8547 Advanced Computing Concepts, University of Windsor, Fall 2026.
 
-A Java console backend that crawls selected Canadian car-repair and EV-charging websites, parses them into service documents, and lets a driver search them: choose **EV or gas vehicle → problem category → words → location** and get ranked pages with phone numbers, emails and postal codes pulled out by regular expressions.
+A Java console backend that crawls selected Canadian car-repair and EV-charging websites, parses them into service documents, and lets a driver search them: choose **problem category → words → location** and get ranked pages with phone numbers, emails and postal codes pulled out by regular expressions.
 
 Full plan and progress tracker: [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md) · Performance results: [docs/performance-results.md](docs/performance-results.md) · Demo script: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) · Report draft: [docs/REPORT.md](docs/REPORT.md)
 
 > **Data status:** real Ontario shop data comes from **OpenStreetMap** (`osm` command, Open Database Licence, "© OpenStreetMap contributors"). The crawler runs only on **Natural Resources Canada** driver pages, whose terms allow non-commercial reproduction with credit (checked 2026-11-17); Fountain Tire, Electrify Canada and Kal Tire stay disabled in `config/sources.txt` because their terms restrict copying (plan §10). The **6 invented test pages** in `fixtures/html/` are labelled `[TEST FIXTURE]` in every result.
 >
-> **Priority and non-priority:** **Priority** gets the driver's location with one tap, finds the nearest shop that has a phone, suits the vehicle and is not closed (`/api/priority`, top 3 by distance with the `TopK` heap), and starts the call to the first one straight away; the panel shows two backup shops, "Text my location" and a small "Call 911" line. **Non-priority** is for repairs that can wait: it lists the best-matching shops with their opening times in the next 2 days (`OpeningHours.openingsWithin`) and a **Request a visit** form that writes the request into the driver's own email app (or a call script). CarCare+ never places calls or sends messages itself.
+> **Priority and non-priority:** **Priority** gets the driver's location with one tap, finds the nearest shop that has a phone and is not closed (`/api/priority`, top 3 by distance with the `TopK` heap), and starts the call to the first one straight away; the panel shows two backup shops, "Text my location" and a small "Call 911" line. **Non-priority** is for repairs that can wait: it lists the best-matching shops with their opening times in the next 2 days (`OpeningHours.openingsWithin`) and a **Request a visit** form that writes the request into the driver's own email app (or a call script). CarCare+ never places calls or sends messages itself.
 >
 > **Describe the problem:** the web page takes the driver's own words ("my car won't start", "brakes are squealing"). `query/SymptomMatcher` maps them to a service with the rules in `config/symptoms.txt` and lists the nearest shops for that service, plus crawled NRCan guides on the topic.
 
@@ -58,7 +58,7 @@ Run with `mvn -q compile exec:java -Dexec.args="<command>"`. With no command, th
 ### The menu
 
 ```
-1. Find help for my vehicle   EV / Gas -> category -> words -> location -> ranked results
+1. Find help for my car       category -> words -> location -> ranked results
                               "bat?" lists completions to pick from; Enter uses the category name;
                               a misspelled word offers "Search again for ...?"
 2. Word completion

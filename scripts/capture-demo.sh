@@ -39,11 +39,11 @@ scene() {
     echo "saved $OUT/$name.txt"
 }
 
-scene 01-ev-battery-completion-ranking  1 1 2 'bat?' 1 'V2S 1A1'
-scene 02-spell-check-corrected-search   1 2 5 'breke pads' '' y
-scene 03-ev-charging-windsor            1 1 10 '' Windsor
+scene 01-ev-battery-completion-ranking  1 2 'bat?' 1 'V2S 1A1'
+scene 02-spell-check-corrected-search   1 5 'breke pads' '' y
+scene 03-ev-charging-windsor            1 12 '' Windsor
 scene 04-word-completion                2 bra
 scene 05-spell-check-edit-distance      3 battrey
 scene 06-word-frequency                 4 1 brake 4 1 ''
 scene 07-search-history                 5
-scene 08-input-validation               1 2 5 '<script>' brake 'N9B 3P' n9b3p4
+scene 08-input-validation               1 5 '<script>' brake 'N9B 3P' n9b3p4

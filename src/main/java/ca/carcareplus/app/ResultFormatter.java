@@ -26,8 +26,10 @@ public final class ResultFormatter {
     /** Full text for one search: header, numbered results, suggestions. */
     public static String format(SearchRequest request, SearchOutcome outcome) {
         StringBuilder out = new StringBuilder();
-        out.append("Search \"").append(outcome.query()).append("\" for ")
-                .append(request.vehicleType() == null ? "any vehicle" : request.vehicleType().displayName());
+        out.append("Search \"").append(outcome.query()).append('"');
+        if (request.vehicleType() != null) {
+            out.append(" for ").append(request.vehicleType().displayName());
+        }
         if (request.hasLocation()) {
             out.append(" near ").append(request.location());
         }

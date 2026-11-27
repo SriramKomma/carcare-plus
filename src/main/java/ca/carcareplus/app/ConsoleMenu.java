@@ -25,7 +25,7 @@ import ca.carcareplus.validation.DataValidator;
  *
  * <pre>
  * Main menu
- *  1 Find help        vehicle type -> category -> problem words -> location -> ranked results
+ *  1 Find help        category -> problem words -> location -> ranked results
  *                     ("bat?" shows completions; misspelled words offer a corrected search)
  *  2 Word completion  Trie
  *  3 Spell check      Levenshtein edit distance
@@ -108,7 +108,7 @@ public class ConsoleMenu {
     private void printMainMenu() {
         out.println();
         out.println("===== CarCare+ main menu =====");
-        out.println("1. Find help for my vehicle");
+        out.println("1. Find help for my car");
         out.println("2. Word completion");
         out.println("3. Spell check a word");
         out.println("4. Word frequency on a page");
@@ -119,18 +119,14 @@ public class ConsoleMenu {
     // ---------------------------------------------------------------- 1. search
 
     private void findHelp() {
-        VehicleType vehicle = chooseVehicle();
-        if (vehicle == null) {
-            return;
-        }
-        ServiceCategory category = chooseCategory(vehicle);
+        ServiceCategory category = chooseCategory();
         if (category == null) {
             return;
         }
         String query = askQuery(defaultQueryFor(category));
         String location = askLocation();
 
-        SearchRequest request = new SearchRequest(query, vehicle, category, location,
+        SearchRequest request = new SearchRequest(query, null, category, location,
                 SearchRequest.DEFAULT_MAX_RESULTS);
         SearchOutcome outcome = search(request);
 
@@ -138,7 +134,7 @@ public class ConsoleMenu {
         if (!outcome.suggestions().isEmpty()) {
             String corrected = correctedQuery(outcome.terms(), outcome.suggestions());
             if (askYesNo("Search again for \"" + corrected + "\"? (y/n): ")) {
-                search(new SearchRequest(corrected, vehicle, category, location, SearchRequest.DEFAULT_MAX_RESULTS));
+                search(new SearchRequest(corrected, null, category, location, SearchRequest.DEFAULT_MAX_RESULTS));
             }
         }
     }
@@ -150,26 +146,9 @@ public class ConsoleMenu {
         return outcome;
     }
 
-    /** @return the chosen vehicle type, or null for "back" */
-    private VehicleType chooseVehicle() {
-        out.println();
-        out.println("What do you drive?");
-        out.println("1. " + VehicleType.EV.displayName());
-        out.println("2. " + VehicleType.GAS.displayName());
-        out.println("0. Back");
-        while (true) {
-            switch (ask("Choose: ")) {
-                case "1": return VehicleType.EV;
-                case "2": return VehicleType.GAS;
-                case "0": return null;
-                default: out.println("Please enter 1, 2 or 0.");
-            }
-        }
-    }
-
     /** @return the chosen category, or null for "back" */
-    private ServiceCategory chooseCategory(VehicleType vehicle) {
-        List<ServiceCategory> options = categoryOptions(vehicle);
+    private ServiceCategory chooseCategory() {
+        List<ServiceCategory> options = categoryOptions(null);
         out.println();
         out.println("What do you need help with?");
         for (int i = 0; i < options.size(); i++) {
@@ -182,10 +161,18 @@ public class ConsoleMenu {
         return choice == 0 ? null : options.get(choice - 1);
     }
 
-    /** Repair categories for the vehicle; EV drivers also get "Find EV charging stations". */
+    /**
+     * Repair categories for the vehicle, then "Find EV charging stations" when it fits.
+     * A null vehicle means any car: every repair category, and charging stations too.
+     */
     static List<ServiceCategory> categoryOptions(VehicleType vehicle) {
-        List<ServiceCategory> options = new ArrayList<>(ServiceCategory.repairCategoriesFor(vehicle));
-        if (ServiceCategory.EV_CHARGING.appliesTo(vehicle)) {
+        List<ServiceCategory> options = new ArrayList<>();
+        for (ServiceCategory category : ServiceCategory.values()) {
+            if (category.isRepair() && (vehicle == null || category.appliesTo(vehicle))) {
+                options.add(category);
+            }
+        }
+        if (vehicle == null || ServiceCategory.EV_CHARGING.appliesTo(vehicle)) {
             options.add(ServiceCategory.EV_CHARGING);
         }
         return options;

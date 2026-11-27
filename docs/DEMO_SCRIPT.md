@@ -21,17 +21,17 @@ Start the menu with `mvn -q compile exec:java`. Each line in **Type** is one inp
 
 | # | Feature(s) shown | Type | What to point at |
 |---|---|---|---|
-| 1 | Inverted index, page ranking, regex pattern finding, word completion | `1` `1` `2` `bat?` `1` `V2S 1A1` | Story: *"My EV battery is dead near Abbotsford."* The `bat?` completion list, then the score breakdown (`category +5`, `location +3`), and the phone, email and postal code pulled out by regex |
-| 2 | Spell checking (no-result suggestions), frequency count per URL | `1` `2` `5` `breke pads` `⏎` `y` | `Did you mean: breke -> brake` with `breke=0` in the word counts, then the corrected search with `phrase +10` |
-| 3 | EV branch, location matching | `1` `1` `10` `⏎` `Windsor` | Charging stations exist only in the EV menu; Enter uses the category name as the query |
+| 1 | Inverted index, page ranking, regex pattern finding, word completion | `1` `2` `bat?` `1` `V2S 1A1` | Story: *"My EV battery is dead near Abbotsford."* The `bat?` completion list, then the score breakdown (`category +5`, `location +3`), and the phone, email and postal code pulled out by regex |
+| 2 | Spell checking (no-result suggestions), frequency count per URL | `1` `5` `breke pads` `⏎` `y` | `Did you mean: breke -> brake` with `breke=0` in the word counts, then the corrected search with `phrase +10` |
+| 3 | EV charging, location matching | `1` `12` `⏎` `Windsor` | Charging stations are the last option in the category list; Enter uses the category name as the query |
 | 4 | Word completion (Trie) | `2` `bra` | Most frequent words starting with `bra` |
 | 5 | Spell checking (edit distance) | `3` `battrey` | `battery (edit distance 2, …)`. Be ready to fill the Levenshtein table on the board (plan §13.3 Q7) |
 | 6 | Frequency count | `4` `1` `brake`, then `4` `1` `⏎` | Count of one word on one URL, then the page's most frequent words |
 | 7 | Search frequency | `5` | Words from scenes 1–3 with their counts (saved to a file on exit) |
-| 8 | Regex data validation | `1` `2` `5` `<script>` `brake` `N9B 3P` `n9b3p4` | Both bad inputs are rejected with a message; `n9b3p4` is normalized to `N9B 3P4` |
+| 8 | Regex data validation | `1` `5` `<script>` `brake` `N9B 3P` `n9b3p4` | Both bad inputs are rejected with a message; `n9b3p4` is normalized to `N9B 3P4` |
 | — | Exit | `0` | `Search history saved. Goodbye!` |
 
-Menu numbers used above: EV categories `2` = Battery problem, `10` = Find EV charging stations; Gas categories `5` = Brake problem. Page `1` in option 4 = Brake Repair Calgary. These numbers come from the current fixtures and categories. If either changes, check the numbers again.
+Menu numbers used above (the console no longer asks for a vehicle): categories `2` = Battery problem, `5` = Brake problem, `12` = Find EV charging stations. Page `1` in option 4 = Brake Repair Calgary. These numbers come from the current fixtures and categories. If either changes, check the numbers again.
 
 ## Not in the menu (show with commands or slides)
 

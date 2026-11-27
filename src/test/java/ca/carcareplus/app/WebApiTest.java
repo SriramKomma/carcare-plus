@@ -94,7 +94,9 @@ class WebApiTest {
         assertEquals("ev charging station", ev.get(ev.size() - 1).get("defaultQuery"));
         assertFalse(gas.stream().anyMatch(c -> c.get("name").equals("EV_CHARGING")));
         assertThrows(InvalidInputException.class, () -> api.categories(Map.of("vehicle", "boat")));
-        assertThrows(InvalidInputException.class, () -> api.categories(Map.of()));
+        List<Map<String, Object>> any = api.categories(Map.of()); // no vehicle = any car
+        assertTrue(any.stream().anyMatch(c -> c.get("name").equals("EV_CHARGING")));
+        assertTrue(any.stream().anyMatch(c -> c.get("name").equals("FUEL")));
     }
 
     @Test

@@ -63,9 +63,9 @@ class ConsoleMenuTest {
         return bytes.toString(StandardCharsets.UTF_8);
     }
 
-    /** Menu number of a category, e.g. BRAKES for GAS -> "5". */
-    private static String option(VehicleType vehicle, ServiceCategory category) {
-        return String.valueOf(ConsoleMenu.categoryOptions(vehicle).indexOf(category) + 1);
+    /** Menu number of a category in "What do you need help with?", e.g. BRAKES -> "5". */
+    private static String option(ServiceCategory category) {
+        return String.valueOf(ConsoleMenu.categoryOptions(null).indexOf(category) + 1);
     }
 
     private static int count(String text, String part) {
@@ -84,7 +84,7 @@ class ConsoleMenuTest {
 
     @Test
     void endOfInputInsideAPromptStillEndsCleanly() throws Exception {
-        String output = run("1", "2"); // input stops while choosing a category
+        String output = run("1"); // input stops while choosing a category
         assertTrue(output.contains("What do you need help with?"), output);
         assertTrue(output.contains("Search history saved. Goodbye!"), output);
     }
@@ -97,7 +97,7 @@ class ConsoleMenuTest {
 
     @Test
     void backOptionsReturnToMainMenu() throws Exception {
-        String output = run("1", "0", "1", "1", "0", "0");
+        String output = run("1", "0", "1", "0", "0");
         assertEquals(3, count(output, "===== CarCare+ main menu ====="), output);
         assertFalse(output.contains("Search \""), "no search was run");
     }
@@ -106,10 +106,9 @@ class ConsoleMenuTest {
 
     @Test
     void gasBrakeSearchInAlbertaRanksCalgaryShopFirst() throws Exception {
-        String output = run("1", "2", option(VehicleType.GAS, ServiceCategory.BRAKES), "brake pads", "Alberta", "0");
+        String output = run("1", option(ServiceCategory.BRAKES), "brake pads", "Alberta", "0");
 
-        assertTrue(output.contains("Search \"brake pads\" for Gas Vehicle"), output);
-        assertTrue(output.contains("near Alberta"), output);
+        assertTrue(output.contains("Search \"brake pads\" near Alberta"), output);
         int top = output.indexOf("1. [TEST FIXTURE] Brake Repair Calgary");
         assertTrue(top >= 0, output);
         assertTrue(output.indexOf("category +5", top) > top, "category bonus shown: " + output);
@@ -118,27 +117,27 @@ class ConsoleMenuTest {
 
     @Test
     void enterUsesTheCategoryNameAsTheQuery() throws Exception {
-        String output = run("1", "2", option(VehicleType.GAS, ServiceCategory.BRAKES), "", "", "0");
-        assertTrue(output.contains("Search \"brake problem repair\" for Gas Vehicle"), output);
+        String output = run("1", option(ServiceCategory.BRAKES), "", "", "0");
+        assertTrue(output.contains("Search \"brake problem repair\"" + System.lineSeparator()), output);
     }
 
     @Test
     void otherCategoryNeedsTypedWords() throws Exception {
-        String output = run("1", "1", option(VehicleType.EV, ServiceCategory.OTHER), "", "tow truck", "", "0");
+        String output = run("1", option(ServiceCategory.OTHER), "", "tow truck", "", "0");
         assertTrue(output.contains("Please type a few words"), output);
         assertTrue(output.contains("Search \"tow truck\""), output);
     }
 
     @Test
-    void evDriversCanFindChargingStations() throws Exception {
-        String output = run("1", "1", option(VehicleType.EV, ServiceCategory.EV_CHARGING), "", "", "0");
+    void chargingStationsAreInTheCategoryList() throws Exception {
+        String output = run("1", option(ServiceCategory.EV_CHARGING), "", "", "0");
         assertTrue(output.contains("Find EV charging stations"), output);
-        assertTrue(output.contains("Search \"ev charging station\" for Electric Vehicle"), output);
+        assertTrue(output.contains("Search \"ev charging station\""), output);
     }
 
     @Test
     void wordEndingWithQuestionMarkShowsCompletionsToPickFrom() throws Exception {
-        String output = run("1", "2", option(VehicleType.GAS, ServiceCategory.BRAKES), "bra?", "1", "", "0");
+        String output = run("1", option(ServiceCategory.BRAKES), "bra?", "1", "", "0");
         assertTrue(output.contains("  1. bra"), output);
         assertTrue(output.contains("Searching for: bra"), output);
         assertTrue(output.contains("Search \"bra"), output);
@@ -146,41 +145,40 @@ class ConsoleMenuTest {
 
     @Test
     void noCompletionsAsksAgain() throws Exception {
-        String output = run("1", "2", option(VehicleType.GAS, ServiceCategory.BRAKES), "zzqx?", "brake", "", "0");
+        String output = run("1", option(ServiceCategory.BRAKES), "zzqx?", "brake", "", "0");
         assertTrue(output.contains("No completions for 'zzqx'"), output);
         assertTrue(output.contains("Search \"brake\""), output);
     }
 
     @Test
     void misspelledWordOffersCorrectedSearch() throws Exception {
-        String output = run("1", "2", option(VehicleType.GAS, ServiceCategory.BRAKES), "breke", "", "y", "0");
+        String output = run("1", option(ServiceCategory.BRAKES), "breke", "", "y", "0");
         assertTrue(output.contains("Did you mean: breke -> brake"), output);
         assertTrue(output.contains("Search again for \"brake\"? (y/n): "), output);
-        assertTrue(output.contains("Search \"brake\" for Gas Vehicle"), output);
+        assertTrue(output.contains("Search \"brake\""), output);
         assertTrue(output.contains("Brake Repair Calgary"), output);
     }
 
     @Test
     void correctedSearchCanBeDeclined() throws Exception {
-        String output = run("1", "2", option(VehicleType.GAS, ServiceCategory.BRAKES), "breke", "", "maybe", "n", "0");
+        String output = run("1", option(ServiceCategory.BRAKES), "breke", "", "maybe", "n", "0");
         assertTrue(output.contains("Please answer y or n."), output);
         assertFalse(output.contains("Search \"brake\""), output);
     }
 
     @Test
     void badInputIsRejectedAndAskedAgain() throws Exception {
-        String output = run("1", "x", "2", "99", option(VehicleType.GAS, ServiceCategory.BRAKES),
+        String output = run("1", "x", "99", option(ServiceCategory.BRAKES),
                 "<script>", "brake", "N9B 3P", "n9b3p4", "0");
-        assertTrue(output.contains("Please enter 1, 2 or 0."), output);
         assertTrue(output.contains("Please enter a number from 0 to"), output);
         assertTrue(output.contains("Search text may only contain"), output);
         assertTrue(output.contains("not a valid Canadian postal code"), output);
-        assertTrue(output.contains("Search \"brake\" for Gas Vehicle (Petrol/Diesel) near N9B 3P4"), output);
+        assertTrue(output.contains("Search \"brake\" near N9B 3P4"), output);
     }
 
     @Test
     void searchesAreCountedAndSavedOnExit() throws Exception {
-        String output = run("1", "2", option(VehicleType.GAS, ServiceCategory.BRAKES), "brake", "", "5", "0");
+        String output = run("1", option(ServiceCategory.BRAKES), "brake", "", "5", "0");
         assertTrue(output.contains("Most searched words:"), output);
         assertTrue(output.contains("  brake  1"), output);
         assertTrue(Files.readString(historyFile).contains("brake"), "history written to the file");
@@ -248,6 +246,23 @@ class ConsoleMenuTest {
         assertEquals("battery dead", ConsoleMenu.correctedQuery(List.of("battrey", "dead"),
                 Map.of("battrey", List.of("battery", "batter"))));
         assertEquals("dead", ConsoleMenu.correctedQuery(List.of("dead"), Map.of()));
+    }
+
+    @Test
+    void findHelpDoesNotAskForAVehicle() throws Exception {
+        String output = run("1", option(ServiceCategory.BRAKES), "brake", "", "0");
+        assertFalse(output.contains("What do you drive?"), output);
+        assertFalse(output.contains(" for Gas Vehicle") || output.contains(" for Electric Vehicle"), output);
+    }
+
+    @Test
+    void withoutAVehicleEveryCategoryIsOffered() {
+        List<ServiceCategory> any = ConsoleMenu.categoryOptions(null);
+        assertTrue(any.contains(ServiceCategory.FUEL));
+        assertTrue(any.contains(ServiceCategory.ENGINE));
+        assertTrue(any.contains(ServiceCategory.EV_MAINTENANCE));
+        assertEquals(ServiceCategory.EV_CHARGING, any.get(any.size() - 1));
+        assertEquals(ServiceCategory.values().length, any.size());
     }
 
     @Test
