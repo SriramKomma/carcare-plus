@@ -1,0 +1,8 @@
+# Never copied into the image
+.git
+target
+data
+.vscode
+.idea
+# The repairers' real phone numbers stay on your computer (use a Render secret file instead)
+config/repairers.txt

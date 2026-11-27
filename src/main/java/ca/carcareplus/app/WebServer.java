@@ -21,6 +21,7 @@ import com.sun.net.httpserver.HttpServer;
 import ca.carcareplus.dispatch.JobBoard;
 import ca.carcareplus.dispatch.RepairerDirectory;
 import ca.carcareplus.dispatch.SmsDispatcher;
+import ca.carcareplus.exceptions.AccessDeniedException;
 import ca.carcareplus.exceptions.CarCareException;
 import ca.carcareplus.exceptions.InvalidInputException;
 import ca.carcareplus.exceptions.ServiceUnavailableException;
@@ -68,6 +69,12 @@ import ca.carcareplus.visits.VisitBook;
  * /api/sms/incoming, and that route believes a request only with Twilio's signature.
  * So the tunnel never exposes the search, the visit requests or the dispatch board.
  *
+ * Hosted (e.g. on Render, see {@link Hosting}): the server listens on every address,
+ * because the internet is now the point. The tunnel rule is then off, and instead the
+ * live dispatch demo (repairers, jobs, pretend phones) needs the secret demo key that
+ * is in the demo link (/live-demo?key=...). Without it nobody can accept a job as
+ * someone else or make the server send texts. The search pages stay open to all.
+ *
  * Threads: a small pool of {@value #THREADS} threads answers requests, so a slow
  * request (a "Live nearby" call to Google can take seconds) no longer blocks the
  * page, the map or the next search. The search structures (index, search history)
@@ -88,10 +95,50 @@ public final class WebServer {
 
     /** config/repairers.txt if it exists, else the example (a fresh clone, Render). */
     static java.nio.file.Path repairersFile() {
+        String chosen = System.getenv(REPAIRERS_VARIABLE); // e.g. a Render "secret file"
+        if (chosen != null && !chosen.isBlank()) {
+            return java.nio.file.Path.of(chosen.trim());
+        }
         return java.nio.file.Files.exists(REPAIRERS_FILE) ? REPAIRERS_FILE : REPAIRERS_EXAMPLE;
     }
+
+    /** Environment variable naming another repairers file (hosted: the real numbers as a secret file). */
+    public static final String REPAIRERS_VARIABLE = "CARCARE_REPAIRERS_FILE";
     static final int THREADS = 8; // the live demo keeps 5+ windows asking twice a second
     static final int MAX_BODY_BYTES = 8 * 1024;
+
+    /**
+     * Where the server runs.
+     *
+     * @param publicServer false = this computer only (127.0.0.1, the default); true = hosted on the internet
+     * @param demoKey      the secret the live dispatch demo asks for, or null for no secret.
+     *                     A public server with no key keeps the live demo switched off.
+     */
+    public record Hosting(boolean publicServer, String demoKey) {
+
+        /** On this computer only, no key: how the app has always run. */
+        public static final Hosting LOCAL = new Hosting(false, null);
+
+        /** Requests from a tunnel are refused, except SMS replies: only for a server on this computer. */
+        boolean refusesTunnelTraffic() {
+            return !publicServer;
+        }
+
+        /** @throws AccessDeniedException if the live demo needs a key and this is not it */
+        void checkDemoKey(String given) throws AccessDeniedException {
+            if (!publicServer && (demoKey == null || demoKey.isBlank())) {
+                return; // on your own computer: no key needed
+            }
+            if (demoKey == null || demoKey.isBlank()) {
+                throw new AccessDeniedException("The live demo is switched off on this server (no CARCARE_DEMO_KEY is set).");
+            }
+            byte[] expected = demoKey.trim().getBytes(StandardCharsets.UTF_8);
+            byte[] actual = given == null ? new byte[0] : given.trim().getBytes(StandardCharsets.UTF_8);
+            if (!java.security.MessageDigest.isEqual(expected, actual)) {
+                throw new AccessDeniedException("This live demo needs the demo link (the address with ?key=...).");
+            }
+        }
+    }
 
     /** One API route: query parameters in, an object to send as JSON out. */
     @FunctionalInterface
@@ -103,8 +150,11 @@ public final class WebServer {
     private final ExecutorService pool;
     private final ExecutorService smsPool;
     private final SmsGateway sms;
+    private final boolean publicServer;
 
-    private WebServer(HttpServer server, ExecutorService pool, ExecutorService smsPool, SmsGateway sms) {
+    private WebServer(HttpServer server, ExecutorService pool, ExecutorService smsPool, SmsGateway sms,
+                      boolean publicServer) {
+        this.publicServer = publicServer;
         this.server = server;
         this.pool = pool;
         this.smsPool = smsPool;
@@ -138,6 +188,12 @@ public final class WebServer {
      */
     public static WebServer start(SearchSystem system, int port, GooglePlacesClient live, VisitBook visits,
                                   RepairerDirectory repairers, SmsGateway sms) throws CarCareException {
+        return start(system, port, live, visits, repairers, sms, Hosting.LOCAL);
+    }
+
+    /** @param hosting this computer only (Hosting.LOCAL) or a public server with a demo key */
+    public static WebServer start(SearchSystem system, int port, GooglePlacesClient live, VisitBook visits,
+                                  RepairerDirectory repairers, SmsGateway sms, Hosting hosting) throws CarCareException {
         WebApi api = new WebApi(system, live, java.time.Clock.systemUTC(), visits);
         JobBoard board = new JobBoard(java.time.Clock.systemUTC());
         SmsGateway gateway = sms != null ? sms : new SimulatedSmsGateway(java.time.Clock.systemUTC());
@@ -152,42 +208,45 @@ public final class WebServer {
         SmsApi smsApi = new SmsApi(texts, repairers);
         HttpServer server;
         try {
-            server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
+            InetSocketAddress address = hosting.publicServer()
+                    ? new InetSocketAddress(port) // every address: the host's proxy forwards visitors to us
+                    : new InetSocketAddress(InetAddress.getLoopbackAddress(), port);
+            server = HttpServer.create(address, 0);
         } catch (IOException e) {
             throw new CarCareException("Could not start the web server on port " + port
                     + " (is it already in use?): " + e.getMessage(), e);
         }
         // One lock for everything that reads or changes the search structures
         Object searchLock = new Object();
-        server.createContext("/", WebServer::servePage);
-        route(server, "/api/stats", searchLock, params -> api.stats());
-        route(server, "/api/categories", searchLock, api::categories);
-        route(server, "/api/problems", searchLock, api::problems);
-        route(server, "/api/search", searchLock, api::search);
-        route(server, "/api/complete", searchLock, api::complete);
-        route(server, "/api/spell", searchLock, api::spell);
-        route(server, "/api/matrix", searchLock, api::matrix);
-        route(server, "/api/pages", searchLock, params -> api.pages());
-        route(server, "/api/frequency", searchLock, api::frequency);
-        route(server, "/api/history", searchLock, params -> api.history());
-        route(server, "/api/cities", searchLock, params -> api.cities());
-        route(server, "/api/priority", searchLock, api::priority);
-        route(server, "/api/live", null, api::live); // network call to Google; no shared state
-        route(server, "/api/visit/slots", searchLock, api::visitSlots);
-        route(server, "/api/visits", searchLock, api::visits);
-        route(server, "/api/visit", "POST", searchLock, api::requestVisit);
-        route(server, "/api/visit/cancel", "POST", searchLock, api::cancelVisit);
+        server.createContext("/", exchange -> servePage(exchange, hosting));
+        route(server, hosting, "/api/stats", searchLock, params -> api.stats());
+        route(server, hosting, "/api/categories", searchLock, api::categories);
+        route(server, hosting, "/api/problems", searchLock, api::problems);
+        route(server, hosting, "/api/search", searchLock, api::search);
+        route(server, hosting, "/api/complete", searchLock, api::complete);
+        route(server, hosting, "/api/spell", searchLock, api::spell);
+        route(server, hosting, "/api/matrix", searchLock, api::matrix);
+        route(server, hosting, "/api/pages", searchLock, params -> api.pages());
+        route(server, hosting, "/api/frequency", searchLock, api::frequency);
+        route(server, hosting, "/api/history", searchLock, params -> api.history());
+        route(server, hosting, "/api/cities", searchLock, params -> api.cities());
+        route(server, hosting, "/api/priority", searchLock, api::priority);
+        route(server, hosting, "/api/live", null, api::live); // network call to Google; no shared state
+        route(server, hosting, "/api/visit/slots", searchLock, api::visitSlots);
+        route(server, hosting, "/api/visits", searchLock, api::visits);
+        route(server, hosting, "/api/visit", "POST", searchLock, api::requestVisit);
+        route(server, hosting, "/api/visit/cancel", "POST", searchLock, api::cancelVisit);
         // Live dispatch demo. JobBoard has its own lock, so these do not wait for searches;
         // only posting a job holds the search lock, because it finds the service for the problem.
-        route(server, "/api/repairers", null, params -> dispatch.repairers());
-        route(server, "/api/jobs", "POST", searchLock, dispatch::post);
-        route(server, "/api/jobs/accept", "POST", null, dispatch::accept);
-        route(server, "/api/jobs/reject", "POST", null, dispatch::reject);
-        route(server, "/api/jobs/done", "POST", null, dispatch::done);
-        route(server, "/api/jobs/cancel", "POST", null, dispatch::cancel);
-        route(server, "/api/jobs/live", null, dispatch::live);
-        route(server, "/api/sms/phone", null, smsApi::phone);
-        route(server, "/api/sms/phone/reply", "POST", null, smsApi::reply);
+        route(server, hosting, "/api/repairers", null, keyed(hosting, params -> dispatch.repairers()));
+        route(server, hosting, "/api/jobs", "POST", searchLock, keyed(hosting, dispatch::post));
+        route(server, hosting, "/api/jobs/accept", "POST", null, keyed(hosting, dispatch::accept));
+        route(server, hosting, "/api/jobs/reject", "POST", null, keyed(hosting, dispatch::reject));
+        route(server, hosting, "/api/jobs/done", "POST", null, keyed(hosting, dispatch::done));
+        route(server, hosting, "/api/jobs/cancel", "POST", null, keyed(hosting, dispatch::cancel));
+        route(server, hosting, "/api/jobs/live", null, keyed(hosting, dispatch::live));
+        route(server, hosting, "/api/sms/phone", null, keyed(hosting, smsApi::phone));
+        route(server, hosting, "/api/sms/phone/reply", "POST", null, keyed(hosting, smsApi::reply));
         server.createContext("/api/sms/incoming", exchange -> twilioReply(exchange, smsApi));
         ExecutorService pool = Executors.newFixedThreadPool(THREADS, task -> {
             Thread thread = new Thread(task, "carcare-web");
@@ -196,7 +255,7 @@ public final class WebServer {
         });
         server.setExecutor(pool);
         server.start();
-        return new WebServer(server, pool, smsPool, gateway);
+        return new WebServer(server, pool, smsPool, gateway, hosting.publicServer());
     }
 
     /** How repairers get texts: "Twilio, from +1..." or "simulated phones ...". */
@@ -210,6 +269,11 @@ public final class WebServer {
 
     public String url() {
         return "http://localhost:" + port() + "/";
+    }
+
+    /** A read-only view of the hosting settings (for Main's start-up lines). */
+    public boolean isPublic() {
+        return publicServer;
     }
 
     public void stop() {
@@ -275,15 +339,23 @@ public final class WebServer {
     }
 
     /** @param lock held while the route runs, or null for a route that shares no state */
-    private static void route(HttpServer server, String path, Object lock, Route route) {
-        route(server, path, "GET", lock, route);
+    private static void route(HttpServer server, Hosting hosting, String path, Object lock, Route route) {
+        route(server, hosting, path, "GET", lock, route);
+    }
+
+    /** A live-demo route: refused (HTTP 403) without the demo key when one is needed. */
+    private static Route keyed(Hosting hosting, Route route) {
+        return params -> {
+            hosting.checkDemoKey(params.get("key"));
+            return route.answer(params);
+        };
     }
 
     /** @param method "GET" (parameters in the address) or "POST" (form-encoded body) */
-    private static void route(HttpServer server, String path, String method, Object lock, Route route) {
+    private static void route(HttpServer server, Hosting hosting, String path, String method, Object lock, Route route) {
         server.createContext(path, exchange -> {
             try (exchange) {
-                if (cameThroughTunnel(exchange)) {
+                if (hosting.refusesTunnelTraffic() && cameThroughTunnel(exchange)) {
                     sendJson(exchange, 403, Map.of("error", "Only SMS replies are accepted from the internet."));
                     return;
                 }
@@ -311,6 +383,8 @@ public final class WebServer {
                     sendJson(exchange, 200, answer); // sending happens outside the lock
                 } catch (InvalidInputException e) {
                     sendJson(exchange, 400, Map.of("error", e.getMessage()));
+                } catch (AccessDeniedException e) {
+                    sendJson(exchange, 403, Map.of("error", e.getMessage()));
                 } catch (ServiceUnavailableException e) {
                     sendJson(exchange, 503, Map.of("error", e.getMessage()));
                 } catch (CarCareException | RuntimeException e) {
@@ -336,9 +410,9 @@ public final class WebServer {
         }
     }
 
-    private static void servePage(HttpExchange exchange) throws IOException {
+    private static void servePage(HttpExchange exchange, Hosting hosting) throws IOException {
         try (exchange) {
-            if (cameThroughTunnel(exchange)) {
+            if (hosting.refusesTunnelTraffic() && cameThroughTunnel(exchange)) {
                 send(exchange, 403, "text/plain; charset=utf-8", "Forbidden".getBytes(StandardCharsets.UTF_8));
                 return;
             }

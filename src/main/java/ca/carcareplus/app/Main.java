@@ -137,16 +137,32 @@ public class Main {
     }
 
     static final int DEFAULT_WEB_PORT = 8080;
+    /** "true" = hosted on the internet (Render sets it in render.yaml). */
+    static final String HOSTED_VARIABLE = "CARCARE_HOSTED";
+    /** The secret in the live demo link: /live-demo?key=... */
+    static final String DEMO_KEY_VARIABLE = "CARCARE_DEMO_KEY";
 
     private static void runWeb(String[] args) throws CarCareException {
-        int port = args.length >= 2 ? parsePort(args[1]) : DEFAULT_WEB_PORT;
+        // Hosts such as Render say which port to use in PORT, and turn on hosted mode
+        String envPort = System.getenv("PORT");
+        int port = args.length >= 2 ? parsePort(args[1])
+                : envPort != null && !envPort.isBlank() ? parsePort(envPort) : DEFAULT_WEB_PORT;
+        boolean hosted = "true".equalsIgnoreCase(System.getenv(HOSTED_VARIABLE));
+        String demoKey = System.getenv(DEMO_KEY_VARIABLE);
+        WebServer.Hosting hosting = hosted ? new WebServer.Hosting(true, demoKey) : WebServer.Hosting.LOCAL;
         SearchSystem system = loadSearchSystem();
         GooglePlacesClient live = GooglePlacesClient.fromEnvironment();
         ca.carcareplus.sms.TwilioSmsGateway sms = ca.carcareplus.sms.TwilioSmsGateway.fromEnvironment();
         WebServer server = WebServer.start(system, port, live, ca.carcareplus.visits.VisitBook.open(VISITS_FILE),
-                ca.carcareplus.dispatch.RepairerDirectory.load(WebServer.repairersFile()), sms);
-        System.out.println("CarCare+ is running at " + server.url());
-        System.out.println("Live dispatch demo: " + server.url() + "live-demo  (SMS: " + server.smsDescription() + ")");
+                ca.carcareplus.dispatch.RepairerDirectory.load(WebServer.repairersFile()), sms, hosting);
+        System.out.println(hosted ? "CarCare+ is running (hosted) on port " + port : "CarCare+ is running at " + server.url());
+        if (hosted) {
+            System.out.println(demoKey == null || demoKey.isBlank()
+                    ? "  Live dispatch demo is OFF: set " + DEMO_KEY_VARIABLE + " to turn it on."
+                    : "  Live dispatch demo: <your address>/live-demo?key=<" + DEMO_KEY_VARIABLE + ">");
+        }
+        System.out.println((hosted ? "  " : "Live dispatch demo: " + server.url() + "live-demo  ")
+                + "(SMS: " + server.smsDescription() + ")");
         System.out.println("  Repairers from " + WebServer.repairersFile()
                 + (WebServer.repairersFile().equals(WebServer.REPAIRERS_FILE) ? "" : " (made-up numbers: copy it to "
                 + WebServer.REPAIRERS_FILE + " and put in the real ones)"));

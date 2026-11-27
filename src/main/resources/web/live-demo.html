@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="same-origin">
 <title>CarCare+ Live dispatch</title>
 <meta name="description" content="Live demo: one repair request goes to several repairers, and the first to accept gets the job.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -322,6 +323,15 @@ const app = $("#app");
 const query = new URLSearchParams(location.search);
 const role = (query.get("as") || "").trim().toLowerCase();
 
+/* On a hosted server the demo needs the secret key from the demo link (?key=...).
+   It is remembered for this window and sent with every live-demo request. */
+const KEY_STORE = "carcare.demo.key";
+const demoKey = (query.get("key") || sessionStorage.getItem(KEY_STORE) || "").trim();
+if (demoKey) sessionStorage.setItem(KEY_STORE, demoKey);
+function withKey(url) {
+  return demoKey ? url + (url.includes("?") ? "&" : "?") + "key=" + encodeURIComponent(demoKey) : url;
+}
+
 const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const icon = (id, cls = "icon sm") => `<svg class="${cls}"><use href="#i-${id}"/></svg>`;
 
@@ -330,14 +340,16 @@ let clockOffset = 0; // server time - this computer's time (both are this comput
 const serverNow = () => Date.now() + clockOffset;
 
 async function getJson(url) {
-  const response = await fetch(url, { cache: "no-store" });
+  const response = await fetch(withKey(url), { cache: "no-store" });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) { const e = new Error(data.error || `HTTP ${response.status}`); e.status = response.status; throw e; }
   return data;
 }
 
 async function postForm(url, fields) {
-  const response = await fetch(url, { method: "POST", body: new URLSearchParams(fields) });
+  const body = new URLSearchParams(fields);
+  if (demoKey) body.set("key", demoKey);
+  const response = await fetch(url, { method: "POST", body });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
   return data;
@@ -357,6 +369,7 @@ function startPolling(buildUrl, onView, onFatal) {
       setLive(true);
       if (data.changed) { version = data.version; onView(data); }
     } catch (e) {
+      if (e.status === 403) { stopped = true; setLive(false); showLocked(e.message); return; }
       if (e.status === 400 && onFatal) { stopped = true; setLive(false); onFatal(e.message); return; }
       setLive(false);
       delay = RETRY_MS;
@@ -369,6 +382,13 @@ function startPolling(buildUrl, onView, onFatal) {
   document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
   tick();
   return { now: () => { tick(); }, reset: () => { version = -1; tick(); } };
+}
+
+function showLocked(message) {
+  app.innerHTML = `<section class="card" style="max-width:560px;margin:40px auto;text-align:center">
+      <div class="badge-icon" style="margin:0 auto 12px">${icon("lock", "icon")}</div>
+      <h2>Live demo locked</h2><p class="lead">${esc(message)}</p>
+      <a class="btn ghost" href="/">Go to the CarCare+ search</a></section>`;
 }
 
 function setLive(ok) {
@@ -504,7 +524,7 @@ function startPage() {
       </aside>
     </div>`;
   let repairers = [], smsMode = "simulated";
-  const roleCard = (key, url, picture, title, sub, i) => `<a class="role" href="${url}" data-key="${esc(key)}" data-i="${i}">
+  const roleCard = (key, url, picture, title, sub, i) => `<a class="role" href="${esc(withKey(url))}" data-key="${esc(key)}" data-i="${i}">
       ${picture}<span class="who"><b>${esc(title)}</b><small>${esc(sub)}</small></span>${icon("window")}</a>`;
   const draw = () => {
     const real = smsMode === "real";
@@ -539,7 +559,7 @@ function startPage() {
     }
     const url = key.startsWith("phone:") ? `/live-demo?phone=${encodeURIComponent(key.slice(6))}`
                                          : `/live-demo?as=${encodeURIComponent(key)}`;
-    return window.open(url, `carcare-${key.replace(":", "-")}`, `popup=yes,width=${w},height=${h},left=${x},top=${y}`);
+    return window.open(withKey(url), `carcare-${key.replace(":", "-")}`, `popup=yes,width=${w},height=${h},left=${x},top=${y}`);
   }
   app.addEventListener("click", (event) => {
     const card = event.target.closest("a[data-key]");

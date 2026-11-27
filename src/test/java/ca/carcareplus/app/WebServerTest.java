@@ -249,4 +249,53 @@ class WebServerTest {
         assertEquals(200, reply.statusCode(), reply.body());
         assertTrue(get("/api/jobs/live?job=JOB-1").body().contains("Sriram Komma accepted your request"));
     }
+
+    @Test
+    void withADemoKeyTheLiveDemoNeedsTheDemoLinkButSearchStaysOpen() throws Exception {
+        RawPageStore rawPages = new RawPageStore(dir.resolve("raw-2"));
+        Path parsedDir = dir.resolve("parsed-2");
+        FixtureLoader.load(Path.of("fixtures", "html"), rawPages);
+        new ParsePipeline(rawPages, new HTMLParser(ServiceCategorizer.loadFile(Path.of("config", "categories.txt"))), parsedDir)
+                .parseSources(List.of(FixtureLoader.SOURCE_NAME));
+        // Bound to this computer in the test; on Render publicServer is true and the key works the same way
+        WebServer keyed = WebServer.start(SearchSystem.load(parsedDir, dir.resolve("history-2.txt")), 0, null,
+                new ca.carcareplus.visits.VisitBook(),
+                ca.carcareplus.dispatch.RepairerDirectory.load(Path.of("config", "repairers.example.txt")), null,
+                new WebServer.Hosting(false, "demo-key-123"));
+        try {
+            String base = keyed.url();
+            HttpResponse<String> locked = send(HttpRequest.newBuilder(URI.create(base + "api/repairers")).GET().build());
+            assertEquals(403, locked.statusCode());
+            assertTrue(locked.body().contains("needs the demo link"), locked.body());
+            assertEquals(403, send(HttpRequest.newBuilder(URI.create(base + "api/repairers?key=wrong")).GET().build()).statusCode());
+            assertEquals(200, send(HttpRequest.newBuilder(URI.create(base + "api/repairers?key=demo-key-123")).GET().build()).statusCode());
+
+            String form = "name=Sam+Lee&phone=519+555+0100&vehicle=gas&q=flat+tire&repairers=sriram";
+            assertEquals(403, send(HttpRequest.newBuilder(URI.create(base + "api/jobs"))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(form)).build()).statusCode(), "no texts without the key");
+            assertEquals(200, send(HttpRequest.newBuilder(URI.create(base + "api/jobs"))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(form + "&key=demo-key-123")).build()).statusCode());
+            assertEquals(403, send(HttpRequest.newBuilder(URI.create(base + "api/sms/phone?repairer=sriram")).GET().build()).statusCode());
+
+            assertEquals(200, send(HttpRequest.newBuilder(URI.create(base + "api/stats")).GET().build()).statusCode(), "search is open");
+            assertEquals(200, send(HttpRequest.newBuilder(URI.create(base + "live-demo")).GET().build()).statusCode(),
+                    "the page loads and shows 'locked' by itself");
+        } finally {
+            keyed.stop();
+        }
+    }
+
+    @Test
+    void hostingRules() {
+        assertTrue(WebServer.Hosting.LOCAL.refusesTunnelTraffic(), "on this computer, tunnels may only bring SMS replies");
+        assertTrue(!new WebServer.Hosting(true, "k").refusesTunnelTraffic(), "hosted: every visitor comes through the host's proxy");
+        assertThrows(ca.carcareplus.exceptions.AccessDeniedException.class,
+                () -> new WebServer.Hosting(true, null).checkDemoKey("anything"), "public with no key: demo switched off");
+        assertThrows(ca.carcareplus.exceptions.AccessDeniedException.class,
+                () -> new WebServer.Hosting(true, "k").checkDemoKey(null));
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> new WebServer.Hosting(true, "k").checkDemoKey(" k "));
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow(() -> WebServer.Hosting.LOCAL.checkDemoKey(null));
+    }
 }

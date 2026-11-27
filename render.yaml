@@ -1,0 +1,16 @@
+# Render Blueprint: Render reads this when you choose New -> Blueprint and pick this repo.
+services:
+  - type: web
+    name: carcare-plus
+    runtime: docker
+    plan: free
+    region: ohio
+    healthCheckPath: /api/stats
+    autoDeploy: true
+    envVars:
+      - key: CARCARE_HOSTED
+        value: "true"
+      # The secret in the live demo link: https://<your-app>.onrender.com/live-demo?key=<this value>
+      # Render makes a random one; read it under Environment in the dashboard.
+      - key: CARCARE_DEMO_KEY
+        generateValue: true
