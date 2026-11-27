@@ -65,8 +65,11 @@
   .lead { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
   .muted { color: var(--muted); }
   .small { font-size: 13px; }
-  .grid2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-  @media (max-width: 820px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+  .simple { max-width: 640px; margin: 0 auto; }
+  .simple h3 { margin: 22px 0 0; font-size: 15px; }
+  details.more { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 14px; }
+  details.more summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--muted); }
+  details.more summary:hover { color: var(--text); }
   .lbl { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin: 12px 0 6px; }
   input, select { width: 100%; height: 42px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
                   background: var(--surface); color: var(--text); font: inherit; transition: border-color .15s, box-shadow .15s; }
@@ -213,11 +216,6 @@
   .role .who { flex: 1; min-width: 0; }
   .role .who b { display: block; }
   .role .who small { color: var(--muted); font-size: 12.5px; }
-  .steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: step; }
-  .steps li { display: flex; gap: 12px; font-size: 14px; }
-  .steps li::before { counter-increment: step; content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%;
-                      display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: 13px; }
-  .note { margin-top: 14px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
   code { font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
 
   /* ----------------------------------------------------- SMS mode + pretend phone */
@@ -482,43 +480,25 @@ function setRole(html) { const chip = $("#roleChip"); chip.innerHTML = html; chi
 function startPage() {
   document.title = baseTitle = "Live dispatch demo · CarCare+";
   app.innerHTML = `
-    <div class="grid2">
-      <section class="card">
-        <h2>Live dispatch demo</h2>
-        <p class="lead">A repair request is <b>texted</b> to every chosen repairer at the same moment. The first repairer to
-          reply <b>ACCEPTED</b> gets the job; the request is then locked, the customer sees who is coming, and the
-          other repairers get a text saying it has been assigned.</p>
-        <div class="sms-mode" id="smsMode"></div>
-        <div class="row" style="margin-top:14px">
-          <button type="button" class="btn primary" id="openAll">${icon("window", "icon")}<span>Open the demo windows</span></button>
-          <span class="muted small" id="openAllNote"></span>
-        </div>
-        <div class="error" id="popupNote" hidden>Your browser blocked some windows. Allow pop-ups for this site
-          (icon at the right of the address bar), or open each window below.</div>
-        <h3 style="margin-top:20px">Customer</h3>
-        <div class="roles" id="customerRole"></div>
-        <h3 style="margin-top:20px" id="phonesTitle">Repairer phones (SMS)</h3>
+    <section class="card simple">
+      <h2>Live dispatch demo</h2>
+      <p class="lead">One repair request goes to several repairers at once. The first to reply <b>ACCEPTED</b> gets the job.</p>
+      <div class="sms-mode" id="smsMode"></div>
+      <div class="row" style="margin-top:14px">
+        <button type="button" class="btn primary" id="openAll">${icon("window", "icon")}<span>Start the demo</span></button>
+        <span class="muted small" id="openAllNote"></span>
+      </div>
+      <div class="error" id="popupNote" hidden>Your browser blocked some windows. Allow pop-ups for this site
+        (icon at the right of the address bar), or open each window below.</div>
+      <h3>Customer</h3>
+      <div class="roles" id="customerRole"></div>
+      <h3>Repairers</h3>
+      <div class="roles" id="webRoles"><div class="muted small">Loading repairers…</div></div>
+      <details class="more">
+        <summary id="phonesTitle">Repairer phones (pretend SMS)</summary>
         <div class="roles" id="phoneRoles"></div>
-        <h3 style="margin-top:20px">Repairer web windows <span class="muted small">(optional: the same jobs, with buttons)</span></h3>
-        <div class="roles" id="webRoles"><div class="muted small">Loading repairers…</div></div>
-      </section>
-      <aside class="card">
-        <h3>What to show</h3>
-        <ol class="steps">
-          <li><span>In the <b>customer</b> window, pick a problem and press <b>Send to repairers</b>.</span></li>
-          <li><span>Every repairer's phone gets a text with the problem, the area and the customer's first name.</span></li>
-          <li><span>One repairer replies <b>ACCEPTED</b>. The customer's screen shows who is coming, with their phone number,
-            within half a second; the winner gets the customer's full name and phone by text.</span></li>
-          <li><span>Everyone else gets "assigned to another repairer". A late ACCEPTED gets "Sorry, already assigned".</span></li>
-          <li><span>Try it: reply ACCEPTED from two phones quickly. Only one can win.</span></li>
-        </ol>
-        <div class="note">${icon("lock")} <b>Why only one can win:</b> every ACCEPTED (by SMS or on the web) goes through
-          <code>JobBoard.accept()</code>, which is <code>synchronized</code>: the check "is it still open?" and the change
-          "assign it to me" happen as one step. <code>JobBoardTest</code> fires 40 accepts at once to prove it.</div>
-        <div class="note"><b>Who replied?</b> The SMS arrives with the sender's number; it is looked up in
-          <code>config/repairers.txt</code>. Unknown numbers are refused.</div>
-      </aside>
-    </div>`;
+      </details>
+    </section>`;
   let repairers = [], smsMode = "simulated";
   const roleCard = (key, url, picture, title, sub, i) => `<a class="role" href="${esc(withKey(url))}" data-key="${esc(key)}" data-i="${i}">
       ${picture}<span class="who"><b>${esc(title)}</b><small>${esc(sub)}</small></span>${icon("window")}</a>`;
@@ -526,12 +506,10 @@ function startPage() {
     const real = smsMode === "real";
     $("#smsMode").className = "sms-mode " + (real ? "real" : "sim");
     $("#smsMode").innerHTML = real
-      ? `${icon("phone", "icon")}<div><b>Real SMS is on</b> (${esc(smsDescription)}). Texts go to the repairers' own phones;
-         their replies come back through Twilio.</div>`
-      : `${icon("phone", "icon")}<div><b>Pretend phones</b>: no Twilio account is set up, so the texts appear on phone screens
-         in the browser. Replies typed there go through exactly the same code as real SMS replies.</div>`;
-    $("#openAll span").textContent = real ? "Open the customer window" : "Open customer + phones side by side";
-    $("#openAllNote").textContent = real ? "Repairers use their real phones." : "Customer on the left, phones on the right.";
+      ? `${icon("phone", "icon")}<div><b>Real SMS is on.</b> Texts go to the repairers' own phones.</div>`
+      : `${icon("phone", "icon")}<div><b>Pretend SMS.</b> Texts show up on phone screens in your browser.</div>`;
+    $("#openAll span").textContent = real ? "Open the customer window" : "Start the demo";
+    $("#openAllNote").textContent = real ? "Repairers use their real phones." : "Opens the customer and the phones.";
     $("#customerRole").innerHTML = roleCard("customer", "?as=customer",
       `<span class="avatar" style="background:#101828">${icon("car")}</span>`, "Customer", "Needs a repair", 0);
     $("#phonesTitle").textContent = real ? "Repairer phones (real SMS)" : "Repairer phones (pretend SMS)";
@@ -541,7 +519,7 @@ function startPage() {
       : repairers.map((r, i) => roleCard("phone:" + r.id, `?phone=${encodeURIComponent(r.id)}`, avatar(r, "", false),
           r.name + "'s phone", r.phone, i)).join("");
     $("#webRoles").innerHTML = repairers.map((r, i) => roleCard(r.id, `?as=${encodeURIComponent(r.id)}`, avatar(r),
-      r.name, `Web window · ${r.area} · ${r.online ? "online" : "offline"}`, i)).join("");
+      r.name, `${r.area} · ${r.online ? "online" : "offline"}`, i)).join("");
   };
   let smsDescription = "";
   // Opens a window placed on a grid: customer = left half, the others = 2 columns on the right
@@ -645,11 +623,10 @@ function customerPage() {
   let answerSecondsSeen = 180;
 
   app.innerHTML = `
-    <div class="grid2">
-      <div>
+    <div class="simple">
         <section class="card" id="formCard">
           <h2>Request a repairer</h2>
-          <p class="lead">Your request goes to every repairer you tick, all at once. The first to accept gets the job.</p>
+          <p class="lead">Sent to every repairer you tick. The first to accept gets the job.</p>
           <label class="lbl" for="problem">What's wrong with your car?</label>
           <select id="problem"><option value="">Loading problems…</option></select>
           <label class="lbl" for="details">Details (optional)</label>
@@ -670,19 +647,10 @@ function customerPage() {
             <button type="button" class="btn primary" id="sendBtn" style="flex:1">${icon("send", "icon")}<span>Send to repairers</span></button>
             <button type="button" class="btn ghost" id="fillBtn" title="Fill in made-up details for the demo">Demo details</button>
           </div>
+          <p class="muted small" style="margin:12px 0 0">Repairers see only your first name and area until one accepts.
+            Requests expire if nobody accepts within 3 minutes.</p>
         </section>
         <section class="card" id="trackCard" hidden></section>
-      </div>
-      <aside class="card">
-        <h3>How it works</h3>
-        <ol class="steps">
-          <li><span>Your request is texted to every chosen repairer at the same moment.</span></li>
-          <li><span>Each repairer replies ACCEPTED or NO. The <b>first</b> ACCEPTED is assigned, and the request is locked.</span></li>
-          <li><span>You see who accepted, how fast, and their phone number. The others see that the job is taken.</span></li>
-        </ol>
-        <div class="note">Repairers see only your first name and area until one of them accepts; then that repairer, and only
-          that one, gets your full name and phone number. Requests expire if nobody accepts within 3 minutes.</div>
-      </aside>
     </div>`;
 
   // --- form
