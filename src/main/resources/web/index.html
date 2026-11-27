@@ -459,19 +459,6 @@
   .sec-title { font-size: 15px; font-weight: 600; margin: 30px 2px 12px; color: var(--text); }
 
 
-  /* how it works: the number fills and the icon moves on hover */
-  .steps3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .step { position: relative; padding: 18px; background: var(--surface); border: 1px solid var(--line);
-          border-radius: var(--radius); transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s; }
-  .step:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: var(--line-strong); }
-  .step > .icon { color: var(--primary); width: 22px; height: 22px; transition: transform .3s var(--ease); }
-  .step:hover > .icon { transform: translateY(-2px) scale(1.1); }
-  .step h4 { margin: 10px 0 4px; font-size: 15px; font-weight: 600; }
-  .step p { margin: 0; color: var(--muted); font-size: 13.5px; }
-  .step-n { position: absolute; top: 14px; right: 14px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center;
-            font-size: 12px; font-weight: 700; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line);
-            transition: background .2s, color .2s, border-color .2s; }
-  .step:hover .step-n { background: var(--primary); border-color: var(--primary); color: #fff; }
 
   /* course tools in a grid */
   .tools-head { margin: 4px 2px 16px; }
@@ -484,7 +471,6 @@
                    transition: background .2s, color .2s, transform .3s var(--ease); }
   .tool:hover h2 .icon { background: var(--primary); color: #fff; transform: rotate(-6deg); }
 
-  @media (max-width: 900px) { .steps3 { grid-template-columns: 1fr; } }
   @media (max-width: 760px) { .tools-grid { grid-template-columns: 1fr; } }
   @media (max-width: 600px) { .search-card h2 { font-size: 23px; } }
 
@@ -707,19 +693,6 @@
           <span class="u-icon"><svg class="icon"><use href="#i-calendar"/></svg></span>
           <span class="u-text"><b>Non-priority</b><small>A repairer within 2 days, not now</small></span>
         </button>
-      </div>
-    </div>
-
-    <!-- Shown until the first search -->
-    <div id="startArea">
-      <h3 class="sec-title">How it works</h3>
-      <div class="steps3">
-        <div class="step"><span class="step-n">1</span><svg class="icon"><use href="#i-search"/></svg>
-          <h4>Pick the problem</h4><p>Choose what's wrong from the list, like "Car won't start" or "Flat tire", and add details if you like.</p></div>
-        <div class="step"><span class="step-n">2</span><svg class="icon"><use href="#i-pin"/></svg>
-          <h4>Find shops nearby</h4><p>CarCare+ matches the problem to a service and lists the closest real shops.</p></div>
-        <div class="step"><span class="step-n">3</span><svg class="icon"><use href="#i-phone"/></svg>
-          <h4>Contact in one tap</h4><p>Call, email or get directions straight from the result.</p></div>
       </div>
     </div>
 
@@ -1052,7 +1025,6 @@ async function runSearch(queryOverride) {
   searchAbort = new AbortController();
   const mySeq = ++searchSeq;
 
-  $("startArea").hidden = true;   // the landing blocks make room for the results
   const button = $("searchBtn");
   setBusy(button, true);
   if ($("resultsArea").hidden) $("searchStatus").innerHTML = skeletons();
