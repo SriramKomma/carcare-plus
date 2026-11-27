@@ -56,6 +56,9 @@
   @keyframes beat { 0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, .45); } 70% { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); } 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); } }
 
   main { padding: 20px 0 48px; }
+  /* phone and repairer windows are small pop-ups: keep their header short */
+  body.compact .brand small, body.compact .bar a[href="/"] { display: none; }
+  body.compact .inbox, body.compact #meCard { max-width: 640px; margin-left: auto; margin-right: auto; }
 
   /* ------------------------------------------------------------- basics */
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 18px; }
@@ -517,7 +520,7 @@ function startPage() {
       ? repairers.map((r) => `<div class="role">${avatar(r, "", false)}<span class="who"><b>${esc(r.name)}</b>
           <small>${esc(r.phone)} · ${esc(r.area)}</small></span>${icon("phone")}</div>`).join("")
       : repairers.map((r, i) => roleCard("phone:" + r.id, `?phone=${encodeURIComponent(r.id)}`, avatar(r, "", false),
-          r.name + "'s phone", r.phone, i)).join("");
+          r.name + "'s phone", r.area, i)).join("");
     $("#webRoles").innerHTML = repairers.map((r, i) => roleCard(r.id, `?as=${encodeURIComponent(r.id)}`, avatar(r),
       r.name, `${r.area} · ${r.online ? "online" : "offline"}`, i)).join("");
   };
@@ -553,6 +556,7 @@ function startPage() {
 
 /* ================================================================== phone */
 function phonePage(id) {
+  document.body.classList.add("compact");
   setupSound();
   let me = null, seen = -1, firstView = true;
   app.innerHTML = `<div class="phone">
@@ -563,14 +567,13 @@ function phonePage(id) {
         <button type="button" class="chip" data-say="NO">NO</button></div>
       <form class="composer" id="composer"><input id="say" maxlength="160" autocomplete="off" placeholder="Text message">
         <button type="submit" class="send" aria-label="Send">${icon("send", "icon")}</button></form>
-      <p class="muted small" style="text-align:center;margin:10px 0 0">A pretend phone: these are the texts a real phone would get.</p>
     </div>`;
 
   function draw(messages) {
     const thread = $("#thread");
     thread.innerHTML = messages.length ? messages.map((m, i) => `<div class="bubble ${m.fromCarCare ? "in" : "out"}${i >= seen && !firstView ? " enter" : ""}">
         ${esc(m.text)}<time>${new Date(m.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time></div>`).join("")
-      : `<div class="muted small" style="text-align:center;margin-top:40px">No messages yet. Texts from CarCare+ appear here.</div>`;
+      : `<div class="muted small" style="text-align:center;margin-top:40px">No messages yet.</div>`;
     thread.scrollTop = thread.scrollHeight;
   }
 
@@ -591,7 +594,7 @@ function phonePage(id) {
         me = data.me;
         document.title = baseTitle = `${me.name.split(" ")[0]}'s phone · CarCare+`;
         setRole(`${avatar({ ...me, online: true }, "xs", false)}${esc(me.name)}'s phone`);
-        $("#phoneOwner").textContent = `to ${me.name} · ${me.phone}`;
+        $("#phoneOwner").textContent = me.name;
       }
       const messages = data.messages;
       const fresh = messages.slice(count).filter((m) => m.fromCarCare);
@@ -808,6 +811,7 @@ function customerPage() {
 
 /* ================================================================= repairer */
 function repairerPage(id) {
+  document.body.classList.add("compact");
   setupSound();
   let me = null, jobs = [], answerSeconds = 180;
   const known = new Map();   // job id -> what "mine" was last time (to notice new and taken requests)
@@ -820,8 +824,8 @@ function repairerPage(id) {
 
   function drawMe() {
     $("#meCard").innerHTML = `<div class="me">${avatar(me, "lg")}
-      <div class="who"><b>${esc(me.name)}</b><span class="muted small">${icon("pin")} ${esc(me.area)} · ${esc(me.specialties)} · ${esc(me.phone)}</span></div>
-      <span class="tag on">Online · receiving requests</span></div>`;
+      <div class="who"><b>${esc(me.name)}</b><span class="muted small">${icon("pin")} ${esc(me.area)}</span></div>
+      <span class="tag on">Online</span></div>`;
   }
 
   function jobCard(job) {
@@ -849,15 +853,14 @@ function repairerPage(id) {
       ${stamp ? `<span class="stamp">${stamp}</span>` : ""}
       <h3>${esc(job.service || job.problem)}</h3>
       ${job.service ? `<p class="what">“${esc(job.problem)}”</p>` : ""}
-      <div class="meta">${job.vehicle ? `<span>${icon("car")}${esc(job.vehicle)}</span>` : ""}${job.area ? `<span>${icon("pin")}${esc(job.area)}</span>` : ""}
-        <span>${icon("users")}${esc(job.customerName)} · sent to ${job.invitedCount}</span></div>
+      <div class="meta">${job.area ? `<span>${icon("pin")}${esc(job.area)}</span>` : ""}<span>${icon("users")}${esc(job.customerName)}</span></div>
       ${body}</article>`;
   }
 
   function drawInbox() {
     $("#inbox").innerHTML = jobs.length ? jobs.map(jobCard).join("")
       : `<div class="empty"><div class="radar"><span></span></div><b>Waiting for repair requests…</b>
-         <div class="small">Keep this window open. New requests ring here the moment a customer sends them.</div></div>`;
+         <div class="small">New requests ring here.</div></div>`;
   }
 
   function notice(newJobs) {
