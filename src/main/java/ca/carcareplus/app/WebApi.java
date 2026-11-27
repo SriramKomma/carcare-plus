@@ -19,6 +19,7 @@ import ca.carcareplus.hours.OpeningHours;
 import ca.carcareplus.live.GooglePlacesClient;
 import ca.carcareplus.models.GeoPoint;
 import ca.carcareplus.osm.OsmImporter;
+import ca.carcareplus.query.CommonProblems;
 import ca.carcareplus.query.LevenshteinDistance;
 import ca.carcareplus.query.SpellChecker;
 import ca.carcareplus.query.SymptomMatcher;
@@ -124,6 +125,28 @@ public class WebApi {
             item.put("label", category == ServiceCategory.EV_CHARGING
                     ? "Find EV charging stations" : category.displayName());
             item.put("defaultQuery", ConsoleMenu.defaultQueryFor(category));
+            answer.add(item);
+        }
+        return answer;
+    }
+
+    /**
+     * GET /api/problems?vehicle=ev
+     * The "What's wrong with your car?" drop-down: everyday problems for this vehicle,
+     * each with the phrase the page searches for (see CommonProblems). commonRank >= 0
+     * puts a problem in the "Common problems" group at the top as well (0 = first).
+     */
+    public List<Map<String, Object>> problems(Map<String, String> params) {
+        VehicleType vehicle = VehicleType.fromUserInput(params.get("vehicle"));
+        List<Map<String, Object>> answer = new ArrayList<>();
+        for (CommonProblems.Problem problem : CommonProblems.forVehicle(vehicle)) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", problem.id());
+            item.put("group", problem.group());
+            item.put("label", problem.label());
+            item.put("text", problem.phrase());
+            item.put("category", problem.category().name());
+            item.put("commonRank", CommonProblems.commonRank(problem)); // -1 = not in "Common problems"
             answer.add(item);
         }
         return answer;
@@ -455,7 +478,9 @@ public class WebApi {
     }
 
     /**
-     * POST /api/visit  url, slot, name, phone, email, note, q, vehicle
+     * POST /api/visit  url, slot, name, phone, email, note, q, details, vehicle
+     * (q is the problem, e.g. a drop-down phrase; details is the driver's optional extra text,
+     * saved with the problem but not used to choose the service)
      *
      * Checks everything again on the server (the slot must be one that visitSlots
      * offers right now; a name and a way to reply -- phone or email -- are needed),
@@ -498,18 +523,16 @@ public class WebApi {
             throw new InvalidInputException("The note is too long (at most " + MAX_NOTE + " characters).");
         }
         String problem = clean(params.get("q"));
+        String service = serviceFor(params.get("vehicle"), problem); // from the problem only, not the free-text details
+        String details = clean(params.get("details"));
+        if (!details.isEmpty() && !details.equalsIgnoreCase(problem)) {
+            problem = problem.isEmpty() ? details : problem + " - " + details;
+        }
         if (problem.length() > MAX_PROBLEM) {
             problem = problem.substring(0, MAX_PROBLEM);
         }
         String vehicleName = params.getOrDefault("vehicle", "").trim();
         VehicleType vehicle = vehicleName.isEmpty() ? null : VehicleType.fromUserInput(vehicleName);
-        String service = "";
-        if (vehicle != null && !problem.isEmpty()) {
-            List<SymptomMatcher.Match> matches = matchesFor(vehicle, problem);
-            if (!matches.isEmpty()) {
-                service = matches.get(0).category().displayName();
-            }
-        }
         VisitRequest saved = visits.add(new VisitRequest(null,
                 java.time.LocalDateTime.now(clock.withZone(Availability.ONTARIO)).withNano(0).toString(),
                 shop.getUrl(), shop.getTitle(), first(shop.getPhones()), first(shop.getEmails()),
@@ -517,6 +540,15 @@ public class WebApi {
                 vehicle == null ? "" : vehicle.displayName(), name, phone == null ? "" : phone, email, note,
                 VisitRequest.REQUESTED));
         return visitToMap(saved);
+    }
+
+    /** The service a visit is for ("Battery problem"), or "" when the problem is not understood. */
+    private String serviceFor(String vehicleName, String problem) {
+        if (vehicleName == null || vehicleName.isBlank() || problem.isEmpty()) {
+            return "";
+        }
+        List<SymptomMatcher.Match> matches = matchesFor(VehicleType.fromUserInput(vehicleName.trim()), problem);
+        return matches.isEmpty() ? "" : matches.get(0).category().displayName();
     }
 
     /** GET /api/visits?ids=CC-1001,CC-1002 -- the driver's own requests (the page remembers their references). */

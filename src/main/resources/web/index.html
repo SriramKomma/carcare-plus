@@ -209,7 +209,16 @@
   .skeleton { padding: 16px; }
 
   /* problem-first search */
-  .q-big > input { height: 52px; font-size: 16.5px; }
+  .q-big > input, .q-big > select { height: 52px; font-size: 16.5px; }
+  /* problem + button on one row, details underneath; on a phone the button comes last */
+  .search-card .ask { display: grid; grid-template-columns: 1fr auto; }
+  .search-card .ask .q-big { grid-column: 1; grid-row: 1; }
+  .search-card .ask #searchBtn { grid-column: 2; grid-row: 1; }
+  .search-card .ask .details-field { grid-column: 1 / -1; grid-row: 2; }
+  @media (max-width: 600px) {
+    .search-card .ask { grid-template-columns: 1fr; }
+    .search-card .ask #searchBtn { grid-column: 1; grid-row: 3; }
+  }
   .examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
   .example { border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); border-radius: 999px;
              padding: 5px 11px; font: inherit; font-size: 13px; cursor: pointer; transition: border-color .15s, color .15s; }
@@ -233,8 +242,6 @@
   .where .seg { width: 220px; }
   .where .city { flex: 1; min-width: 200px; }
   .search-card .examples { margin-top: 12px; }
-  .more-options { margin-top: 12px; font-size: 13.5px; }
-  .more-options summary { cursor: pointer; color: var(--muted); font-weight: 600; }
   @media (max-width: 600px) {
     .ask { flex-direction: column; }
     .ask .btn { width: 100%; }
@@ -341,7 +348,7 @@
   input, select { border-color: var(--line-strong); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); }
   input:hover, select:hover { border-color: #98a2b3; }
   input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft); }
-  .q-big > input { height: 52px; font-size: 16px; }
+  .q-big > input, .q-big > select { height: 52px; font-size: 16px; }
   .seg { background: var(--surface-2); border-color: var(--line-strong); }
   .seg button:hover { color: var(--text); }
 
@@ -356,8 +363,6 @@
   .example { background: var(--surface-2); border-color: var(--line); color: #344054; padding: 6px 12px;
              transition: background .15s, border-color .15s, color .15s, transform .15s var(--ease); }
   .example:hover { background: var(--primary-soft); border-color: var(--primary-line); color: var(--primary); transform: translateY(-1px); }
-  .more-options summary { transition: color .15s; }
-  .more-options summary:hover { color: var(--primary); }
   .near-chip { background: var(--primary-soft); border: 1px solid var(--primary-line); }
 
   .problem { background: var(--ok-soft); border: 1px solid var(--ok-line); }
@@ -450,30 +455,6 @@
   .q-big:hover > input:not(:focus) { box-shadow: 0 0 0 4px rgba(37, 99, 235, .06); }
   .sec-title { font-size: 15px; font-weight: 600; margin: 30px 2px 12px; color: var(--text); }
 
-  /* problem tiles: soft coloured icon; on hover the card lifts, the icon fills, the arrow slides in */
-  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .tile { --tone: var(--primary); --tone-soft: var(--primary-soft);
-          display: flex; align-items: center; gap: 14px; text-align: left; padding: 16px; cursor: pointer;
-          background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm);
-          font: inherit; color: var(--text); animation: rise .35s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 45ms);
-          transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s; }
-  .tile:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--tone) 35%, white); }
-  .tile:active { transform: translateY(-1px) scale(.99); }
-  .tile-icon { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center;
-               background: var(--tone-soft); color: var(--tone); transition: background .2s, color .2s, transform .3s var(--ease); }
-  .tile:hover .tile-icon { background: var(--tone); color: #fff; transform: rotate(-6deg) scale(1.05); }
-  .tile-text { flex: 1; min-width: 0; display: grid; }
-  .tile-text b { font-weight: 600; }
-  .tile-text small { color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tile-go { color: var(--tone); opacity: 0; transform: translateX(-6px); transition: opacity .2s, transform .2s var(--ease); }
-  .tile:hover .tile-go { opacity: 1; transform: none; }
-  .tone-blue { --tone: #2563eb; --tone-soft: #eff4ff; }
-  .tone-slate { --tone: #475467; --tone-soft: #f2f4f7; }
-  .tone-red { --tone: #d92d20; --tone-soft: #fef3f2; }
-  .tone-orange { --tone: #e04f16; --tone-soft: #fef6ee; }
-  .tone-amber { --tone: #b54708; --tone-soft: #fffaeb; }
-  .tone-green { --tone: #079455; --tone-soft: #ecfdf3; }
-  .tone-violet { --tone: #6941c6; --tone-soft: #f4f3ff; }
 
   /* how it works: the number fills and the icon moves on hover */
   .steps3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
@@ -500,9 +481,9 @@
                    transition: background .2s, color .2s, transform .3s var(--ease); }
   .tool:hover h2 .icon { background: var(--primary); color: #fff; transform: rotate(-6deg); }
 
-  @media (max-width: 900px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .steps3 { grid-template-columns: 1fr; } }
+  @media (max-width: 900px) { .steps3 { grid-template-columns: 1fr; } }
   @media (max-width: 760px) { .tools-grid { grid-template-columns: 1fr; } }
-  @media (max-width: 600px) { .tiles { grid-template-columns: 1fr; } .search-card h2 { font-size: 23px; } }
+  @media (max-width: 600px) { .search-card h2 { font-size: 23px; } }
 
   /* ------------------------------------------------ urgency: priority and non-priority */
   .urgency { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
@@ -564,7 +545,7 @@
   .v-msg summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   .v-msg pre { white-space: pre-wrap; font: inherit; font-size: 13px; background: var(--surface); border: 1px solid var(--line);
                border-radius: var(--radius-sm); padding: 10px 12px; margin: 8px 0 0; }
-  .my-visits { margin-bottom: 20px; padding: 16px 18px; }
+  .my-visits { margin-top: 24px; padding: 16px 18px; }
   .mv-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   .mv-head .sec-title { margin: 0 0 8px; }
   .mv-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0;
@@ -686,11 +667,15 @@
     <div class="card search-card">
       <span class="eyebrow">Roadside help for Ontario drivers</span>
       <h2>What's wrong with your car?</h2>
-      <p class="sub">Describe it in your own words. CarCare+ works out which service you need and finds the nearest shops that can fix it.</p>
+      <p class="sub">Pick the problem from the list. CarCare+ works out which service you need and finds the nearest shops that can fix it.</p>
       <div class="ask">
         <div class="field q-big">
-          <svg class="icon"><use href="#i-search"/></svg>
-          <input id="q" autocomplete="off" aria-label="Describe the problem" placeholder="Describe it, e.g. my car won't start" role="combobox" aria-expanded="false" aria-controls="qList" aria-autocomplete="list">
+          <svg class="icon"><use href="#i-wrench"/></svg>
+          <select id="problem" aria-label="What's wrong with your car?"><option value="">Choose a problem…</option></select>
+        </div>
+        <div class="field details-field">
+          <svg class="icon"><use href="#i-msg"/></svg>
+          <input id="q" autocomplete="off" aria-label="Add details (optional)" placeholder="Add details (optional), e.g. it started this morning" role="combobox" aria-expanded="false" aria-controls="qList" aria-autocomplete="list" maxlength="300">
           <ul class="ac-list" id="qList" role="listbox" hidden></ul>
         </div>
         <button type="button" class="btn primary" id="searchBtn"><svg class="icon"><use href="#i-search"/></svg>Find shops</button>
@@ -719,26 +704,14 @@
           <span class="u-text"><b>Non-priority</b><small>A repairer within 2 days, not now</small></span>
         </button>
       </div>
-      <details class="more-options">
-        <summary>More options</summary>
-        <div class="row-inline" style="margin-top:10px;gap:16px">
-          <div class="field" style="min-width:260px"><svg class="icon"><use href="#i-car"/></svg><select id="category" aria-label="Service"></select></div>
-          <label class="switch"><input type="checkbox" id="openNow"><span class="track"></span>Open now only</label>
-        </div>
-      </details>
     </div>
-
-    <!-- This browser's visit requests (non-priority) -->
-    <section class="card my-visits" id="myVisits" hidden></section>
 
     <!-- Shown until the first search -->
     <div id="startArea">
-      <h3 class="sec-title">Common problems</h3>
-      <div class="tiles" id="tiles"></div>
       <h3 class="sec-title">How it works</h3>
       <div class="steps3">
         <div class="step"><span class="step-n">1</span><svg class="icon"><use href="#i-search"/></svg>
-          <h4>Describe the problem</h4><p>Type what the car is doing, like "won't start" or "squealing brakes".</p></div>
+          <h4>Pick the problem</h4><p>Choose what's wrong from the list, like "Car won't start" or "Flat tire", and add details if you like.</p></div>
         <div class="step"><span class="step-n">2</span><svg class="icon"><use href="#i-pin"/></svg>
           <h4>Find shops nearby</h4><p>CarCare+ matches the problem to a service and lists the closest real shops.</p></div>
         <div class="step"><span class="step-n">3</span><svg class="icon"><use href="#i-phone"/></svg>
@@ -756,6 +729,9 @@
       </div>
       <div id="guidesArea" style="margin-top:14px"></div>
     </div>
+
+    <!-- This browser's visit requests (non-priority): last on the page -->
+    <section class="card my-visits" id="myVisits" hidden></section>
   </section>
 
   <!-- ============================================================= Live nearby -->
@@ -947,7 +923,7 @@ function locate(which) {
     (which === "search" ? $("location") : $("llocation")).value = "";
     if (which === "live") runLive();
     else if (hasSomethingToSearch()) runSearch();
-    else { toast("Got your location. Now describe the problem."); $("q").focus(); }
+    else { toast("Got your location. Now choose what's wrong."); $("problem").focus(); }
   }, (err) => {
     setBusy(button, false);
     toast(err.code === 1 ? "Location permission was denied. Type a city or postal code instead."
@@ -975,68 +951,97 @@ $("llocation").addEventListener("input", () => { if (nearState.live && $("llocat
 
 // ================================================================== find help
 let vehicle = "ev";
-// Common problems: one click types the description and searches (SymptomMatcher does the rest)
-const COMMON = [
-  { title: "Won't start", text: "my car won't start", icon: "battery", tone: "blue" },
-  { title: "Flat tire", text: "flat tire", icon: "tire", tone: "slate" },
-  { title: "Brake noise", text: "brakes are squealing", icon: "disc", tone: "red" },
-  { title: "Overheating", text: "engine is overheating", icon: "thermo", tone: "orange" },
-  { title: "Warning light", text: "check engine light is on", icon: "engine", tone: "amber" }
-];
-const LAST_TILE = {
-  ev:  { title: "Need to charge", text: "I need to charge my car", icon: "plug", tone: "green" },
-  gas: { title: "Need a tow", text: "my car broke down, need a tow", icon: "truck", tone: "violet" }
-};
-function renderTiles() {
-  $("tiles").innerHTML = [...COMMON, LAST_TILE[vehicle]].map((t, i) =>
-    `<button type="button" class="tile tone-${t.tone}" data-text="${esc(t.text)}" style="--i:${i}">
-       <span class="tile-icon">${icon(t.icon)}</span>
-       <span class="tile-text"><b>${esc(t.title)}</b><small>“${esc(t.text)}”</small></span>
-       <span class="tile-go">${icon("arrow", "sm")}</span></button>`).join("");
-  $("tiles").querySelectorAll(".tile").forEach((b) => b.addEventListener("click", () => {
-    $("q").value = b.dataset.text; $("category").value = ""; startNormal(); runSearch();
-  }));
-}
-async function loadCategories() {
+// "What's wrong with your car?" drop-down: everyday problems from /api/problems (CommonProblems.java).
+// Each one carries a phrase SymptomMatcher understands, so a pick always finds the right service.
+// "Something else" turns the details box into the description, like typing used to.
+let problems = [];
+const OTHER = "other";
+async function loadProblems() {
+  const keep = $("problem").value;
   try {
-    const keep = $("category").value;
-    const categories = await api("categories", { vehicle });
-    // First option: let SymptomMatcher pick the service from the description
-    $("category").innerHTML = `<option value="">Work it out from my words</option>` + categories.map((c) =>
-      `<option value="${esc(c.name)}">${esc(c.label)}</option>`).join("");
-    if ([...$("category").options].some((o) => o.value === keep)) $("category").value = keep;
-  } catch (e) { toast(e.message); }
+    problems = await api("problems", { vehicle });
+  } catch (e) {
+    // Without the list the driver can still describe the problem in their own words
+    problems = [];
+    $("problem").innerHTML = `<option value="${OTHER}">Describe the problem below</option>`;
+    problemChanged();
+    toast(e.status === 404 ? "The problem list needs the newest server: stop it and start it again. You can still describe the problem."
+                           : "Could not load the problem list. You can still describe the problem below.");
+    return;
+  }
+  {
+    // "Common problems" first (most frequent first), then every problem by group
+    const common = problems.filter((p) => p.commonRank >= 0).sort((a, b) => a.commonRank - b.commonRank);
+    const groups = new Map(common.length ? [["Common problems", common]] : []);
+    problems.forEach((p) => { if (!groups.has(p.group)) groups.set(p.group, []); groups.get(p.group).push(p); });
+    $("problem").innerHTML = `<option value="">Choose a problem…</option>`
+      + [...groups].map(([group, list]) => `<optgroup label="${esc(group)}">`
+          + list.map((p) => `<option value="${esc(p.id)}">${esc(p.label)}</option>`).join("") + `</optgroup>`).join("")
+      + `<optgroup label="Not in the list"><option value="${OTHER}">Something else (describe it below)</option></optgroup>`;
+    // keep the pick when switching vehicle, unless it does not apply (e.g. "Oil leak" on an EV)
+    if ([...$("problem").options].some((o) => o.value === keep)) $("problem").value = keep;
+    else if (keep) toast("That problem is not for this kind of car. Please choose another one.");
+    problemChanged();
+  }
 }
+/** Selects a problem from the drop-down and searches straight away. */
+function pickProblem(id) {
+  $("problem").value = id;
+  problemChanged();
+  if (!pickedProblem()) return;
+  chosenCategory = "";          // the picked problem chooses the service
+  startNormal();
+  runSearch();
+}
+/** The picked problem, or null for "Choose a problem…" / "Something else". */
+function pickedProblem() { return problems.find((p) => p.id === $("problem").value) || null; }
+/** The optional details the driver typed. */
+function detailsText() { return $("q").value.trim(); }
+/** What is searched: the picked problem's phrase, or the driver's own words when nothing is picked. */
+function problemQuery() { return pickedProblem()?.text || detailsText(); }
+function problemChanged() {
+  const describe = $("problem").value === OTHER;
+  $("q").placeholder = describe ? "Describe the problem, e.g. a humming noise from the back"
+                                : "Add details (optional), e.g. it started this morning";
+  $("q").setAttribute("aria-label", describe ? "Describe the problem" : "Add details (optional)");
+}
+$("problem").addEventListener("change", () => {
+  if ($("problem").value === OTHER) { problemChanged(); $("q").focus(); }
+  else pickProblem($("problem").value);
+});
+// Service chosen with a "Not it? <other service>" button above the results; "" = work it out from the problem
+let chosenCategory = "", chosenFor = "";   // chosenFor: the problem text it was chosen for
 document.querySelectorAll("#vehicle button").forEach((btn) => btn.addEventListener("click", async () => {
   if (vehicle === btn.dataset.v) return;
   vehicle = btn.dataset.v;
   document.querySelectorAll("#vehicle button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
-  renderTiles();
-  await loadCategories();
-  if (lastSearch) runSearch();   // show the same search for the other vehicle straight away
+  chosenCategory = "";                     // services differ per vehicle: let the problem choose again
+  await loadProblems();
+  if (lastSearch && hasSomethingToSearch()) runSearch();   // show the same search for the other vehicle straight away
 }));
-function hasSomethingToSearch() { return $("q").value.trim() !== "" || $("category").value !== ""; }
+function hasSomethingToSearch() { return problemQuery() !== "" || chosenCategory !== ""; }
+/** Tells the driver what is missing and puts the cursor there. */
+function askForProblem(after) {
+  if ($("problem").value === OTHER) { toast("Describe the problem in the box below" + after); $("q").focus(); }
+  else { toast("Choose what's wrong with your car first" + after); $("problem").focus(); }
+}
 
 let lastSearch = null;
 let sortMode = "distance";       // with "use my location", nearest first is what a driver wants
 let urgency = "normal";          // "later" = non-priority: best match first, fix within 2 days
-/** A normal search (Find shops, Enter, a problem tile): nearest first again. */
+/** A normal search (Find shops, Enter, a problem picked): nearest first again. */
 function startNormal() { urgency = "normal"; sortMode = "distance"; }
 let viewMode = "list";
 let searchSeq = 0, searchAbort = null;
 
 async function runSearch(queryOverride) {
-  if (queryOverride !== undefined) $("q").value = queryOverride;
+  if (queryOverride !== undefined) { $("problem").value = OTHER; problemChanged(); $("q").value = queryOverride; }
   closeList();
-  if (!hasSomethingToSearch()) {
-    toast("Describe the problem first, e.g. \"my car won't start\".");
-    $("q").focus();
-    return;
-  }
+  if (chosenCategory && problemQuery() !== chosenFor) chosenCategory = "";   // a new problem: let it choose again
+  if (!hasSomethingToSearch()) { askForProblem("."); return; }
   const n = nearState.search;
-  const params = { vehicle, category: $("category").value, q: $("q").value, location: n ? "" : $("location").value,
-                   lat: n?.lat, lon: n?.lon, radius: n?.radius, sort: n ? sortMode : undefined,
-                   open: $("openNow").checked ? 1 : undefined };
+  const params = { vehicle, category: chosenCategory, q: problemQuery(), location: n ? "" : $("location").value,
+                   lat: n?.lat, lon: n?.lon, radius: n?.radius, sort: n ? sortMode : undefined };
 
   // Only the newest search may draw: cancel the one still running, and ignore late answers
   searchAbort?.abort();
@@ -1100,14 +1105,13 @@ function renderResults(r) {
   if (sugg.length) {
     notices += `<div class="notice info">${icon("spell")}<div>Did you mean: ${sugg.map(([w, s]) => `<b>${esc(w)}</b> → ${s.map(esc).join(", ")}`).join("; ")}?
       <button class="btn ghost small" id="again" style="margin-left:6px">Search “${esc(r.correctedQuery)}”</button></div></div>`;
-  } else if (!r.problem && !$("category").value && r.results.length === 0) {
+  } else if (!r.problem && !chosenCategory && r.results.length === 0) {
     notices += `<div class="notice info">${icon("info")}<span>Tip: describe what the car does, e.g. “won't start”, “squealing brakes” or “flat tire”, or pick a service.</span></div>`;
   }
   const where = r.near ? `within ${r.near.radiusKm} km` : r.location ? `in ${esc(r.location)}` : "found";
 
   if (r.results.length === 0) {
     const actions = [];
-    if (r.openNowOnly) actions.push(`<button class="btn ghost" id="showClosed">${icon("clock")}Show closed places too</button>`);
     if (r.location || r.near) actions.push(`<button class="btn ghost" id="widen">${icon("map")}${r.near ? "Search a bigger area" : "Search everywhere"}</button>`);
     showState(notices + guidesHtml(r) + stateHtml("", "search", "No places found " + (r.near ? "near you" : r.location ? "in " + r.location : ""),
       esc(r.noResultsMessage || "Try other words."), actions.join("")));
@@ -1117,14 +1121,13 @@ function renderResults(r) {
       runSearch();
     });
     bindNoticeButtons();
-    $("showClosed")?.addEventListener("click", () => { $("openNow").checked = false; runSearch(); });
     return;
   }
 
   $("searchStatus").innerHTML = notices;
   bindNoticeButtons();
   const hasPoints = r.results.some((x) => x.lat !== undefined);
-  const noun = r.problem?.category === "EV_CHARGING" || $("category").value === "EV_CHARGING" ? "charging station" : "place";
+  const noun = r.problem?.category === "EV_CHARGING" || chosenCategory === "EV_CHARGING" ? "charging station" : "place";
   $("resultsHead").innerHTML = `
       <h3>${urgency === "later" ? `Shops that can fix it within 2 days <span class="h-note">${r.near ? `up to ${r.near.radiusKm} km away` : where} · best match first</span>`
             : `${r.results.length}${r.moreResults ? "+" : ""} ${noun}${r.results.length === 1 ? "" : "s"} ${where}${r.openNowOnly ? ", open now" : ""}`}</h3>
@@ -1174,7 +1177,8 @@ function renderResults(r) {
 function bindNoticeButtons() {
   $("again")?.addEventListener("click", () => runSearch(lastSearch.correctedQuery));
   $("searchStatus").querySelectorAll("[data-cat]").forEach((b) => b.addEventListener("click", () => {
-    $("category").value = b.dataset.cat;   // the user picks the service: no more guessing
+    chosenCategory = b.dataset.cat;   // the user picks the service: no more guessing
+    chosenFor = problemQuery();
     runSearch();
   }));
 }
@@ -1182,9 +1186,10 @@ function bindNoticeButtons() {
 /** mailto: with the problem already written, so the driver only has to press Send. */
 function mailtoHref(email, x) {
   const r = lastSearch || {};
-  const problem = r.problem ? `${r.problem.text} (${r.problem.label})` : (r.category || r.query || "");
+  const problem = r.problem ? `${pickedProblem()?.label || r.problem.text} (${r.problem.label})` : (r.category || r.query || "");
+  const extra = pickedProblem() ? detailsText() : "";
   const body = [`Hello ${x.title},`, "", "I found your shop on CarCare+.",
-    r.vehicle ? `Vehicle: ${r.vehicle}` : "", problem ? `Problem: ${problem}` : "", "",
+    r.vehicle ? `Vehicle: ${r.vehicle}` : "", problem ? `Problem: ${problem}` : "", extra ? `Details: ${extra}` : "", "",
     "Could you let me know if you can help, and when I could bring the car in?", "", "Thank you"]
     .filter((line, i, all) => line !== "" || all[i - 1] !== "").join("\n");
   return `mailto:${email}?subject=${encodeURIComponent("Car problem: " + (r.problem ? r.problem.label : problem || "service request"))}&body=${encodeURIComponent(body)}`;
@@ -1341,7 +1346,8 @@ async function loadVisitForm(card, x) {
     send.innerHTML = `${icon("loader", "spin")}Sending…`;
     try {
       const v = await postApi("visit", { url: x.url, slot, name: name.value, phone: phone.value, email: email.value,
-        note: body.querySelector(".v-note-text").value, q: lastSearch?.problem?.text || $("q").value, vehicle });
+        note: body.querySelector(".v-note-text").value, q: lastSearch?.problem?.text || problemQuery(),
+        details: pickedProblem() ? detailsText() : "", vehicle });
       rememberVisit(v.id);
       showVisitDone(body, v);
       loadMyVisits();
@@ -1463,7 +1469,7 @@ async function runPriority() {
     }
   }
   try {
-    const r = await api("priority", { vehicle, lat: n.lat, lon: n.lon, q: $("q").value });
+    const r = await api("priority", { vehicle, lat: n.lat, lon: n.lon, q: problemQuery() });
     renderPriority(r);
     if (r.shops.length) dial(r.shops[0].phone);   // one tap: the call starts straight away
   } catch (e) {
@@ -1510,7 +1516,7 @@ function renderPriority(r) {
 $("priorityBtn").addEventListener("click", runPriority);
 
 $("nonPriorityBtn").addEventListener("click", () => {
-  if (!hasSomethingToSearch()) { toast("Describe the problem first, then press Non-priority."); $("q").focus(); return; }
+  if (!hasSomethingToSearch()) { askForProblem(", then press Non-priority."); return; }
   urgency = "later";
   sortMode = "best";                       // non-priority: the best shop for the job, not just the closest
   if (nearState.search && nearState.search.radius < 25) { nearState.search.radius = 25; renderNear("search"); }
@@ -1644,7 +1650,6 @@ $("q").addEventListener("keydown", (e) => {
 });
 $("q").addEventListener("blur", () => setTimeout(closeList, 100));
 $("location").addEventListener("keydown", (e) => { if (e.key === "Enter") { startNormal(); runSearch(); } });
-$("openNow").addEventListener("change", () => { if (lastSearch) runSearch(); });
 $("searchBtn").addEventListener("click", () => { startNormal(); runSearch(); });
 
 // ================================================================= live nearby
@@ -1817,9 +1822,7 @@ async function loadHistory() {
 }
 $("historyRefresh").addEventListener("click", loadHistory);
 
-renderTiles();
-loadCategories();
-$("q").focus();
+loadProblems();
 </script>
 </body>
 </html>

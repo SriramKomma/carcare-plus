@@ -53,6 +53,25 @@ class WebApiTest {
     }
 
     @Test
+    void problemsDropDownFollowsTheVehicle() {
+        List<Map<String, Object>> ev = api.problems(Map.of("vehicle", "ev"));
+        List<Map<String, Object>> gas = api.problems(Map.of("vehicle", "gas"));
+        assertEquals(Map.of("id", "wont-start", "group", "Starting & battery", "label", "Car won't start",
+                "text", "won't start", "category", "BATTERY", "commonRank", 0), ev.get(0));
+        assertTrue(ev.stream().anyMatch(p -> p.get("id").equals("wont-charge")));
+        assertTrue(ev.stream().noneMatch(p -> p.get("id").equals("check-engine")));
+        assertTrue(gas.stream().anyMatch(p -> p.get("id").equals("check-engine")));
+        assertTrue(gas.stream().noneMatch(p -> p.get("id").equals("wont-charge")));
+        assertThrows(InvalidInputException.class, () -> api.problems(Map.of("vehicle", "boat")));
+    }
+
+    @Test
+    void aDropDownPhraseIsUnderstoodBySearch() throws Exception {
+        Map<String, Object> answer = api.search(Map.of("vehicle", "gas", "q", "headlight out"));
+        assertEquals("Electrical problem", answer.get("category"));
+    }
+
+    @Test
     void categoriesFollowTheVehicle() {
         List<Map<String, Object>> ev = api.categories(Map.of("vehicle", "ev"));
         List<Map<String, Object>> gas = api.categories(Map.of("vehicle", "gas"));

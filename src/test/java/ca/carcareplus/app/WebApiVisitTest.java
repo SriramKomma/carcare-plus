@@ -67,6 +67,18 @@ class WebApiVisitTest {
     }
 
     @Test
+    void optionalDetailsAreSavedButDoNotChangeTheService() throws Exception {
+        // Picked "Flat tire" from the drop-down, then wrote about the brakes in the details box
+        Map<String, Object> saved = api.requestVisit(form("q", "flat tire", "details", " it also squeals when I brake "));
+        assertEquals("Flat tire / puncture", saved.get("service"), "the service comes from the picked problem");
+        assertEquals("flat tire - it also squeals when I brake", saved.get("problem"));
+
+        Map<String, Object> onlyDetails = api.requestVisit(form("slot", "2026-11-16T15:00", "q", "", "details", "dead battery"));
+        assertEquals("dead battery", onlyDetails.get("problem"));
+        assertEquals("", onlyDetails.get("service"), "free text alone is kept but not used to pick a service");
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void slotsFollowTheShopsHours() {
         Map<String, Object> answer = api.visitSlots(Map.of("url", url("Open Near Garage")));

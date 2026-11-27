@@ -116,6 +116,7 @@ public final class WebServer {
         server.createContext("/", WebServer::servePage);
         route(server, "/api/stats", searchLock, params -> api.stats());
         route(server, "/api/categories", searchLock, api::categories);
+        route(server, "/api/problems", searchLock, api::problems);
         route(server, "/api/search", searchLock, api::search);
         route(server, "/api/complete", searchLock, api::complete);
         route(server, "/api/spell", searchLock, api::spell);
