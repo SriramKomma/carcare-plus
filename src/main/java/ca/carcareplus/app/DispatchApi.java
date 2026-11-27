@@ -98,7 +98,7 @@ public final class DispatchApi {
             throw new InvalidInputException("The area is too long (at most " + MAX_AREA + " characters).");
         }
         String vehicleName = clean(params.get("vehicle"));
-        VehicleType vehicle = VehicleType.fromUserInput(vehicleName.isEmpty() ? "gas" : vehicleName);
+        VehicleType vehicle = vehicleName.isEmpty() ? null : VehicleType.fromUserInput(vehicleName); // optional
         String picked = clean(params.get("q"));
         String details = clean(params.get("details"));
         if (picked.isEmpty() && details.isEmpty()) {
@@ -128,7 +128,7 @@ public final class DispatchApi {
         if (invited.isEmpty()) {
             throw new InvalidInputException("Pick at least one repairer.");
         }
-        RepairJob job = board.post(new JobBoard.JobRequest(name, phone, area, vehicle.displayName(),
+        RepairJob job = board.post(new JobBoard.JobRequest(name, phone, area, vehicle == null ? "" : vehicle.displayName(),
                 problem, service, invited));
         JobBoard.Snapshot snapshot = board.snapshot();
         return customerJob(snapshot.job(job.id()), snapshot);

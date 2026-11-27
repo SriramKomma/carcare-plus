@@ -74,7 +74,7 @@ public class SearchEngine {
         int outsideLocation = 0;
         for (int id : index.lookupAny(terms)) {
             ServiceDocument doc = index.document(id);
-            if (!doc.appliesTo(request.vehicleType())) {
+            if (request.vehicleType() != null && !doc.appliesTo(request.vehicleType())) {
                 continue;
             }
             // A typed location is a filter: only pages in that place are results

@@ -42,10 +42,8 @@ public record SearchRequest(
         if (query == null || query.isBlank()) {
             throw new InvalidInputException("Please enter something to search for.");
         }
-        if (vehicleType == null) {
-            throw new InvalidInputException("Please choose a vehicle type (EV or Gas).");
-        }
-        if (category != null && !category.appliesTo(vehicleType)) {
+        // vehicleType == null means "any vehicle" (the web page does not ask)
+        if (vehicleType != null && category != null && !category.appliesTo(vehicleType)) {
             throw new InvalidInputException("'" + category.displayName()
                     + "' is not available for " + vehicleType.displayName() + ".");
         }

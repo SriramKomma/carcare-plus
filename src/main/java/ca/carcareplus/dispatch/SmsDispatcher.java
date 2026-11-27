@@ -131,9 +131,10 @@ public final class SmsDispatcher implements JobBoard.Listener {
     static String invitation(RepairJob job) {
         StringBuilder text = new StringBuilder("CarCare+ repair request ").append(job.id()).append(": ");
         text.append(job.service().isEmpty() ? job.problem() : job.service() + " (" + job.problem() + ")");
-        text.append(". ").append(job.vehicle());
-        if (!job.area().isEmpty()) {
-            text.append(", ").append(job.area());
+        String where = String.join(", ", java.util.stream.Stream.of(job.vehicle(), job.area())
+                .filter(part -> part != null && !part.isEmpty()).toList());
+        if (!where.isEmpty()) {
+            text.append(". ").append(where);
         }
         text.append(". Customer: ").append(firstName(job.customerName()));
         text.append(". Reply ACCEPTED to take it - the first reply gets the job. Reply NO to pass.");

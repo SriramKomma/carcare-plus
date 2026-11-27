@@ -17,7 +17,7 @@
     --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f9fafb; --text: #101828; --muted: #667085;
     --line: #eaecf0; --line-strong: #d0d5dd;
     --primary: #2563eb; --primary-hover: #1d4ed8; --primary-soft: #eff4ff; --primary-line: #c7d7fe; --on-primary: #ffffff;
-    --ev: #047857; --ev-soft: #ecfdf3; --gas: #b54708; --gas-soft: #fffaeb;
+    --ev: #047857; --ev-soft: #ecfdf3;
     --star: #f59e0b; --ok: #067647; --ok-soft: #ecfdf3; --ok-line: #abefc6;
     --warn: #b54708; --warn-soft: #fffaeb; --danger: #b42318; --danger-soft: #fef3f2; --hl: #fef0c7;
     --shadow-sm: 0 1px 2px rgba(16, 24, 40, .05);
@@ -98,8 +98,6 @@
          border: 1px solid var(--line-strong); border-radius: var(--radius-sm); }
   .seg button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 7px; background: none;
                 color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; transition: all .2s var(--ease); }
-  .seg button[aria-pressed="true"][data-v="ev"] { background: var(--surface); color: var(--ev); box-shadow: var(--shadow-sm); }
-  .seg button[aria-pressed="true"][data-v="gas"] { background: var(--surface); color: var(--gas); box-shadow: var(--shadow-sm); }
   .seg button[aria-pressed="true"][data-view] { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
   .seg button[aria-pressed="true"][data-view] { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: var(--radius-sm);
@@ -242,13 +240,12 @@
   .ask .field { flex: 1; }
   .ask .btn { width: auto; height: 52px; padding: 0 24px; font-size: 15.5px; }
   .where { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
-  .where .seg { width: 220px; }
   .where .city { flex: 1; min-width: 200px; }
   .search-card .examples { margin-top: 12px; }
   @media (max-width: 600px) {
     .ask { flex-direction: column; }
     .ask .btn { width: 100%; }
-    .where .seg, .where #nearArea, .where #nearArea .btn { width: 100%; }
+    .where #nearArea, .where #nearArea .btn { width: 100%; }
   }
   /* simple result card */
   .r-place { color: var(--muted); font-size: 14px; margin-top: 3px; overflow-wrap: anywhere; }
@@ -279,7 +276,6 @@
   .steps li { margin: 6px 0; }
   code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .92em; background: var(--surface-2);
          border: 1px solid var(--line); padding: 1px 5px; border-radius: 5px; overflow-wrap: anywhere; }
-
 
   footer { color: var(--muted); font-size: 13px; padding: 0 0 36px; }
   footer .wrap { display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 16px; }
@@ -540,8 +536,6 @@
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
-  <symbol id="i-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
-  <symbol id="i-fuel" viewBox="0 0 24 24"><line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></symbol>
   <symbol id="i-spell" viewBox="0 0 24 24"><path d="m6 16 6-12 6 12"/><path d="M8 12h8"/><path d="m16 20 2 2 4-4"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
@@ -614,10 +608,6 @@
         <button type="button" class="btn primary" id="searchBtn"><svg class="icon"><use href="#i-search"/></svg>Find shops</button>
       </div>
       <div class="where">
-        <div class="seg" role="group" aria-label="Vehicle" id="vehicle">
-          <button type="button" data-v="ev" aria-pressed="true"><svg class="icon sm"><use href="#i-zap"/></svg>Electric</button>
-          <button type="button" data-v="gas" aria-pressed="false"><svg class="icon sm"><use href="#i-fuel"/></svg>Gas</button>
-        </div>
         <div class="row-inline" id="nearArea">
           <button type="button" class="btn ghost" id="locateBtn"><svg class="icon"><use href="#i-locate"/></svg>Use my location</button>
         </div>
@@ -811,7 +801,6 @@ $("location").addEventListener("input", () => { if (nearState.search && $("locat
 $("llocation").addEventListener("input", () => { if (nearState.live && $("llocation").value) { nearState.live = null; renderNear("live"); } });
 
 // ================================================================== find help
-let vehicle = "ev";
 // "What's wrong with your car?" drop-down: everyday problems from /api/problems (CommonProblems.java).
 // Each one carries a phrase SymptomMatcher understands, so a pick always finds the right service.
 // "Something else" turns the details box into the description, like typing used to.
@@ -820,7 +809,7 @@ const OTHER = "other";
 async function loadProblems() {
   const keep = $("problem").value;
   try {
-    problems = await api("problems", { vehicle });
+    problems = await api("problems");
   } catch (e) {
     // Without the list the driver can still describe the problem in their own words
     problems = [];
@@ -839,9 +828,7 @@ async function loadProblems() {
       + [...groups].map(([group, list]) => `<optgroup label="${esc(group)}">`
           + list.map((p) => `<option value="${esc(p.id)}">${esc(p.label)}</option>`).join("") + `</optgroup>`).join("")
       + `<optgroup label="Not in the list"><option value="${OTHER}">Something else (describe it below)</option></optgroup>`;
-    // keep the pick when switching vehicle, unless it does not apply (e.g. "Oil leak" on an EV)
     if ([...$("problem").options].some((o) => o.value === keep)) $("problem").value = keep;
-    else if (keep) toast("That problem is not for this kind of car. Please choose another one.");
     problemChanged();
   }
 }
@@ -872,14 +859,6 @@ $("problem").addEventListener("change", () => {
 });
 // Service chosen with a "Not it? <other service>" button above the results; "" = work it out from the problem
 let chosenCategory = "", chosenFor = "";   // chosenFor: the problem text it was chosen for
-document.querySelectorAll("#vehicle button").forEach((btn) => btn.addEventListener("click", async () => {
-  if (vehicle === btn.dataset.v) return;
-  vehicle = btn.dataset.v;
-  document.querySelectorAll("#vehicle button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
-  chosenCategory = "";                     // services differ per vehicle: let the problem choose again
-  await loadProblems();
-  if (lastSearch && hasSomethingToSearch()) runSearch();   // show the same search for the other vehicle straight away
-}));
 function hasSomethingToSearch() { return problemQuery() !== "" || chosenCategory !== ""; }
 /** Tells the driver what is missing and puts the cursor there. */
 function askForProblem(after) {
@@ -901,7 +880,7 @@ async function runSearch(queryOverride) {
   if (chosenCategory && problemQuery() !== chosenFor) chosenCategory = "";   // a new problem: let it choose again
   if (!hasSomethingToSearch()) { askForProblem("."); return; }
   const n = nearState.search;
-  const params = { vehicle, category: chosenCategory, q: problemQuery(), location: n ? "" : $("location").value,
+  const params = { category: chosenCategory, q: problemQuery(), location: n ? "" : $("location").value,
                    lat: n?.lat, lon: n?.lon, radius: n?.radius, sort: n ? sortMode : undefined };
 
   // Only the newest search may draw: cancel the one still running, and ignore late answers
@@ -1196,7 +1175,7 @@ async function loadVisitForm(card, x) {
     try {
       const v = await postApi("visit", { url: x.url, slot, name: name.value, phone: phone.value, email: email.value,
         note: body.querySelector(".v-note-text").value, q: lastSearch?.problem?.text || problemQuery(),
-        details: pickedProblem() ? detailsText() : "", vehicle });
+        details: pickedProblem() ? detailsText() : "" });
       showVisitDone(body, v);
     } catch (e) {
       fail(e.message);
@@ -1276,7 +1255,7 @@ async function runPriority() {
     }
   }
   try {
-    const r = await api("priority", { vehicle, lat: n.lat, lon: n.lon, q: problemQuery() });
+    const r = await api("priority", { lat: n.lat, lon: n.lon, q: problemQuery() });
     renderPriority(r);
     if (r.shops.length) dial(r.shops[0].phone);   // one tap: the call starts straight away
   } catch (e) {

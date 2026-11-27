@@ -137,9 +137,9 @@ public class WebApi {
      * puts a problem in the "Common problems" group at the top as well (0 = first).
      */
     public List<Map<String, Object>> problems(Map<String, String> params) {
-        VehicleType vehicle = VehicleType.fromUserInput(params.get("vehicle"));
+        VehicleType vehicle = optionalVehicle(params);
         List<Map<String, Object>> answer = new ArrayList<>();
-        for (CommonProblems.Problem problem : CommonProblems.forVehicle(vehicle)) {
+        for (CommonProblems.Problem problem : vehicle == null ? CommonProblems.all() : CommonProblems.forVehicle(vehicle)) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", problem.id());
             item.put("group", problem.group());
@@ -163,7 +163,7 @@ public class WebApi {
      * the answer's "problem" field says what was understood, so the page can show it.
      */
     public Map<String, Object> search(Map<String, String> params) throws StorageException {
-        VehicleType vehicle = VehicleType.fromUserInput(params.get("vehicle"));
+        VehicleType vehicle = optionalVehicle(params);
         ServiceCategory category = parseCategory(params.get("category"));
         String query = params.getOrDefault("q", "").trim();
 
@@ -215,7 +215,7 @@ public class WebApi {
         Map<String, Object> answer = new LinkedHashMap<>();
         answer.put("query", outcome.query());
         answer.put("problem", problem);
-        answer.put("vehicle", vehicle.displayName());
+        answer.put("vehicle", vehicle == null ? "" : vehicle.displayName());
         answer.put("category", category == null ? "" : category.displayName());
         answer.put("location", location);
         answer.put("near", near == null ? null : Map.of("lat", near.latitude(), "lon", near.longitude(), "radiusKm", radius));
@@ -282,11 +282,17 @@ public class WebApi {
         return guides;
     }
 
-    /** Symptom matches whose service applies to this vehicle (no "EV charging" for a gas car). */
+    /** The vehicle in the request, or null for "any vehicle" when none is given. */
+    private static VehicleType optionalVehicle(Map<String, String> params) {
+        String name = params.get("vehicle");
+        return name == null || name.isBlank() ? null : VehicleType.fromUserInput(name);
+    }
+
+    /** Symptom matches whose service applies to this vehicle (no "EV charging" for a gas car); null = any vehicle. */
     private List<SymptomMatcher.Match> matchesFor(VehicleType vehicle, String description) {
         List<SymptomMatcher.Match> fitting = new ArrayList<>();
         for (SymptomMatcher.Match match : system.symptoms().match(description)) {
-            if (match.category().appliesTo(vehicle)) {
+            if (vehicle == null || match.category().appliesTo(vehicle)) {
                 fitting.add(match);
             }
         }
@@ -393,7 +399,7 @@ public class WebApi {
      * the page calls the first one straight away. Nothing is sent by the server.
      */
     public Map<String, Object> priority(Map<String, String> params) {
-        VehicleType vehicle = VehicleType.fromUserInput(params.get("vehicle"));
+        VehicleType vehicle = optionalVehicle(params);
         GeoPoint near = GeoPoint.parse(params.get("lat"), params.get("lon"));
         if (near == null) {
             throw new InvalidInputException("Priority help needs your location. Allow location access, or call 911 if you are in danger.");
@@ -407,7 +413,7 @@ public class WebApi {
         for (ServiceDocument doc : system.documents()) {
             if (!shown(doc) || !doc.hasLocation() || doc.getPhones().isEmpty()
                     || doc.hasCategory(ServiceCategory.EV_CHARGING) != wantCharger
-                    || !(doc.getVehicleTypes().isEmpty() || doc.getVehicleTypes().contains(vehicle))
+                    || (vehicle != null && !doc.appliesTo(vehicle))
                     || doc.getLocation().distanceKm(near) > PRIORITY_MAX_KM
                     || Availability.of(doc.getOpeningHours(), clock).state() == Availability.State.CLOSED) {
                 continue;
@@ -544,10 +550,11 @@ public class WebApi {
 
     /** The service a visit is for ("Battery problem"), or "" when the problem is not understood. */
     String serviceFor(String vehicleName, String problem) {
-        if (vehicleName == null || vehicleName.isBlank() || problem.isEmpty()) {
+        if (problem.isEmpty()) {
             return "";
         }
-        List<SymptomMatcher.Match> matches = matchesFor(VehicleType.fromUserInput(vehicleName.trim()), problem);
+        VehicleType vehicle = vehicleName == null || vehicleName.isBlank() ? null : VehicleType.fromUserInput(vehicleName.trim());
+        List<SymptomMatcher.Match> matches = matchesFor(vehicle, problem);
         return matches.isEmpty() ? "" : matches.get(0).category().displayName();
     }
 

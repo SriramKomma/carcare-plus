@@ -27,7 +27,7 @@ public final class ResultFormatter {
     public static String format(SearchRequest request, SearchOutcome outcome) {
         StringBuilder out = new StringBuilder();
         out.append("Search \"").append(outcome.query()).append("\" for ")
-                .append(request.vehicleType().displayName());
+                .append(request.vehicleType() == null ? "any vehicle" : request.vehicleType().displayName());
         if (request.hasLocation()) {
             out.append(" near ").append(request.location());
         }

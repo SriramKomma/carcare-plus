@@ -66,6 +66,21 @@ class WebApiTest {
     }
 
     @Test
+    void withoutAVehicleTheDropDownListsEveryProblem() {
+        List<Map<String, Object>> any = api.problems(Map.of());
+        assertTrue(any.stream().anyMatch(p -> p.get("id").equals("wont-charge")));
+        assertTrue(any.stream().anyMatch(p -> p.get("id").equals("check-engine")));
+        assertEquals(any.size(), any.stream().map(p -> p.get("id")).distinct().count());
+    }
+
+    @Test
+    void searchWithoutAVehicleFindsShopsForAnyCar() throws Exception {
+        Map<String, Object> answer = api.search(Map.of("q", "battery"));
+        assertEquals("", answer.get("vehicle"));
+        assertFalse(((List<?>) answer.get("results")).isEmpty());
+    }
+
+    @Test
     void aDropDownPhraseIsUnderstoodBySearch() throws Exception {
         Map<String, Object> answer = api.search(Map.of("vehicle", "gas", "q", "headlight out"));
         assertEquals("Electrical problem", answer.get("category"));

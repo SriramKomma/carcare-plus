@@ -73,10 +73,6 @@
   input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
   @media (max-width: 480px) { .two { grid-template-columns: 1fr; } }
-  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; height: 42px; background: var(--surface-2);
-         border: 1px solid var(--line-strong); border-radius: var(--radius-sm); }
-  .seg button { border: 0; border-radius: 7px; background: none; color: var(--muted); font: inherit; font-weight: 600; cursor: pointer; }
-  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--primary); box-shadow: var(--shadow-sm); }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: var(--radius-sm);
          border: 1px solid transparent; font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; color: var(--text);
          transition: background .15s var(--ease), transform .12s var(--ease), box-shadow .15s, border-color .15s, color .15s; }
@@ -641,7 +637,6 @@ function customerPage() {
   setRole(`<span class="avatar xs" style="background:#101828">${icon("car")}</span>Customer window`);
   setupSound();
   const saved = JSON.parse(localStorage.getItem(ME_KEY) || "{}");
-  let vehicle = saved.vehicle || "gas";
   let repairers = [];
   const chosen = new Set();
   let chosenAll = true;           // until the customer unticks someone, new repairers are ticked too
@@ -655,11 +650,6 @@ function customerPage() {
         <section class="card" id="formCard">
           <h2>Request a repairer</h2>
           <p class="lead">Your request goes to every repairer you tick, all at once. The first to accept gets the job.</p>
-          <span class="lbl">Vehicle</span>
-          <div class="seg" id="vehicle">
-            <button type="button" data-v="gas" aria-pressed="false">Gas</button>
-            <button type="button" data-v="ev" aria-pressed="false">Electric</button>
-          </div>
           <label class="lbl" for="problem">What's wrong with your car?</label>
           <select id="problem"><option value="">Loading problems…</option></select>
           <label class="lbl" for="details">Details (optional)</label>
@@ -698,17 +688,11 @@ function customerPage() {
   // --- form
   const form = { name: $("#name"), phone: $("#phone"), area: $("#area"), details: $("#details"), problem: $("#problem") };
   form.name.value = saved.name || ""; form.phone.value = saved.phone || ""; form.area.value = saved.area || "";
-  const drawVehicle = () => document.querySelectorAll("#vehicle button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === vehicle)));
-  $("#vehicle").addEventListener("click", (e) => {
-    const b = e.target.closest("button"); if (!b || b.dataset.v === vehicle) return;
-    vehicle = b.dataset.v; drawVehicle(); loadProblems();
-  });
-  drawVehicle();
 
   async function loadProblems() {
     const keep = form.problem.value;
     try {
-      const problems = await getJson(`/api/problems?vehicle=${vehicle}`);
+      const problems = await getJson(`/api/problems`);
       const common = problems.filter((p) => p.commonRank >= 0).sort((a, b) => a.commonRank - b.commonRank);
       const groups = new Map();
       problems.forEach((p) => { if (!groups.has(p.group)) groups.set(p.group, []); groups.get(p.group).push(p); });
@@ -759,9 +743,9 @@ function customerPage() {
     enableSoundFromClick();
     const btn = $("#sendBtn"); btn.disabled = true;
     try {
-      localStorage.setItem(ME_KEY, JSON.stringify({ name: form.name.value.trim(), phone: form.phone.value.trim(), area: form.area.value.trim(), vehicle }));
+      localStorage.setItem(ME_KEY, JSON.stringify({ name: form.name.value.trim(), phone: form.phone.value.trim(), area: form.area.value.trim() }));
       const job = await postForm("/api/jobs", {
-        name: form.name.value, phone: form.phone.value, area: form.area.value, vehicle,
+        name: form.name.value, phone: form.phone.value, area: form.area.value,
         q: form.problem.value, details: form.details.value, repairers: [...chosen].join(","),
       });
       jobId = job.id; sessionStorage.setItem(JOB_KEY, jobId);
@@ -825,7 +809,7 @@ function customerPage() {
       <div class="answers">${job.invited.map(answerRow).join("")}</div>
       <dl class="facts"><dt>Problem</dt><dd>${esc(job.problem)}</dd>
         ${job.service ? `<dt>Service</dt><dd>${esc(job.service)}</dd>` : ""}
-        <dt>Vehicle</dt><dd>${esc(job.vehicle)}</dd>${job.area ? `<dt>Where</dt><dd>${esc(job.area)}</dd>` : ""}</dl>`;
+        ${job.vehicle ? `<dt>Vehicle</dt><dd>${esc(job.vehicle)}</dd>` : ""}${job.area ? `<dt>Where</dt><dd>${esc(job.area)}</dd>` : ""}</dl>`;
     const cancel = $("#cancelBtn");
     if (cancel) cancel.addEventListener("click", async () => {
       cancel.disabled = true;
@@ -897,7 +881,7 @@ function repairerPage(id) {
       ${stamp ? `<span class="stamp">${stamp}</span>` : ""}
       <h3>${esc(job.service || job.problem)}</h3>
       ${job.service ? `<p class="what">“${esc(job.problem)}”</p>` : ""}
-      <div class="meta"><span>${icon("car")}${esc(job.vehicle)}</span>${job.area ? `<span>${icon("pin")}${esc(job.area)}</span>` : ""}
+      <div class="meta">${job.vehicle ? `<span>${icon("car")}${esc(job.vehicle)}</span>` : ""}${job.area ? `<span>${icon("pin")}${esc(job.area)}</span>` : ""}
         <span>${icon("users")}${esc(job.customerName)} · sent to ${job.invitedCount}</span></div>
       ${body}</article>`;
   }

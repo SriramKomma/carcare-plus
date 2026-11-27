@@ -115,11 +115,16 @@ class WebApiPriorityTest {
     }
 
     @Test
-    void priorityNeedsALocationAndAVehicle() {
+    void priorityNeedsALocation() {
         InvalidInputException e = assertThrows(InvalidInputException.class,
                 () -> api.priority(params("vehicle", "gas")));
         assertTrue(e.getMessage().contains("911"), e.getMessage());
-        assertThrows(InvalidInputException.class, () -> api.priority(params("lat", LAT, "lon", LON)));
+    }
+
+    @Test
+    void priorityWithoutAVehicleCoversAnyCar() {
+        assertFalse(shops(api.priority(params("lat", LAT, "lon", LON))).isEmpty());
+        assertThrows(InvalidInputException.class, () -> api.priority(params("vehicle", "boat", "lat", LAT, "lon", LON)));
     }
 
     @Test

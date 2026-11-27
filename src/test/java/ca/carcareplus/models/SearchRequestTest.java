@@ -50,8 +50,11 @@ class SearchRequestTest {
     }
 
     @Test
-    void rejectsMissingVehicleType() {
-        assertThrows(InvalidInputException.class, () -> SearchRequest.of("battery", null));
+    void missingVehicleTypeMeansAnyVehicle() {
+        assertNull(SearchRequest.of("battery", null).vehicleType());
+        // with no vehicle, every category is allowed (FUEL is gas-only, EV_CHARGING is EV-only)
+        assertDoesNotThrow(() -> new SearchRequest("fuel pump", null, ServiceCategory.FUEL, "", 10));
+        assertDoesNotThrow(() -> new SearchRequest("charger", null, ServiceCategory.EV_CHARGING, "", 10));
     }
 
     @Test

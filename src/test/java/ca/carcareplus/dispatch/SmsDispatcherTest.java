@@ -70,6 +70,15 @@ class SmsDispatcherTest {
         }
     }
 
+    @Test
+    void theTextNamesTheVehicleOnlyWhenOneWasGiven() {
+        postToTeam();
+        assertTrue(lastTextTo(SRIRAM).contains("(dead battery - at the mall). Gas Vehicle, Windsor. Customer:"), lastTextTo(SRIRAM));
+        board.post(new JobBoard.JobRequest("Alex Morgan", "(519) 555-0100", "Windsor", "",
+                "flat tire", "", List.of("sarvesh")));
+        assertTrue(lastTextTo(SARVESH).contains("flat tire. Windsor. Customer:"), lastTextTo(SARVESH));
+    }
+
     private static String idOf(String phone) {
         return switch (phone) {
             case SRIRAM -> "sriram";

@@ -199,6 +199,13 @@ class DispatchApiTest {
     }
 
     @Test
+    void theVehicleIsOptional() {
+        Map<String, Object> job = api.post(form("vehicle", ""));
+        assertEquals("", job.get("vehicle"));
+        assertEquals("Flat tire / puncture", job.get("service"));
+    }
+
+    @Test
     void badFormsAreRefusedWithAClearMessage() {
         assertThrows(InvalidInputException.class, () -> api.post(form("name", " ")));
         assertThrows(InvalidInputException.class, () -> api.post(form("phone", "12345")));
