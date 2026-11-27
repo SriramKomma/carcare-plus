@@ -12,6 +12,7 @@ import ca.carcareplus.dispatch.JobBoard;
 import ca.carcareplus.dispatch.RepairJob;
 import ca.carcareplus.dispatch.Repairer;
 import ca.carcareplus.dispatch.RepairerDirectory;
+import ca.carcareplus.dispatch.SmsDispatcher;
 import ca.carcareplus.exceptions.InvalidInputException;
 import ca.carcareplus.models.VehicleType;
 import ca.carcareplus.validation.DataValidator;
@@ -52,14 +53,23 @@ public final class DispatchApi {
     private final JobBoard board;
     /** (vehicle, problem) -> service name such as "Battery problem", or "" (WebApi.serviceFor). */
     private final BiFunction<String, String, String> serviceFor;
+    /** Texts the repairers; null = no SMS (some tests). */
+    private final SmsDispatcher sms;
 
     public DispatchApi(RepairerDirectory repairers, JobBoard board, BiFunction<String, String, String> serviceFor) {
+        this(repairers, board, serviceFor, null);
+    }
+
+    /** @param sms texts the repairers (it listens to the board), or null for no SMS */
+    public DispatchApi(RepairerDirectory repairers, JobBoard board, BiFunction<String, String, String> serviceFor,
+                       SmsDispatcher sms) {
         if (repairers == null || board == null || serviceFor == null) {
             throw new InvalidInputException("DispatchApi needs repairers, a job board and a service finder.");
         }
         this.repairers = repairers;
         this.board = board;
         this.serviceFor = serviceFor;
+        this.sms = sms;
     }
 
     /** GET /api/repairers */
@@ -173,6 +183,7 @@ public final class DispatchApi {
         }
         answer.put("changed", true);
         answer.put("answerSeconds", JobBoard.ANSWER_TIME.toSeconds());
+        answer.put("sms", smsInfo());
         if (me != null) {
             answer.put("me", repairerMap(me, snapshot.online()));
             List<Map<String, Object>> jobs = new ArrayList<>();
@@ -194,6 +205,14 @@ public final class DispatchApi {
         return answer;
     }
 
+    /** {mode: "off" | "simulated" | "real", description} for the pages. */
+    Map<String, Object> smsInfo() {
+        Map<String, Object> info = new LinkedHashMap<>();
+        info.put("mode", sms == null ? "off" : sms.gateway().isSimulated() ? "simulated" : "real");
+        info.put("description", sms == null ? "SMS is off" : sms.gateway().description());
+        return info;
+    }
+
     // ------------------------------------------------------------------ views
 
     /** What the customer sees: every invited repairer's answer, and the winner's contact details. */
@@ -207,6 +226,14 @@ public final class DispatchApi {
             Map<String, Object> row = repairer == null ? new LinkedHashMap<>() : repairerMap(repairer, snapshot.online());
             row.put("id", id);
             row.put("answer", answerOf(job, id));
+            SmsDispatcher.Delivery delivery = sms == null ? null : sms.delivery(job.id(), id);
+            if (delivery != null) {
+                row.put("sms", delivery.name()); // SENDING | SENT | FAILED
+                String error = sms.deliveryError(job.id(), id);
+                if (error != null) {
+                    row.put("smsError", error);
+                }
+            }
             invited.add(row);
         }
         item.put("invited", invited);

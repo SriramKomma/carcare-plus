@@ -142,8 +142,17 @@ public class Main {
         int port = args.length >= 2 ? parsePort(args[1]) : DEFAULT_WEB_PORT;
         SearchSystem system = loadSearchSystem();
         GooglePlacesClient live = GooglePlacesClient.fromEnvironment();
-        WebServer server = WebServer.start(system, port, live, ca.carcareplus.visits.VisitBook.open(VISITS_FILE));
+        ca.carcareplus.sms.TwilioSmsGateway sms = ca.carcareplus.sms.TwilioSmsGateway.fromEnvironment();
+        WebServer server = WebServer.start(system, port, live, ca.carcareplus.visits.VisitBook.open(VISITS_FILE),
+                ca.carcareplus.dispatch.RepairerDirectory.load(WebServer.REPAIRERS_FILE), sms);
         System.out.println("CarCare+ is running at " + server.url());
+        System.out.println("Live dispatch demo: " + server.url() + "live-demo  (SMS: " + server.smsDescription() + ")");
+        if (sms == null) {
+            System.out.println("  For real SMS set " + ca.carcareplus.sms.TwilioSmsGateway.SID_VARIABLE + ", "
+                    + ca.carcareplus.sms.TwilioSmsGateway.TOKEN_VARIABLE + ", "
+                    + ca.carcareplus.sms.TwilioSmsGateway.FROM_VARIABLE + " and "
+                    + ca.carcareplus.sms.TwilioSmsGateway.WEBHOOK_VARIABLE + " (see docs/SMS_SETUP.md).");
+        }
         System.out.println(live == null
                 ? "Live nearby (Google Places) is off: set " + GooglePlacesClient.API_KEY_VARIABLE + " to turn it on."
                 : "Live nearby (Google Places) is on.");

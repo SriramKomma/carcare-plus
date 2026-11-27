@@ -223,6 +223,31 @@
   .note { margin-top: 14px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }
   code { font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
 
+  /* ----------------------------------------------------- SMS mode + pretend phone */
+  .sms-mode { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 14px; }
+  .sms-mode.sim { background: var(--primary-soft); color: #1e3a8a; border: 1px solid var(--primary-line); }
+  .sms-mode.real { background: var(--ok-soft); color: var(--ok); border: 1px solid var(--ok-line); }
+  .tag.bad { background: var(--danger-soft); color: var(--danger); border-color: #fecdca; }
+  .phone { max-width: 400px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line); border-radius: 28px;
+           box-shadow: var(--shadow-lg); padding: 14px; display: flex; flex-direction: column; height: calc(100vh - 120px); min-height: 420px; }
+  .phone-top { display: flex; align-items: center; gap: 10px; padding: 4px 6px 12px; border-bottom: 1px solid var(--line); }
+  .phone-top b { display: block; }
+  .phone-top small { color: var(--muted); font-size: 12.5px; }
+  .thread { flex: 1; overflow-y: auto; padding: 12px 4px; display: flex; flex-direction: column; gap: 8px; }
+  .bubble { max-width: 82%; padding: 9px 12px 6px; border-radius: 18px; font-size: 14.5px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .bubble time { display: block; font-size: 11px; opacity: .65; margin-top: 3px; text-align: right; }
+  .bubble.in { align-self: flex-start; background: #f2f4f7; border-bottom-left-radius: 6px; }
+  .bubble.out { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 6px; }
+  .bubble.enter { animation: rise .35s var(--ease); }
+  .quick { display: flex; gap: 8px; padding: 8px 0; }
+  .chip { flex: 1; height: 36px; border-radius: 999px; border: 1px solid var(--primary-line); background: var(--primary-soft); color: var(--primary);
+          font: inherit; font-weight: 700; font-size: 13.5px; cursor: pointer; transition: background .15s; }
+  .chip:hover { background: #dbe6ff; }
+  .composer { display: flex; gap: 8px; }
+  .composer input { border-radius: 999px; }
+  .send { flex: none; width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--primary); color: #fff; cursor: pointer; display: grid; place-items: center; }
+  .send:hover { background: var(--primary-hover); }
+
   /* --------------------------------------------------------------- toasts */
   #toasts { position: fixed; right: 16px; bottom: 16px; z-index: 100; display: grid; gap: 8px; max-width: min(360px, calc(100vw - 32px)); }
   .toast { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius-sm); background: #101828; color: #fff;
@@ -444,64 +469,147 @@ function startPage() {
     <div class="grid2">
       <section class="card">
         <h2>Live dispatch demo</h2>
-        <p class="lead">One repair request goes to every chosen repairer at the same moment. The first repairer to press
-          <b>Accept</b> gets the job; the request is then locked, and everyone else's window shows it as taken.</p>
-        <div class="row">
-          <button type="button" class="btn primary" id="openAll">${icon("window", "icon")}Open all windows side by side</button>
-          <span class="muted small">Customer on the left, repairers on the right.</span>
+        <p class="lead">A repair request is <b>texted</b> to every chosen repairer at the same moment. The first repairer to
+          reply <b>ACCEPTED</b> gets the job; the request is then locked, the customer sees who is coming, and the
+          other repairers get a text saying it has been assigned.</p>
+        <div class="sms-mode" id="smsMode"></div>
+        <div class="row" style="margin-top:14px">
+          <button type="button" class="btn primary" id="openAll">${icon("window", "icon")}<span>Open the demo windows</span></button>
+          <span class="muted small" id="openAllNote"></span>
         </div>
         <div class="error" id="popupNote" hidden>Your browser blocked some windows. Allow pop-ups for this site
           (icon at the right of the address bar), or open each window below.</div>
-        <div class="roles" id="roles"><div class="muted small">Loading repairers…</div></div>
+        <h3 style="margin-top:20px">Customer</h3>
+        <div class="roles" id="customerRole"></div>
+        <h3 style="margin-top:20px" id="phonesTitle">Repairer phones (SMS)</h3>
+        <div class="roles" id="phoneRoles"></div>
+        <h3 style="margin-top:20px">Repairer web windows <span class="muted small">(optional: the same jobs, with buttons)</span></h3>
+        <div class="roles" id="webRoles"><div class="muted small">Loading repairers…</div></div>
       </section>
       <aside class="card">
         <h3>What to show</h3>
         <ol class="steps">
           <li><span>In the <b>customer</b> window, pick a problem and press <b>Send to repairers</b>.</span></li>
-          <li><span>Every repairer window rings and shows the request within half a second.</span></li>
-          <li><span>One repairer presses <b>Accept</b>. The customer instantly sees who is coming, with their phone number.</span></li>
-          <li><span>The other repairers' cards turn grey: <i>already assigned</i>. Their Accept button is gone.</span></li>
-          <li><span>Try it: press Accept in two windows quickly. Only one can win.</span></li>
+          <li><span>Every repairer's phone gets a text with the problem, the area and the customer's first name.</span></li>
+          <li><span>One repairer replies <b>ACCEPTED</b>. The customer's screen shows who is coming, with their phone number,
+            within half a second; the winner gets the customer's full name and phone by text.</span></li>
+          <li><span>Everyone else gets "assigned to another repairer". A late ACCEPTED gets "Sorry, already assigned".</span></li>
+          <li><span>Try it: reply ACCEPTED from two phones quickly. Only one can win.</span></li>
         </ol>
-        <div class="note">${icon("lock")} <b>Why only one can win:</b> <code>JobBoard.accept()</code> is <code>synchronized</code>:
-          the check "is it still open?" and the change "assign it to me" happen as one step, so a second click
-          always sees the job already taken. <code>JobBoardTest</code> fires 40 accepts at once to prove it.</div>
+        <div class="note">${icon("lock")} <b>Why only one can win:</b> every ACCEPTED (by SMS or on the web) goes through
+          <code>JobBoard.accept()</code>, which is <code>synchronized</code>: the check "is it still open?" and the change
+          "assign it to me" happen as one step. <code>JobBoardTest</code> fires 40 accepts at once to prove it.</div>
+        <div class="note"><b>Who replied?</b> The SMS arrives with the sender's number; it is looked up in
+          <code>config/repairers.txt</code>. Unknown numbers are refused.</div>
       </aside>
     </div>`;
-  let repairers = [];
+  let repairers = [], smsMode = "simulated";
+  const roleCard = (key, url, picture, title, sub, i) => `<a class="role" href="${url}" data-key="${esc(key)}" data-i="${i}">
+      ${picture}<span class="who"><b>${esc(title)}</b><small>${esc(sub)}</small></span>${icon("window")}</a>`;
   const draw = () => {
-    $("#roles").innerHTML = [
-      `<a class="role" href="?as=customer" data-role="customer" data-i="0">
-         <span class="avatar" style="background:#101828">${icon("car")}</span>
-         <span class="who"><b>Customer</b><small>Needs a repair</small></span>${icon("window")}</a>`,
-      ...repairers.map((r, i) => `<a class="role" href="?as=${encodeURIComponent(r.id)}" data-role="${esc(r.id)}" data-i="${i}">
-         ${avatar(r)}<span class="who"><b>${esc(r.name)}</b><small>Repairer · ${esc(r.area)} · ${r.online ? "online" : "offline"}</small></span>${icon("window")}</a>`),
-    ].join("");
+    const real = smsMode === "real";
+    $("#smsMode").className = "sms-mode " + (real ? "real" : "sim");
+    $("#smsMode").innerHTML = real
+      ? `${icon("phone", "icon")}<div><b>Real SMS is on</b> (${esc(smsDescription)}). Texts go to the repairers' own phones;
+         their replies come back through Twilio.</div>`
+      : `${icon("phone", "icon")}<div><b>Pretend phones</b>: no Twilio account is set up, so the texts appear on phone screens
+         in the browser. Replies typed there go through exactly the same code as real SMS replies.</div>`;
+    $("#openAll span").textContent = real ? "Open the customer window" : "Open customer + phones side by side";
+    $("#openAllNote").textContent = real ? "Repairers use their real phones." : "Customer on the left, phones on the right.";
+    $("#customerRole").innerHTML = roleCard("customer", "?as=customer",
+      `<span class="avatar" style="background:#101828">${icon("car")}</span>`, "Customer", "Needs a repair", 0);
+    $("#phonesTitle").textContent = real ? "Repairer phones (real SMS)" : "Repairer phones (pretend SMS)";
+    $("#phoneRoles").innerHTML = real
+      ? repairers.map((r) => `<div class="role">${avatar(r, "", false)}<span class="who"><b>${esc(r.name)}</b>
+          <small>${esc(r.phone)} · ${esc(r.area)}</small></span>${icon("phone")}</div>`).join("")
+      : repairers.map((r, i) => roleCard("phone:" + r.id, `?phone=${encodeURIComponent(r.id)}`, avatar(r, "", false),
+          r.name + "'s phone", r.phone, i)).join("");
+    $("#webRoles").innerHTML = repairers.map((r, i) => roleCard(r.id, `?as=${encodeURIComponent(r.id)}`, avatar(r),
+      r.name, `Web window · ${r.area} · ${r.online ? "online" : "offline"}`, i)).join("");
   };
-  // Opens a role in its own window placed on a grid: customer = left half, repairers = 2 columns on the right
-  function openWindow(roleId, index) {
+  let smsDescription = "";
+  // Opens a window placed on a grid: customer = left half, the others = 2 columns on the right
+  function openWindow(key, index) {
     const W = screen.availWidth, H = screen.availHeight, left0 = screen.availLeft || 0, top0 = screen.availTop || 0;
     let x = left0, y = top0, w = Math.floor(W / 2), h = H;
-    if (roleId !== "customer") {
+    if (key !== "customer") {
       const rows = Math.max(1, Math.ceil(repairers.length / 2));
       w = Math.floor(W / 4); h = Math.floor(H / rows);
       x = left0 + Math.floor(W / 2) + (index % 2) * w; y = top0 + Math.floor(index / 2) * h;
     }
-    return window.open(`/live-demo?as=${encodeURIComponent(roleId)}`, `carcare-${roleId}`,
-      `popup=yes,width=${w},height=${h},left=${x},top=${y}`);
+    const url = key.startsWith("phone:") ? `/live-demo?phone=${encodeURIComponent(key.slice(6))}`
+                                         : `/live-demo?as=${encodeURIComponent(key)}`;
+    return window.open(url, `carcare-${key.replace(":", "-")}`, `popup=yes,width=${w},height=${h},left=${x},top=${y}`);
   }
-  $("#roles").addEventListener("click", (event) => {
-    const card = event.target.closest("[data-role]");
+  app.addEventListener("click", (event) => {
+    const card = event.target.closest("a[data-key]");
     if (!card || event.ctrlKey || event.metaKey || event.shiftKey) return; // let the browser open a tab instead
     event.preventDefault();
-    if (!openWindow(card.dataset.role, Number(card.dataset.i))) $("#popupNote").hidden = false;
+    if (!openWindow(card.dataset.key, Number(card.dataset.i))) $("#popupNote").hidden = false;
   });
   $("#openAll").addEventListener("click", () => {
     let blocked = !openWindow("customer", 0);
-    repairers.forEach((r, i) => { blocked = !openWindow(r.id, i) || blocked; });
+    if (smsMode !== "real") repairers.forEach((r, i) => { blocked = !openWindow("phone:" + r.id, i) || blocked; });
     $("#popupNote").hidden = !blocked;
   });
-  startPolling((v) => `/api/jobs/live?since=${v}`, (data) => { repairers = data.repairers; draw(); });
+  startPolling((v) => `/api/jobs/live?since=${v}`, (data) => {
+    repairers = data.repairers; smsMode = data.sms.mode; smsDescription = data.sms.description; draw();
+  });
+}
+
+/* ================================================================== phone */
+function phonePage(id) {
+  setupSound();
+  let me = null, seen = -1, firstView = true;
+  app.innerHTML = `<div class="phone">
+      <div class="phone-top"><span class="avatar" style="background:#2563eb">C+</span>
+        <div><b>CarCare+</b><small id="phoneOwner">Loading…</small></div></div>
+      <div class="thread" id="thread"></div>
+      <div class="quick"><button type="button" class="chip" data-say="ACCEPTED">ACCEPTED</button>
+        <button type="button" class="chip" data-say="NO">NO</button></div>
+      <form class="composer" id="composer"><input id="say" maxlength="160" autocomplete="off" placeholder="Text message">
+        <button type="submit" class="send" aria-label="Send">${icon("send", "icon")}</button></form>
+      <p class="muted small" style="text-align:center;margin:10px 0 0">A pretend phone: these are the texts a real phone would get.</p>
+    </div>`;
+
+  function draw(messages) {
+    const thread = $("#thread");
+    thread.innerHTML = messages.length ? messages.map((m, i) => `<div class="bubble ${m.fromCarCare ? "in" : "out"}${i >= seen && !firstView ? " enter" : ""}">
+        ${esc(m.text)}<time>${new Date(m.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time></div>`).join("")
+      : `<div class="muted small" style="text-align:center;margin-top:40px">No messages yet. Texts from CarCare+ appear here.</div>`;
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  async function say(text) {
+    text = text.trim(); if (!text) return;
+    $("#say").value = "";
+    try { await postForm("/api/sms/phone/reply", { repairer: id, text }); poller.now(); }
+    catch (e) { toast(e.message, "warn"); }
+  }
+  $("#composer").addEventListener("submit", (e) => { e.preventDefault(); say($("#say").value); });
+  document.querySelector(".quick").addEventListener("click", (e) => { const b = e.target.closest("[data-say]"); if (b) say(b.dataset.say); });
+
+  let count = 0;
+  const poller = startPolling(
+    (v) => `/api/sms/phone?since=${v}&repairer=${encodeURIComponent(id)}`,
+    (data) => {
+      if (!me) {
+        me = data.me;
+        document.title = baseTitle = `${me.name.split(" ")[0]}'s phone · CarCare+`;
+        setRole(`${avatar({ ...me, online: true }, "xs", false)}${esc(me.name)}'s phone`);
+        $("#phoneOwner").textContent = `to ${me.name} · ${me.phone}`;
+      }
+      const messages = data.messages;
+      const fresh = messages.slice(count).filter((m) => m.fromCarCare);
+      if (!firstView && fresh.length) { chime(); flashTitle("New text from CarCare+"); }
+      seen = count; count = messages.length;
+      draw(messages);
+      firstView = false;
+    },
+    (message) => {
+      app.innerHTML = `<section class="card"><h2>No pretend phone</h2><p class="lead">${esc(message)}</p>
+        <a class="btn primary" href="/live-demo">Back to the demo start page</a></section>`;
+    });
 }
 
 /* ================================================================= customer */
@@ -558,8 +666,8 @@ function customerPage() {
       <aside class="card">
         <h3>How it works</h3>
         <ol class="steps">
-          <li><span>Your request appears on every chosen repairer's screen at the same moment.</span></li>
-          <li><span>Each repairer can accept or decline. The <b>first</b> to accept is assigned, and the request is locked.</span></li>
+          <li><span>Your request is texted to every chosen repairer at the same moment.</span></li>
+          <li><span>Each repairer replies ACCEPTED or NO. The <b>first</b> ACCEPTED is assigned, and the request is locked.</span></li>
           <li><span>You see who accepted, how fast, and their phone number. The others see that the job is taken.</span></li>
         </ol>
         <div class="note">Repairers see only your first name and area until one of them accepts; then that repairer, and only
@@ -650,8 +758,10 @@ function customerPage() {
     const label = { waiting: `Waiting<span class="typing"><i></i><i></i><i></i></span>`, accepted: `${icon("check")} Accepted`,
                     declined: `${icon("x")} Declined`, "no answer": "No answer" }[r.answer] || esc(r.answer);
     const cls = r.answer.replace(" ", "");
+    const sms = { SENDING: `<span class="tag">Texting…</span>`, SENT: `<span class="tag on">${icon("check")} SMS sent</span>`,
+                  FAILED: `<span class="tag bad" title="${esc(r.smsError || "")}">SMS failed</span>` }[r.sms] || "";
     return `<div class="answer ${cls}">${avatar(r, "xs")}<span class="who">${esc(r.name)} <small>· ${esc(r.area)}</small></span>
-      <span class="ans ${cls}">${label}</span></div>`;
+      ${sms}<span class="ans ${cls}">${label}</span></div>`;
   }
 
   function drawJob(job) {
@@ -834,7 +944,9 @@ function repairerPage(id) {
 }
 
 /* ------------------------------------------------------------------ start */
-if (!role) startPage();
+const phoneOf = (query.get("phone") || "").trim().toLowerCase();
+if (phoneOf) phonePage(phoneOf);
+else if (!role) startPage();
 else if (role === "customer") customerPage();
 else repairerPage(role);
 </script>

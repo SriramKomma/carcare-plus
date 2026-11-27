@@ -219,4 +219,34 @@ class WebServerTest {
         assertEquals(405, get("/api/jobs/accept?id=JOB-1&repairer=sriram").statusCode(), "accepting needs POST");
         assertEquals(400, get("/api/jobs/live?repairer=nobody").statusCode());
     }
+
+    @Test
+    void requestsThroughATunnelMayOnlyBringSmsReplies() throws Exception {
+        HttpRequest viaTunnel = HttpRequest.newBuilder(URI.create(server.url() + "api/stats"))
+                .header("X-Forwarded-For", "203.0.113.5").GET().build();
+        assertEquals(403, send(viaTunnel).statusCode(), "the search API is not open to the internet");
+        assertEquals(403, send(HttpRequest.newBuilder(URI.create(server.url())).header("X-Forwarded-For", "203.0.113.5")
+                .GET().build()).statusCode(), "nor the page");
+        // The SMS address answers, but without Twilio set up (tests) no reply is believed
+        HttpResponse<String> sms = send(HttpRequest.newBuilder(URI.create(server.url() + "api/sms/incoming"))
+                .header("X-Forwarded-For", "203.0.113.5").header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString("From=%2B15195550102&Body=ACCEPTED")).build());
+        assertEquals(403, sms.statusCode());
+        assertTrue(sms.headers().firstValue("Content-Type").orElse("").startsWith("text/xml"));
+        assertEquals(200, get("/api/stats").statusCode(), "this computer is still served");
+    }
+
+    @Test
+    void pretendPhonesWorkOverHttp() throws Exception {
+        postForm("api/jobs", "name=Sam+Lee&phone=519+555+0100&vehicle=gas&q=flat+tire&repairers=sriram,sarvesh");
+        String phone = "";
+        for (int i = 0; i < 50 && !phone.contains("JOB-1"); i++) { // texts are sent on the SMS thread
+            phone = get("/api/sms/phone?repairer=sriram").body();
+            Thread.sleep(20);
+        }
+        assertTrue(phone.contains("CarCare+ repair request JOB-1"), phone);
+        HttpResponse<String> reply = postForm("api/sms/phone/reply", "repairer=sriram&text=ACCEPTED");
+        assertEquals(200, reply.statusCode(), reply.body());
+        assertTrue(get("/api/jobs/live?job=JOB-1").body().contains("Sriram Komma accepted your request"));
+    }
 }

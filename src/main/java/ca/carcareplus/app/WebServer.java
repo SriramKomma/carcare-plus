@@ -20,10 +20,13 @@ import com.sun.net.httpserver.HttpServer;
 
 import ca.carcareplus.dispatch.JobBoard;
 import ca.carcareplus.dispatch.RepairerDirectory;
+import ca.carcareplus.dispatch.SmsDispatcher;
 import ca.carcareplus.exceptions.CarCareException;
 import ca.carcareplus.exceptions.InvalidInputException;
 import ca.carcareplus.exceptions.ServiceUnavailableException;
 import ca.carcareplus.live.GooglePlacesClient;
+import ca.carcareplus.sms.SimulatedSmsGateway;
+import ca.carcareplus.sms.SmsGateway;
 import ca.carcareplus.visits.VisitBook;
 
 /**
@@ -52,13 +55,18 @@ import ca.carcareplus.visits.VisitBook;
  * GET  /api/visits       ?ids=CC-1001,CC-1002     the driver's saved requests
  * POST /api/visit/cancel id=                       cancel one
  * GET /live-demo         the live dispatch demo page (web/live-demo.html); routes in DispatchApi
+ * POST /api/sms/incoming  SMS replies forwarded by Twilio; other SMS routes in SmsApi
  * </pre>
  *
  * POST bodies are form-encoded (application/x-www-form-urlencoded), at most
  * {@value #MAX_BODY_BYTES} bytes. Routes that change data accept POST only.
  *
  * Safety: it listens on the loopback address only (127.0.0.1), so other computers
- * cannot reach it.
+ * cannot reach it. For real SMS replies a tunnel (e.g. ngrok) forwards Twilio's
+ * requests from the internet to this computer; anything that arrives through a
+ * tunnel (it carries an X-Forwarded-For header or another host name) may ONLY use
+ * /api/sms/incoming, and that route believes a request only with Twilio's signature.
+ * So the tunnel never exposes the search, the visit requests or the dispatch board.
  *
  * Threads: a small pool of {@value #THREADS} threads answers requests, so a slow
  * request (a "Live nearby" call to Google can take seconds) no longer blocks the
@@ -86,10 +94,14 @@ public final class WebServer {
 
     private final HttpServer server;
     private final ExecutorService pool;
+    private final ExecutorService smsPool;
+    private final SmsGateway sms;
 
-    private WebServer(HttpServer server, ExecutorService pool) {
+    private WebServer(HttpServer server, ExecutorService pool, ExecutorService smsPool, SmsGateway sms) {
         this.server = server;
         this.pool = pool;
+        this.smsPool = smsPool;
+        this.sms = sms;
     }
 
     /**
@@ -109,14 +121,28 @@ public final class WebServer {
     /** @param visits where visit requests are saved (Main uses data/visits/visits.json) */
     public static WebServer start(SearchSystem system, int port, GooglePlacesClient live, VisitBook visits)
             throws CarCareException {
-        return start(system, port, live, visits, RepairerDirectory.load(REPAIRERS_FILE));
+        return start(system, port, live, visits, RepairerDirectory.load(REPAIRERS_FILE), null);
     }
 
-    /** @param repairers who receives requests in the live dispatch demo */
+    /**
+     * @param repairers who receives requests in the live dispatch demo
+     * @param sms       real SMS (Main passes Twilio when it is set up), or null for pretend phones;
+     *                  tests always pass null, so they never send a real text
+     */
     public static WebServer start(SearchSystem system, int port, GooglePlacesClient live, VisitBook visits,
-                                  RepairerDirectory repairers) throws CarCareException {
+                                  RepairerDirectory repairers, SmsGateway sms) throws CarCareException {
         WebApi api = new WebApi(system, live, java.time.Clock.systemUTC(), visits);
-        DispatchApi dispatch = new DispatchApi(repairers, new JobBoard(java.time.Clock.systemUTC()), api::serviceFor);
+        JobBoard board = new JobBoard(java.time.Clock.systemUTC());
+        SmsGateway gateway = sms != null ? sms : new SimulatedSmsGateway(java.time.Clock.systemUTC());
+        // One thread sends every SMS, in order, so no page request ever waits for Twilio
+        ExecutorService smsPool = Executors.newSingleThreadExecutor(task -> {
+            Thread thread = new Thread(task, "carcare-sms");
+            thread.setDaemon(true);
+            return thread;
+        });
+        SmsDispatcher texts = new SmsDispatcher(gateway, repairers, board, smsPool);
+        DispatchApi dispatch = new DispatchApi(repairers, board, api::serviceFor, texts);
+        SmsApi smsApi = new SmsApi(texts, repairers);
         HttpServer server;
         try {
             server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 0);
@@ -153,6 +179,9 @@ public final class WebServer {
         route(server, "/api/jobs/done", "POST", null, dispatch::done);
         route(server, "/api/jobs/cancel", "POST", null, dispatch::cancel);
         route(server, "/api/jobs/live", null, dispatch::live);
+        route(server, "/api/sms/phone", null, smsApi::phone);
+        route(server, "/api/sms/phone/reply", "POST", null, smsApi::reply);
+        server.createContext("/api/sms/incoming", exchange -> twilioReply(exchange, smsApi));
         ExecutorService pool = Executors.newFixedThreadPool(THREADS, task -> {
             Thread thread = new Thread(task, "carcare-web");
             thread.setDaemon(true); // do not keep the program alive after the server stops
@@ -160,7 +189,12 @@ public final class WebServer {
         });
         server.setExecutor(pool);
         server.start();
-        return new WebServer(server, pool);
+        return new WebServer(server, pool, smsPool, gateway);
+    }
+
+    /** How repairers get texts: "Twilio, from +1..." or "simulated phones ...". */
+    public String smsDescription() {
+        return sms.description();
     }
 
     public int port() {
@@ -174,6 +208,63 @@ public final class WebServer {
     public void stop() {
         server.stop(0);
         pool.shutdownNow();
+        smsPool.shutdownNow();
+    }
+
+    /**
+     * POST /api/sms/incoming: Twilio forwards an SMS reply. Twilio expects XML back
+     * (TwiML); an empty Response means "send nothing now" -- our answer, if any, is sent
+     * separately by SmsDispatcher.
+     */
+    private static void twilioReply(HttpExchange exchange, SmsApi smsApi) throws IOException {
+        try (exchange) {
+            if (!"POST".equals(exchange.getRequestMethod())) {
+                exchange.getResponseHeaders().set("Allow", "POST");
+                sendXml(exchange, 405);
+                return;
+            }
+            if (!exchange.getRequestURI().getPath().equals("/api/sms/incoming")) {
+                sendXml(exchange, 404);
+                return;
+            }
+            try {
+                Map<String, String> form = parseQuery(readBody(exchange));
+                boolean genuine = smsApi.incoming(exchange.getRequestHeaders().getFirst("X-Twilio-Signature"), form);
+                if (!genuine) {
+                    LOG.warning("Ignored an SMS reply without a valid Twilio signature.");
+                }
+                sendXml(exchange, genuine ? 200 : 403);
+            } catch (InvalidInputException e) {
+                sendXml(exchange, 400);
+            } catch (RuntimeException e) {
+                LOG.log(Level.WARNING, "SMS reply failed", e);
+                sendXml(exchange, 500);
+            }
+        }
+    }
+
+    private static void sendXml(HttpExchange exchange, int status) throws IOException {
+        send(exchange, status, "text/xml; charset=utf-8",
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>".getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * True if the request came from the internet through a tunnel rather than from a
+     * browser on this computer: tunnels add X-Forwarded-For, and they pass on the
+     * public host name (abc.ngrok-free.app) instead of localhost.
+     */
+    static boolean cameThroughTunnel(HttpExchange exchange) {
+        if (exchange.getRequestHeaders().containsKey("X-Forwarded-For")) {
+            return true;
+        }
+        String host = exchange.getRequestHeaders().getFirst("Host");
+        if (host == null) {
+            return false;
+        }
+        String name = host.startsWith("[") ? host.substring(0, host.indexOf(']') + 1)
+                : host.contains(":") ? host.substring(0, host.indexOf(':')) : host;
+        name = name.toLowerCase(java.util.Locale.ROOT);
+        return !(name.equals("localhost") || name.equals("127.0.0.1") || name.equals("[::1]"));
     }
 
     /** @param lock held while the route runs, or null for a route that shares no state */
@@ -185,6 +276,10 @@ public final class WebServer {
     private static void route(HttpServer server, String path, String method, Object lock, Route route) {
         server.createContext(path, exchange -> {
             try (exchange) {
+                if (cameThroughTunnel(exchange)) {
+                    sendJson(exchange, 403, Map.of("error", "Only SMS replies are accepted from the internet."));
+                    return;
+                }
                 if (!method.equals(exchange.getRequestMethod())) {
                     exchange.getResponseHeaders().set("Allow", method);
                     sendJson(exchange, 405, Map.of("error", "Only " + method + " is supported."));
@@ -236,6 +331,10 @@ public final class WebServer {
 
     private static void servePage(HttpExchange exchange) throws IOException {
         try (exchange) {
+            if (cameThroughTunnel(exchange)) {
+                send(exchange, 403, "text/plain; charset=utf-8", "Forbidden".getBytes(StandardCharsets.UTF_8));
+                return;
+            }
             String path = exchange.getRequestURI().getPath();
             String resource = switch (path) {
                 case "/", "/index.html" -> PAGE_RESOURCE;

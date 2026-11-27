@@ -111,6 +111,20 @@ public final class RepairerDirectory {
         return id == null ? null : byId.get(id.trim().toLowerCase(Locale.ROOT));
     }
 
+    /**
+     * Who sent an SMS: "+15195550101" (how Twilio writes it) and "(519) 555-0101" are the
+     * same number once normalized.
+     *
+     * @return the repairer with this phone, or null
+     */
+    public Repairer byPhone(String phone) {
+        String number = DataValidator.normalizePhone(phone == null ? "" : phone.trim());
+        if (number == null) {
+            return null;
+        }
+        return byId.values().stream().filter(r -> r.phone().equals(number)).findFirst().orElse(null);
+    }
+
     public int size() {
         return byId.size();
     }

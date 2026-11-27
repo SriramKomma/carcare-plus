@@ -82,7 +82,20 @@ public final class JobBoard {
         }
     }
 
+    /**
+     * Told about every change to a job, whichever way it happened (web page, SMS reply,
+     * time limit). SmsDispatcher uses it to text the repairers.
+     *
+     * Called while the board's lock is held, so it must be quick and must not wait for
+     * the network: it should only hand the work to another thread.
+     */
+    public interface Listener {
+        /** @param before the job before the change, or null for a new job */
+        void jobChanged(RepairJob before, RepairJob after);
+    }
+
     private final Clock clock;
+    private Listener listener = (before, after) -> { };
     /** In posting order, oldest first. */
     private final Map<String, RepairJob> jobs = new LinkedHashMap<>();
     private final Map<String, Instant> lastSeen = new HashMap<>();
@@ -105,9 +118,8 @@ public final class JobBoard {
                 request.customerName(), request.customerPhone(), request.area(), request.vehicle(),
                 request.problem(), request.service(), List.copyOf(new LinkedHashSet<>(request.invited())), Set.of(),
                 RepairJob.Status.OPEN, null, null, null);
-        jobs.put(job.id(), job);
         forgetOldJobs();
-        changed();
+        store(null, job);
         return job;
     }
 
@@ -132,8 +144,7 @@ public final class JobBoard {
         }
         // Check and change in one step, inside the lock: this is the first-come, first-served rule
         RepairJob won = job.withAssigned(repairerId, clock.instant());
-        jobs.put(won.id(), won);
-        changed();
+        store(job, won);
         return new Outcome(true, won, "");
     }
 
@@ -154,8 +165,7 @@ public final class JobBoard {
         if (declined.declined().containsAll(declined.invited())) {
             declined = declined.withClosed(RepairJob.Status.NO_TAKERS, clock.instant());
         }
-        jobs.put(declined.id(), declined);
-        changed();
+        store(job, declined);
         return new Outcome(true, declined, "");
     }
 
@@ -170,8 +180,7 @@ public final class JobBoard {
             throw new InvalidInputException("This request is already " + job.status().name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ') + ".");
         }
         RepairJob cancelled = job.withClosed(RepairJob.Status.CANCELLED, clock.instant());
-        jobs.put(cancelled.id(), cancelled);
-        changed();
+        store(job, cancelled);
         return cancelled;
     }
 
@@ -189,9 +198,18 @@ public final class JobBoard {
             return new Outcome(false, job, closedMessage(job));
         }
         RepairJob done = job.withClosed(RepairJob.Status.DONE, clock.instant());
-        jobs.put(done.id(), done);
-        changed();
+        store(job, done);
         return new Outcome(true, done, "");
+    }
+
+    /** @param listener told about every job change (null = nobody) */
+    public synchronized void setListener(Listener listener) {
+        this.listener = listener == null ? (before, after) -> { } : listener;
+    }
+
+    /** Something the pages show changed outside the board (e.g. an SMS was delivered): pages redraw. */
+    public synchronized void touch() {
+        changed();
     }
 
     /** A repairer's page is open and asking; marks them online. */
@@ -240,8 +258,7 @@ public final class JobBoard {
         Instant now = clock.instant();
         for (RepairJob job : new ArrayList<>(jobs.values())) {
             if (job.status() == RepairJob.Status.OPEN && !now.isBefore(job.expiresAt())) {
-                jobs.put(job.id(), job.withClosed(RepairJob.Status.EXPIRED, now));
-                changed();
+                store(job, job.withClosed(RepairJob.Status.EXPIRED, now));
             }
         }
         for (Iterator<String> it = online.iterator(); it.hasNext(); ) {
@@ -253,13 +270,21 @@ public final class JobBoard {
         }
     }
 
+    /** Makes room for one more job. */
     private void forgetOldJobs() {
         Iterator<RepairJob> it = jobs.values().iterator();
-        while (jobs.size() > MAX_KEPT && it.hasNext()) {
+        while (jobs.size() >= MAX_KEPT && it.hasNext()) {
             if (it.next().status().isFinal()) {
                 it.remove();
             }
         }
+    }
+
+    /** Saves the new copy of a job, raises the version and tells the listener (before = null: a new job). */
+    private void store(RepairJob before, RepairJob after) {
+        jobs.put(after.id(), after);
+        changed();
+        listener.jobChanged(before, after);
     }
 
     private void changed() {
